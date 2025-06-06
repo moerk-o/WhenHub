@@ -1,6 +1,6 @@
 # VS Code
 .vscode/
-.images/
++images/
 *.code-workspace
 
 # Python
