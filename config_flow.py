@@ -1,9 +1,7 @@
-"""Config flow for WhenHub integration."""
+"""Config flow for WhenHub integration with proper Home Assistant translation system."""
 from __future__ import annotations
 
 import logging
-import os
-import uuid
 from typing import Any
 import voluptuous as vol
 from datetime import date
@@ -11,6 +9,7 @@ from datetime import date
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
+from homeassistant.helpers import selector
 import homeassistant.helpers.config_validation as cv
 
 from .const import (
@@ -34,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for WhenHub."""
+    """Handle a config flow for WhenHub with proper translation support."""
 
     VERSION = 1
 
@@ -51,7 +50,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._event_type = user_input[CONF_EVENT_TYPE]
         
-        # Weiter zum entsprechenden Event-spezifischen Schritt
+        # Route to appropriate event-specific step
         if self._event_type == EVENT_TYPE_TRIP:
             return await self.async_step_trip()
         elif self._event_type == EVENT_TYPE_MILESTONE:
@@ -60,24 +59,47 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_anniversary()
 
     async def _show_event_type_form(self) -> FlowResult:
-        """Show event type selection form."""
-        event_type_options = {
-            event_type: f"{info['name']} - {info['description']}" 
-            for event_type, info in EVENT_TYPES.items()
-        }
+        """Show event type selection form with proper HA translations."""
+        # Debug: Check system language and try to get translations
+        system_language = self.hass.config.language or "en"
+        _LOGGER.warning(f"WhenHub Debug: System language = {system_language}")
         
+        # Get translations for our domain
+        try:
+            from homeassistant.helpers import translation
+            translations = await translation.async_get_translations(
+                self.hass, system_language, "config", {DOMAIN}
+            )
+            _LOGGER.warning(f"WhenHub Debug: Found {len(translations)} translation keys")
+        except Exception as e:
+            _LOGGER.warning(f"WhenHub Debug: Translation lookup failed = {e}")
+            translations = {}
+
+        # Try to get translated options from our loaded translations
+        try:
+            event_type_options = {
+                EVENT_TYPE_TRIP: translations.get(f'component.whenhub.config.step.user.selector.event_type_selector.options.trip', 'Trip'),
+                EVENT_TYPE_MILESTONE: translations.get(f'component.whenhub.config.step.user.selector.event_type_selector.options.milestone', 'Milestone'),
+                EVENT_TYPE_ANNIVERSARY: translations.get(f'component.whenhub.config.step.user.selector.event_type_selector.options.anniversary', 'Anniversary'),
+            }
+            _LOGGER.warning(f"WhenHub Debug: Using translated options: {event_type_options}")
+        except Exception as e:
+            _LOGGER.warning(f"WhenHub Debug: Translation failed, using fallback: {e}")
+            # Fallback to const.py values
+            event_type_options = {
+                event_type: f"{info['name']} - {info['description']}" 
+                for event_type, info in EVENT_TYPES.items()
+            }
+
+        # Use simple vol.In() with our translated values
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_TYPE): vol.In(event_type_options)
         })
 
+        # Home Assistant automatically handles translations for step_id="user"
         return self.async_show_form(
             step_id="user",
             data_schema=data_schema,
-            description_placeholders={
-                "trip_desc": "Mehrtägige Events wie Urlaub oder Geschäftsreisen",
-                "milestone_desc": "Einmalige wichtige Termine wie Geburtstage oder Deadlines", 
-                "anniversary_desc": "Jährlich wiederkehrende Events wie Hochzeitstage",
-            },
         )
 
     async def async_step_trip(
@@ -137,14 +159,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="trip",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Dänemarkurlaub 2025",
-                "start_date": "Format: YYYY-MM-DD",
-                "end_date": "Format: YYYY-MM-DD", 
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "URL zur Unterkunft (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )
 
     async def async_step_milestone(
@@ -196,13 +210,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="milestone",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Geburtstag Max oder Projektabgabe",
-                "target_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )
 
     async def async_step_anniversary(
@@ -254,13 +261,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="anniversary",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
-                "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )
 
     @staticmethod
@@ -271,7 +271,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for WhenHub."""
+    """Handle options flow for WhenHub with translation support."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
@@ -385,13 +385,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="milestone_options",
             data_schema=data_schema,
-            description_placeholders={
-                "event_name": "z.B. Geburtstag Max oder Projektabgabe",
-                "target_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )
 
     async def async_step_anniversary_options(
@@ -434,11 +427,4 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="anniversary_options",
             data_schema=data_schema,
-            description_placeholders={
-                "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
-                "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )

@@ -1,0 +1,178 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose WhenHub Event Type",
+        "description": "Select the type of your event",
+        "data": {
+          "event_type": "Event Type"
+        },
+  "selector": {
+    "event_type_selector": {
+      "options": {
+        "trip": "Trip - Multi-day travel or event",
+        "milestone": "Milestone - One-time important date",
+        "anniversary": "Anniversary - Yearly recurring event"
+      }
+    }
+  },
+        "data_description": {
+          "event_type": "Trip for multi-day events, Milestone for one-time dates, Anniversary for yearly recurring events"
+        },
+        "event_types": {
+          "trip": "Trip - Multi-day travel or event",
+          "milestone": "Milestone - One-time important date", 
+          "anniversary": "Anniversary - Yearly recurring event"
+        }
+      },
+      "trip": {
+        "title": "Set up Trip",
+        "description": "Set up a new Trip in WhenHub",
+        "data": {
+          "event_name": "Trip Name",
+          "start_date": "Start Date (YYYY-MM-DD)",
+          "end_date": "End Date (YYYY-MM-DD)",
+          "image_path": "Image Path (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notes (optional)"
+        },
+        "data_description": {
+          "event_name": "e.g. 'Denmark Vacation 2025' or 'Business Trip Berlin'",
+          "start_date": "The date when the trip begins",
+          "end_date": "The date when the trip ends",
+          "image_path": "Path to an image, e.g. /local/images/trip.jpg",
+          "website_url": "Link to accommodation or other relevant information",
+          "notes": "Additional information about the trip"
+        }
+      },
+      "milestone": {
+        "title": "Set up Milestone",
+        "description": "Set up a new Milestone in WhenHub",
+        "data": {
+          "event_name": "Milestone Name",
+          "target_date": "Target Date (YYYY-MM-DD)",
+          "image_path": "Image Path (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notes (optional)"
+        },
+        "data_description": {
+          "event_name": "e.g. 'Max's Birthday' or 'Project Deadline'",
+          "target_date": "The date of the important appointment",
+          "image_path": "Path to an image, e.g. /local/images/milestone.jpg",
+          "website_url": "Relevant URL for the event",
+          "notes": "Additional information about the milestone"
+        }
+      },
+      "anniversary": {
+        "title": "Set up Anniversary",
+        "description": "Set up a new Anniversary in WhenHub",
+        "data": {
+          "event_name": "Anniversary Name",
+          "target_date": "Original Date (YYYY-MM-DD)",
+          "image_path": "Image Path (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notes (optional)"
+        },
+        "data_description": {
+          "event_name": "e.g. 'Wedding Anniversary' or 'Company Anniversary'",
+          "target_date": "The original date (will be repeated annually)",
+          "image_path": "Path to an image, e.g. /local/images/anniversary.jpg",
+          "website_url": "Relevant URL for the event",
+          "notes": "Additional information about the anniversary"
+        }
+      }
+    },
+    "error": {
+      "invalid_dates": "End date must be after start date",
+      "invalid_date_format": "Invalid date format. Use YYYY-MM-DD",
+      "image_upload_failed": "Error uploading image"
+    },
+    "abort": {
+      "already_configured": "An event with this name is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WhenHub Options",
+        "description": "Edit the settings for this event"
+      },
+      "trip_options": {
+        "title": "Trip Options",
+        "description": "Edit the settings for this trip"
+      },
+      "milestone_options": {
+        "title": "Milestone Options",
+        "description": "Edit the settings for this milestone"
+      },
+      "anniversary_options": {
+        "title": "Anniversary Options",
+        "description": "Edit the settings for this anniversary"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "countdown_text": {
+        "name": "Countdown Text"
+      },
+      "days_until": {
+        "name": "Days Until Start"
+      },
+      "days_until_end": {
+        "name": "Days Until End"
+      },
+      "trip_left_days": {
+        "name": "Trip Left Days"
+      },
+      "trip_left_percent": {
+        "name": "Trip Left Percent"
+      },
+      "days_until_next": {
+        "name": "Days Until Next"
+      },
+      "days_since_last": {
+        "name": "Days Since Last"
+      },
+      "occurrences_count": {
+        "name": "Occurrences Count"
+      },
+      "next_date": {
+        "name": "Next Date"
+      },
+      "last_date": {
+        "name": "Last Date"
+      }
+    },
+    "binary_sensor": {
+      "trip_starts_today": {
+        "name": "Trip Starts Today"
+      },
+      "trip_active_today": {
+        "name": "Trip Active Today"
+      },
+      "trip_ends_today": {
+        "name": "Trip Ends Today"
+      },
+      "is_today": {
+        "name": "Is Today"
+      }
+    },
+    "image": {
+      "event_image": {
+        "name": "Event Image"
+      }
+    }
+  },
+  "countdown": {
+    "year": "year",
+    "years": "years",
+    "month": "month", 
+    "months": "months",
+    "week": "week",
+    "weeks": "weeks",
+    "day": "day",
+    "days": "days",
+    "zero_days": "0 days"
+  }
+}
