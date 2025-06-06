@@ -3,206 +3,206 @@
 ![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
-WhenHub ist eine Home Assistant Integration zum Verfolgen verschiedener Events und wichtiger Termine. Die Integration stellt Countdown-Sensoren, Status-Informationen und visuelle Darstellungen für deine Events bereit.
+WhenHub is a Home Assistant integration for tracking various events and important dates. The integration provides countdown sensors, status information, and visual representations for your events.
 
-## Überblick
+## Overview
 
-**Die Entstehungsgeschichte:** Die Kinder haben ständig gefragt "Wie lange noch bis zum Urlaub?" oder "Wie viele Tage noch bis zu meinem Geburtstag?". Ich dachte mir, da kann doch was mit HomeAssistant Machen! Nun zeigt WhenHub auf dem Tablet ein Bild des Ereignisses mit einer großen Zahl für die verbleibenden Tage und darunter die Dauer noch einmal als Text.
+**The origin story:** The kids kept asking "How much longer until vacation?" or "How many days until my birthday?". I thought, there's got to be something I can do with Home Assistant! Now WhenHub displays an image of the event on the tablet with a big number showing the remaining days and the duration as text below.
 
-### Event-Typen
+### Event Types
 
-**Trip** - Mehrtägige Events wie Urlaub oder der Besuch von Oma  
-**Milestone** - Einmalige wichtige Termine wie Schulveranstaltungen oder 'wann kommt das neue Haustier'  
-**Anniversary** - Jährlich wiederkehrende Events wie Geburtstage oder Feiertage  
+**Trip** - Multi-day events like vacations or visiting grandma  
+**Milestone** - One-time important dates like school events or 'when is the new pet coming'  
+**Anniversary** - Yearly recurring events like birthdays or holidays  
 
 ## Installation
 
-### Manuelle Installation
+### Manual Installation
 
-1. Lade die neueste Version von der [Releases-Seite](https://github.com/yourusername/whenhub/releases) herunter
-2. Entpacke die Dateien in das `custom_components/whenhub` Verzeichnis deiner Home Assistant Installation
-3. Starte Home Assistant neu
-4. Gehe zu **Einstellungen** → **Geräte & Dienste** → **Integration hinzufügen**
-5. Suche nach "WhenHub" und folge dem Konfigurationsassistenten
+1. Download the latest version from the [Releases page](https://github.com/yourusername/whenhub/releases)
+2. Extract the files to the `custom_components/whenhub` directory of your Home Assistant installation
+3. Restart Home Assistant
+4. Go to **Settings** → **Devices & Services** → **Add Integration**
+5. Search for "WhenHub" and follow the configuration wizard
 
 ## Trip Events
 
-Trip Events haben ein **Startdatum** und ein **Enddatum** und bieten umfassende Tracking-Funktionen für mehrtägige Events.
+Trip events have a **start date** and **end date** and provide comprehensive tracking functions for multi-day events.
 
-### Konfiguration
+### Configuration
 
-Bei der Einrichtung eines Trip Events konfigurierst du:
+When setting up a Trip event, you configure:
 
-- **Event Name**: z.B. "Dänemarkurlaub 2025"
-- **Startdatum**: Wann der Trip beginnt (Format: YYYY-MM-DD)
-- **Enddatum**: Wann der Trip endet (Format: YYYY-MM-DD)
-- **Bildpfad** *(optional)*: 
-  - Leer lassen = Automatisch generiertes Standard-Bild (blaues Flugzeug-Icon)
-  - Dateipfad = z.B. `/local/images/daenemark.jpg` für eigene Bilder
-  - Base64-String = Direkt eingefügtes, kodiertes Bild
-- **Website URL** *(optional)*: Link zur Unterkunft oder anderen relevanten Infos
-- **Notizen** *(optional)*: Zusätzliche Informationen
+- **Event Name**: e.g., "Denmark Vacation 2025"
+- **Start Date**: When the trip begins (Format: YYYY-MM-DD)
+- **End Date**: When the trip ends (Format: YYYY-MM-DD)
+- **Image Path** *(optional)*: 
+  - Leave empty = Automatically generated default image (blue airplane icon)
+  - File path = e.g., `/local/images/denmark.jpg` for custom images
+  - Base64 string = Directly embedded encoded image
+- **Website URL** *(optional)*: Link to accommodation or other relevant info
+- **Notes** *(optional)*: Additional information
 
-### Verfügbare Entitäten
+### Available Entities
 
-#### Sensoren
-- **Days Until Start** - Tage bis zum Trip-Beginn
-- **Days Until End** - Tage bis zum Trip-Ende  
-- **Countdown Text** - Formatierter Countdown-Text ("2 Jahre, 3 Monate, 1 Woche, 4 Tage")
-  - **Attribute**: 
-    - `event_name` - Name des Events
-    - `event_type` - Typ des Events (trip)
-    - `start_date` - Startdatum (ISO-Format)
-    - `end_date` - Enddatum (ISO-Format)
-    - `total_days` - Gesamte Trip-Dauer in Tagen
-    - `text_years` - Jahre aus dem Countdown-Text bis Start
-    - `text_months` - Monate aus dem Countdown-Text bis Start
-    - `text_weeks` - Wochen aus dem Countdown-Text bis Start
-    - `text_days` - Tage aus dem Countdown-Text bis Start
-- **Trip Left Days** - Verbleibende Tage während des Trips
-- **Trip Left Percent** - Verbleibender Trip-Anteil in Prozent (0-100%)
+#### Sensors
+- **Days Until Start** - Days until trip begins
+- **Days Until End** - Days until trip ends  
+- **Countdown Text** - Formatted countdown text ("2 years, 3 months, 1 week, 4 days")
+  - **Attributes**: 
+    - `event_name` - Name of the event
+    - `event_type` - Type of event (trip)
+    - `start_date` - Start date (ISO format)
+    - `end_date` - End date (ISO format)
+    - `total_days` - Total trip duration in days
+    - `text_years` - Years from countdown text until start
+    - `text_months` - Months from countdown text until start
+    - `text_weeks` - Weeks from countdown text until start
+    - `text_days` - Days from countdown text until start
+- **Trip Left Days** - Remaining days during the trip
+- **Trip Left Percent** - Remaining trip percentage (0-100%)
 
-#### Binary Sensoren
-- **Trip Starts Today** - `true` wenn der Trip heute beginnt
-- **Trip Active Today** - `true` wenn der Trip heute aktiv ist
-- **Trip Ends Today** - `true` wenn der Trip heute endet
+#### Binary Sensors
+- **Trip Starts Today** - `true` when the trip starts today
+- **Trip Active Today** - `true` when the trip is active today
+- **Trip Ends Today** - `true` when the trip ends today
 
 #### Image
-- **Event Image** - Zeigt das konfigurierte Bild oder Standard-Bild
-  - **Attribute**: 
-    - `image_type` - "user_defined" (eigenes Bild) oder "system_defined" (Standard-Icon)
-    - `image_path` - Pfad zum Bild, "base64_data" oder "default_svg"
+- **Event Image** - Shows the configured image or default image
+  - **Attributes**: 
+    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
+    - `image_path` - Path to image, "base64_data" or "default_svg"
 
 ## Milestone Events
 
-Milestone Events haben ein einzelnes **Zieldatum** und fokussieren sich auf den Countdown zu diesem wichtigen Termin.
+Milestone events have a single **target date** and focus on the countdown to this important date.
 
-### Konfiguration
+### Configuration
 
-Bei der Einrichtung eines Milestone Events konfigurierst du:
+When setting up a Milestone event, you configure:
 
-- **Event Name**: z.B. "Geburtstag Max" oder "Projektabgabe"
-- **Zieldatum**: Das wichtige Datum (Format: YYYY-MM-DD)
-- **Bildpfad** *(optional)*: 
-  - Leer lassen = Automatisch generiertes Standard-Bild (rotes Flaggen-Icon)
-  - Dateipfad = z.B. `/local/images/geburtstag.jpg` für eigene Bilder
-  - Base64-String = Direkt eingefügtes, kodiertes Bild
-- **Website URL** *(optional)*: Relevante URL zum Event
-- **Notizen** *(optional)*: Zusätzliche Informationen
+- **Event Name**: e.g., "Max's Birthday" or "Project Deadline"
+- **Target Date**: The important date (Format: YYYY-MM-DD)
+- **Image Path** *(optional)*: 
+  - Leave empty = Automatically generated default image (red flag icon)
+  - File path = e.g., `/local/images/birthday.jpg` for custom images
+  - Base64 string = Directly embedded encoded image
+- **Website URL** *(optional)*: Relevant URL for the event
+- **Notes** *(optional)*: Additional information
 
-### Verfügbare Entitäten
+### Available Entities
 
-#### Sensoren
-- **Days Until** - Tage bis zum Milestone (kann negativ werden wenn das Datum vorbei ist)
-- **Countdown Text** - Formatierter Countdown-Text bis zum Milestone
-  - **Attribute**: 
-    - `event_name` - Name des Events
-    - `event_type` - Typ des Events (milestone)
-    - `date` - Zieldatum (ISO-Format)
-    - `text_years` - Jahre aus dem Countdown-Text bis Ziel
-    - `text_months` - Monate aus dem Countdown-Text bis Ziel
-    - `text_weeks` - Wochen aus dem Countdown-Text bis Ziel
-    - `text_days` - Tage aus dem Countdown-Text bis Ziel
+#### Sensors
+- **Days Until** - Days until milestone (can become negative if date has passed)
+- **Countdown Text** - Formatted countdown text until milestone
+  - **Attributes**: 
+    - `event_name` - Name of the event
+    - `event_type` - Type of event (milestone)
+    - `date` - Target date (ISO format)
+    - `text_years` - Years from countdown text until target
+    - `text_months` - Months from countdown text until target
+    - `text_weeks` - Weeks from countdown text until target
+    - `text_days` - Days from countdown text until target
 
-#### Binary Sensoren
-- **Is Today** - `true` wenn heute der Milestone-Tag ist
+#### Binary Sensors
+- **Is Today** - `true` when today is the milestone day
 
 #### Image
-- **Event Image** - Zeigt das konfigurierte Bild oder Standard-Bild
-  - **Attribute**: 
-    - `image_type` - "user_defined" (eigenes Bild) oder "system_defined" (Standard-Icon)
-    - `image_path` - Pfad zum Bild, "base64_data" oder "default_svg"
+- **Event Image** - Shows the configured image or default image
+  - **Attributes**: 
+    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
+    - `image_path` - Path to image, "base64_data" or "default_svg"
 
 ## Anniversary Events
 
-Anniversary Events wiederholen sich jährlich basierend auf einem **ursprünglichen Datum** und bieten sowohl Rückblick- als auch Vorschau-Funktionen.
+Anniversary events repeat annually based on an **original date** and provide both retrospective and prospective functions.
 
-### Konfiguration
+### Configuration
 
-Bei der Einrichtung eines Anniversary Events konfigurierst du:
+When setting up an Anniversary event, you configure:
 
-- **Event Name**: z.B. "Hochzeitstag" oder "Firmenjubiläum"
-- **Ursprüngliches Datum**: Das Datum des ersten Events (Format: YYYY-MM-DD)
-- **Bildpfad** *(optional)*: 
-  - Leer lassen = Automatisch generiertes Standard-Bild (pinkes Herz-Icon)
-  - Dateipfad = z.B. `/local/images/hochzeit.jpg` für eigene Bilder
-  - Base64-String = Direkt eingefügtes, kodiertes Bild
-- **Website URL** *(optional)*: Relevante URL zum Event
-- **Notizen** *(optional)*: Zusätzliche Informationen
+- **Event Name**: e.g., "Wedding Anniversary" or "Company Anniversary"
+- **Original Date**: The date of the first event (Format: YYYY-MM-DD)
+- **Image Path** *(optional)*: 
+  - Leave empty = Automatically generated default image (pink heart icon)
+  - File path = e.g., `/local/images/wedding.jpg` for custom images
+  - Base64 string = Directly embedded encoded image
+- **Website URL** *(optional)*: Relevant URL for the event
+- **Notes** *(optional)*: Additional information
 
-### Verfügbare Entitäten
+### Available Entities
 
-#### Sensoren
-- **Days Until Next** - Tage bis zum nächsten Anniversary
-- **Days Since Last** - Tage seit dem letzten Anniversary
-- **Countdown Text** - Formatierter Countdown-Text zum nächsten Anniversary
-  - **Attribute**: 
-    - `event_name` - Name des Events
-    - `event_type` - Typ des Events (anniversary)
-    - `initial_date` - Ursprüngliches Datum (ISO-Format)
-    - `next_anniversary` - Datum des nächsten Anniversary (ISO-Format)
-    - `years_on_next` - Anzahl Jahre beim nächsten Anniversary
-    - `text_years` - Jahre aus dem Countdown-Text bis nächstes Anniversary
-    - `text_months` - Monate aus dem Countdown-Text bis nächstes Anniversary
-    - `text_weeks` - Wochen aus dem Countdown-Text bis nächstes Anniversary
-    - `text_days` - Tage aus dem Countdown-Text bis nächstes Anniversary
-- **Occurrences Count** - Anzahl der bisherigen Wiederholungen
-- **Next Date** - Datum des nächsten Anniversary (ISO-Format)
-- **Last Date** - Datum des letzten Anniversary (ISO-Format)
+#### Sensors
+- **Days Until Next** - Days until next anniversary
+- **Days Since Last** - Days since last anniversary
+- **Countdown Text** - Formatted countdown text to next anniversary
+  - **Attributes**: 
+    - `event_name` - Name of the event
+    - `event_type` - Type of event (anniversary)
+    - `initial_date` - Original date (ISO format)
+    - `next_anniversary` - Date of next anniversary (ISO format)
+    - `years_on_next` - Number of years at next anniversary
+    - `text_years` - Years from countdown text until next anniversary
+    - `text_months` - Months from countdown text until next anniversary
+    - `text_weeks` - Weeks from countdown text until next anniversary
+    - `text_days` - Days from countdown text until next anniversary
+- **Occurrences Count** - Number of past occurrences
+- **Next Date** - Date of next anniversary (ISO format)
+- **Last Date** - Date of last anniversary (ISO format)
 
-#### Binary Sensoren
-- **Is Today** - `true` wenn heute ein Anniversary-Tag ist
+#### Binary Sensors
+- **Is Today** - `true` when today is an anniversary day
 
 #### Image
-- **Event Image** - Zeigt das konfigurierte Bild oder Standard-Bild
-  - **Attribute**: 
-    - `image_type` - "user_defined" (eigenes Bild) oder "system_defined" (Standard-Icon)
-    - `image_path` - Pfad zum Bild, "base64_data" oder "default_svg"
+- **Event Image** - Shows the configured image or default image
+  - **Attributes**: 
+    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
+    - `image_path` - Path to image, "base64_data" or "default_svg"
 
-### Schaltjahr-Behandlung
-Anniversary Events handhaben Schaltjahre intelligent: Wenn das ursprüngliche Datum der 29. Februar ist, wird in Nicht-Schaltjahren automatisch der 28. Februar verwendet.
+### Leap Year Handling
+Anniversary events handle leap years intelligently: When the original date is February 29th, non-leap years automatically use February 28th.
 
-## Erweiterte Features
+## Advanced Features
 
-### Bildverwaltung
+### Image Management
 
-WhenHub unterstützt verschiedene Arten von Bildern für deine Events:
+WhenHub supports various types of images for your events:
 
-1. **Benutzerdefinierte Bilder**: Verwende `/local/images/mein-event.jpg` für eigene Bilder
-2. **Automatisch generierte Icons**: 
-   - **Trip**: Blaues Flugzeug-Icon
-   - **Milestone**: Rote Flagge
-   - **Anniversary**: Pinkes Herz
-3. **Unterstützte Formate**: JPEG, PNG, WebP, GIF, SVG
+1. **Custom Images**: Use `/local/images/my-event.jpg` for your own images
+2. **Auto-generated Icons**: 
+   - **Trip**: Blue airplane icon
+   - **Milestone**: Red flag
+   - **Anniversary**: Pink heart
+3. **Supported Formats**: JPEG, PNG, WebP, GIF, SVG
 
-Bilder werden im `www/` Verzeichnis von Home Assistant gespeichert und über `/local/` Pfade referenziert.
+Images are stored in Home Assistant's `www/` directory and referenced via `/local/` paths.
 
-### Countdown-Text Formatierung
+### Countdown Text Formatting
 
-Der Countdown-Text verwendet eine intelligente deutsche Formatierung:
+The countdown text uses intelligent English formatting:
 
-- **Vollständig**: "2 Jahre, 3 Monate, 1 Woche, 4 Tage"
-- **Verkürzt**: "5 Tage" (null-Werte werden weggelassen)
-- **Erreicht**: "0 Tage" wenn das Datum erreicht oder überschritten ist
+- **Complete**: "2 years, 3 months, 1 week, 4 days"
+- **Shortened**: "5 days" (zero values are omitted)
+- **Reached**: "0 days" when the date is reached or passed
 
-Die Berechnung verwendet Näherungswerte (365 Tage/Jahr, 30 Tage/Monat) für konsistente Ergebnisse.
+The calculation uses approximations (365 days/year, 30 days/month) for consistent results.
 
-### Optionen-Flow
+### Options Flow
 
-Alle Event-Konfigurationen können nach der Ersteinrichtung über den **Optionen-Flow** bearbeitet werden:
+All event configurations can be edited after initial setup via the **Options Flow**:
 
-1. Gehe zu **Einstellungen** → **Geräte & Dienste** → **WhenHub**
-2. Klicke auf **Konfigurieren** bei dem gewünschten Event
-3. Ändere die Einstellungen für das jeweilige Event (Trip, Milestone oder Anniversary) und speichere
+1. Go to **Settings** → **Devices & Services** → **WhenHub**
+2. Click **Configure** on the desired event
+3. Modify the settings for the respective event (Trip, Milestone, or Anniversary) and save
 
-**Hinweis:** Eine Umwandlung zwischen den Event-Typen (z.B. Trip zu Anniversary) ist nicht möglich.
+**Note:** Converting between event types (e.g., Trip to Anniversary) is not possible.
 
-Alle Sensoren werden automatisch mit den neuen Daten aktualisiert.
+All sensors are automatically updated with the new data.
 
 ## Contributors Welcome
 
-Dieses Projekt ist Open Source und Beiträge sind herzlich willkommen! Issues für Bugs oder Feature-Requests sind genauso geschätzt wie Pull Requests für Code-Verbesserungen.
+This project is open source and contributions are warmly welcomed! Issues for bugs or feature requests are just as appreciated as pull requests for code improvements.
 
 ---
 
-⭐ **Gefällt dir WhenHub?** Anstatt mir einen Kaffee zu spendieren, spendiere dem Projekt ein Stern auf GitHub!
+⭐ **Like WhenHub?** Instead of buying me a coffee, give the project a star on GitHub!
