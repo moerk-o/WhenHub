@@ -33,7 +33,7 @@ Trip events have a **start date** and **end date** and provide comprehensive tra
 
 When setting up a Trip event, you configure:
 
-- **Event Name**: e.g., "Denmark Vacation 2025"
+- **Event Name**: e.g., "Denmark Vacation" or "Grandmas visit"
 - **Start Date**: When the trip begins (Format: YYYY-MM-DD)
 - **End Date**: When the trip ends (Format: YYYY-MM-DD)
 - **Image Path** *(optional)*: 
@@ -81,7 +81,7 @@ Milestone events have a single **target date** and focus on the countdown to thi
 
 When setting up a Milestone event, you configure:
 
-- **Event Name**: e.g., "Max's Birthday" or "Project Deadline"
+- **Event Name**: e.g., "New car delivery" or "Project Deadline"
 - **Target Date**: The important date (Format: YYYY-MM-DD)
 - **Image Path** *(optional)*: 
   - Leave empty = Automatically generated default image (red flag icon)
@@ -121,7 +121,7 @@ Anniversary events repeat annually based on an **original date** and provide bot
 
 When setting up an Anniversary event, you configure:
 
-- **Event Name**: e.g., "Wedding Anniversary" or "Company Anniversary"
+- **Event Name**: e.g., "Birthday Jon" or "Company Anniversary"
 - **Original Date**: The date of the first event (Format: YYYY-MM-DD)
 - **Image Path** *(optional)*: 
   - Leave empty = Automatically generated default image (pink heart icon)
@@ -179,7 +179,7 @@ Images are stored in Home Assistant's `www/` directory and referenced via `/loca
 
 ### Countdown Text Formatting
 
-The countdown text uses intelligent English formatting:
+The countdown text uses intelligent formatting:
 
 - **Complete**: "2 years, 3 months, 1 week, 4 days"
 - **Shortened**: "5 days" (zero values are omitted)
