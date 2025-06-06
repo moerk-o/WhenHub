@@ -1,0 +1,26 @@
+# VS Code
+.vscode/
+.images/
+*.code-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+
+# Home Assistant
+.storage/
+home-assistant.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo

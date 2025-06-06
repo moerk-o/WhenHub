@@ -1,0 +1,100 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WhenHub Event-Typ wählen",
+        "description": "Wähle den Typ deines Events aus",
+        "data": {
+          "event_type": "Event-Typ"
+        },
+        "data_description": {
+          "event_type": "Trip für mehrtägige Events, Milestone für einmalige Termine, Anniversary für jährlich wiederkehrende Events"
+        }
+      },
+      "trip": {
+        "title": "Trip einrichten",
+        "description": "Richte einen neuen Trip bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Trips",
+          "start_date": "Startdatum (YYYY-MM-DD)",
+          "end_date": "Enddatum (YYYY-MM-DD)",
+          "image_path": "Bildpfad (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notizen (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Dänemarkurlaub 2025' oder 'Geschäftsreise Berlin'",
+          "start_date": "Das Datum, an dem der Trip beginnt",
+          "end_date": "Das Datum, an dem der Trip endet",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg",
+          "website_url": "Link zur Unterkunft oder anderen relevanten Informationen",
+          "notes": "Zusätzliche Informationen über den Trip"
+        }
+      },
+      "milestone": {
+        "title": "Milestone einrichten",
+        "description": "Richte einen neuen Milestone bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Milestones",
+          "target_date": "Zieldatum (YYYY-MM-DD)",
+          "image_path": "Bildpfad (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notizen (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Geburtstag Max' oder 'Projektabgabe'",
+          "target_date": "Das Datum des wichtigen Termins",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg",
+          "website_url": "Relevante URL zum Event",
+          "notes": "Zusätzliche Informationen über den Milestone"
+        }
+      },
+      "anniversary": {
+        "title": "Anniversary einrichten", 
+        "description": "Richte ein neues Anniversary bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Anniversarys",
+          "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
+          "image_path": "Bildpfad (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notizen (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Hochzeitstag' oder 'Firmenjubiläum'",
+          "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg",
+          "website_url": "Relevante URL zum Event",
+          "notes": "Zusätzliche Informationen über das Anniversary"
+        }
+      }
+    },
+    "error": {
+      "invalid_dates": "Das Enddatum muss nach dem Startdatum liegen",
+      "invalid_date_format": "Ungültiges Datumsformat. Verwende YYYY-MM-DD",
+      "image_upload_failed": "Fehler beim Hochladen des Bildes"
+    },
+    "abort": {
+      "already_configured": "Ein Event mit diesem Namen ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WhenHub Optionen",
+        "description": "Bearbeite die Einstellungen für dieses Event"
+      },
+      "trip_options": {
+        "title": "Trip Optionen",
+        "description": "Bearbeite die Einstellungen für diesen Trip"
+      },
+      "milestone_options": {
+        "title": "Milestone Optionen", 
+        "description": "Bearbeite die Einstellungen für diesen Milestone"
+      },
+      "anniversary_options": {
+        "title": "Anniversary Optionen",
+        "description": "Bearbeite die Einstellungen für dieses Anniversary"
+      }
+    }
+  }
+}
