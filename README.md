@@ -46,9 +46,7 @@ When setting up a Trip event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Days Until Start** - Days until trip begins
-- **Days Until End** - Days until trip ends  
-- **Countdown Text** - Formatted countdown text ("2 years, 3 months, 1 week, 4 days")
+- **Countdown Text** - Formatted countdown text, will stay at 0 once the date has passed
   - **Attributes**: 
     - `event_name` - Name of the event
     - `event_type` - Type of event (trip)
@@ -59,8 +57,10 @@ When setting up a Trip event, you configure:
     - `text_months` - Months from countdown text until start
     - `text_weeks` - Weeks from countdown text until start
     - `text_days` - Days from countdown text until start
+- **Days Until Start** -  Days until trip begins (can become negative if date has passed)
+- **Days Until End** - Days until trip ends (can become negative if date has passed) 
 - **Trip Left Days** - Remaining days during the trip
-- **Trip Left Percent** - Remaining trip percentage (0-100%)
+- **Trip Left Percent** - Remaining trip percentage (100% before start, decreases during trip, 0% after end)
 
 #### Binary Sensors
 - **Trip Starts Today** - `true` when the trip starts today
@@ -93,8 +93,7 @@ When setting up a Milestone event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Days Until** - Days until milestone (can become negative if date has passed)
-- **Countdown Text** - Formatted countdown text until milestone
+- **Countdown Text** - Formatted countdown text, will stay at 0 once the date has passed
   - **Attributes**: 
     - `event_name` - Name of the event
     - `event_type` - Type of event (milestone)
@@ -103,6 +102,7 @@ When setting up a Milestone event, you configure:
     - `text_months` - Months from countdown text until target
     - `text_weeks` - Weeks from countdown text until target
     - `text_days` - Days from countdown text until target
+- **Days Until** - Days until milestone (can become negative if date has passed)
 
 #### Binary Sensors
 - **Is Today** - `true` when today is the milestone day
@@ -133,9 +133,7 @@ When setting up an Anniversary event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Days Until Next** - Days until next anniversary
-- **Days Since Last** - Days since last anniversary
-- **Countdown Text** - Formatted countdown text to next anniversary
+- **Countdown Text** - Formatted countdown text to next anniversary, will show 0 only on anniversary day
   - **Attributes**: 
     - `event_name` - Name of the event
     - `event_type` - Type of event (anniversary)
@@ -146,6 +144,8 @@ When setting up an Anniversary event, you configure:
     - `text_months` - Months from countdown text until next anniversary
     - `text_weeks` - Weeks from countdown text until next anniversary
     - `text_days` - Days from countdown text until next anniversary
+- **Days Until Next** - Days until next anniversary
+- **Days Since Last** - Days since last anniversary
 - **Occurrences Count** - Number of past occurrences
 - **Next Date** - Date of next anniversary (ISO format)
 - **Last Date** - Date of last anniversary (ISO format)
@@ -179,8 +179,8 @@ Images are stored in Home Assistant's `www/` directory and referenced via `/loca
 
 ### Countdown Text Formatting
 
-The countdown text uses intelligent English formatting:
-
+The countdown text uses intelligent German formatting
+*(multilingual support coming soon):*
 - **Complete**: "2 years, 3 months, 1 week, 4 days"
 - **Shortened**: "5 days" (zero values are omitted)
 - **Reached**: "0 days" when the date is reached or passed
