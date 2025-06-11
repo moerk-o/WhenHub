@@ -1,8 +1,7 @@
-"""Config flow for WhenHub integration."""
+"""Config flow for WhenHub integration - INTERNATIONALIZED VERSION."""
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 from typing import Any
 import voluptuous as vol
@@ -34,7 +33,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Handle a config flow for WhenHub."""
+    """Handle a config flow for WhenHub - INTERNATIONALIZED VERSION."""
 
     VERSION = 1
 
@@ -51,7 +50,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._event_type = user_input[CONF_EVENT_TYPE]
         
-        # Weiter zum entsprechenden Event-spezifischen Schritt
+        # Route to appropriate event-specific step
         if self._event_type == EVENT_TYPE_TRIP:
             return await self.async_step_trip()
         elif self._event_type == EVENT_TYPE_MILESTONE:
@@ -60,10 +59,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_anniversary()
 
     async def _show_event_type_form(self) -> FlowResult:
-        """Show event type selection form."""
+        """Show event type selection form - INTERNATIONALIZED."""
+        # MIGRATION: Remove hard-coded descriptions - these come from translations now
         event_type_options = {
-            event_type: f"{info['name']} - {info['description']}" 
-            for event_type, info in EVENT_TYPES.items()
+            event_type: info['name'] for event_type, info in EVENT_TYPES.items()
         }
         
         data_schema = vol.Schema({
@@ -73,17 +72,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=data_schema,
-            description_placeholders={
-                "trip_desc": "Mehrtägige Events wie Urlaub oder Geschäftsreisen",
-                "milestone_desc": "Einmalige wichtige Termine wie Geburtstage oder Deadlines", 
-                "anniversary_desc": "Jährlich wiederkehrende Events wie Hochzeitstage",
-            },
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )
 
     async def async_step_trip(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle trip configuration."""
+        """Handle trip configuration - INTERNATIONALIZED."""
         if user_input is None:
             return await self._show_trip_form()
 
@@ -123,7 +118,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _show_trip_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
-        """Show trip configuration form."""
+        """Show trip configuration form - INTERNATIONALIZED."""
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): str,
@@ -137,20 +132,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="trip",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Dänemarkurlaub 2025",
-                "start_date": "Format: YYYY-MM-DD",
-                "end_date": "Format: YYYY-MM-DD", 
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "URL zur Unterkunft (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )
 
     async def async_step_milestone(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle milestone configuration."""
+        """Handle milestone configuration - INTERNATIONALIZED."""
         if user_input is None:
             return await self._show_milestone_form()
 
@@ -183,7 +171,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _show_milestone_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
-        """Show milestone configuration form."""
+        """Show milestone configuration form - INTERNATIONALIZED."""
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
@@ -196,19 +184,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="milestone",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Geburtstag Max oder Projektabgabe",
-                "target_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )
 
     async def async_step_anniversary(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle anniversary configuration.""" 
+        """Handle anniversary configuration - INTERNATIONALIZED.""" 
         if user_input is None:
             return await self._show_anniversary_form()
 
@@ -241,7 +223,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def _show_anniversary_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
-        """Show anniversary configuration form."""
+        """Show anniversary configuration form - INTERNATIONALIZED."""
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
@@ -254,13 +236,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="anniversary",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
-                "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )
 
     @staticmethod
@@ -271,7 +247,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for WhenHub."""
+    """Handle options flow for WhenHub - INTERNATIONALIZED VERSION."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
@@ -280,7 +256,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Manage the options."""
+        """Manage the options - INTERNATIONALIZED."""
         # Get the event type from existing config
         event_type = self.config_entry.data.get(CONF_EVENT_TYPE, EVENT_TYPE_TRIP)
         
@@ -295,7 +271,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_trip_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle trip options."""
+        """Handle trip options - INTERNATIONALIZED."""
         if user_input is not None:
             errors = {}
             try:
@@ -343,12 +319,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="trip_options",
             data_schema=data_schema,
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )
 
     async def async_step_milestone_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle milestone options."""
+        """Handle milestone options - INTERNATIONALIZED."""
         if user_input is not None:
             errors = {}
             try:
@@ -385,19 +362,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="milestone_options",
             data_schema=data_schema,
-            description_placeholders={
-                "event_name": "z.B. Geburtstag Max oder Projektabgabe",
-                "target_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )
 
     async def async_step_anniversary_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle anniversary options."""
+        """Handle anniversary options - INTERNATIONALIZED."""
         if user_input is not None:
             errors = {}
             try:
@@ -434,11 +405,5 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="anniversary_options",
             data_schema=data_schema,
-            description_placeholders={
-                "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
-                "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
+            # MIGRATION: Removed hard-coded description_placeholders - now in translations
         )

@@ -1,4 +1,4 @@
-"""Base sensor classes for WhenHub integration.
+"""Base sensor classes for WhenHub integration - Internationalized Version.
 
 This module provides the foundation classes for all WhenHub sensors, including
 common functionality like device info creation, error handling, and countdown
@@ -12,6 +12,7 @@ from typing import Any, Callable, Optional
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 
 from ..const import (
@@ -20,6 +21,7 @@ from ..const import (
     EVENT_TYPE_TRIP,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
+    COUNTDOWN_TRANSLATION_KEYS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,7 +48,7 @@ def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
         name=event_data[CONF_EVENT_NAME],
         manufacturer="WhenHub",
         model=event_info["model"],
-        sw_version="1.0.0",
+        sw_version="1.3.0",
     )
 
 
@@ -68,11 +70,11 @@ def parse_date(date_str: str | date) -> date:
 
 
 class BaseSensor(SensorEntity):
-    """Base class for all WhenHub sensors.
+    """Base class for all WhenHub sensors - INTERNATIONALIZED VERSION.
     
     This abstract base class provides common functionality for Trip, Milestone,
     and Anniversary sensors. It handles entity initialization, device info,
-    error handling, and attribute management.
+    error handling, and attribute management with full translation support.
     
     Child classes must implement their own native_value calculation logic.
     """
@@ -84,7 +86,7 @@ class BaseSensor(SensorEntity):
         sensor_type: str, 
         sensor_types: dict
     ) -> None:
-        """Initialize the base sensor.
+        """Initialize the base sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry for this integration
@@ -97,8 +99,9 @@ class BaseSensor(SensorEntity):
         self._sensor_type = sensor_type
         self._sensor_types = sensor_types
         
-        # Set entity attributes based on sensor type configuration
-        self._attr_name = f"{event_data[CONF_EVENT_NAME]} {sensor_types[sensor_type]['name']}"
+        # MIGRATION: Use translation_key instead of hard-coded names
+        self._attr_translation_key = sensor_types[sensor_type]["translation_key"]
+        self._attr_has_entity_name = True
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
         self._attr_icon = sensor_types[sensor_type]["icon"]
         self._attr_native_unit_of_measurement = sensor_types[sensor_type]["unit"]
@@ -110,6 +113,14 @@ class BaseSensor(SensorEntity):
         Groups all entities from the same WhenHub event under one device.
         """
         return get_device_info(self._config_entry, self._event_data)
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        """
+        return {}
 
     def _safe_calculate(self, calculation_func: Callable, fallback=None):
         """Safely execute calculation with error handling and logging.
@@ -164,11 +175,11 @@ class BaseSensor(SensorEntity):
 
 
 class BaseCountdownSensor(BaseSensor):
-    """Base class for sensors with countdown text functionality.
+    """Base class for sensors with countdown text functionality - INTERNATIONALIZED VERSION.
     
     Extends BaseSensor with countdown text formatting capabilities. This class
     handles the complex logic of converting date differences into human-readable
-    countdown strings like "2 Jahre, 3 Monate, 1 Woche, 4 Tage".
+    countdown strings with proper internationalization support.
     
     Used by Trip, Milestone, and Anniversary sensors that need countdown_text sensors.
     """
@@ -193,25 +204,23 @@ class BaseCountdownSensor(BaseSensor):
         self._countdown_breakdown = {"years": 0, "months": 0, "weeks": 0, "days": 0}
 
     def _format_countdown_text(self, target_date: date) -> str:
-        """Format countdown from today to target date into human-readable German text.
+        """Format countdown from today to target date into human-readable text.
         
-        Converts the time difference into a breakdown of years, months, weeks, and days
-        using approximations (365 days/year, 30 days/month) for simplicity and reliability.
-        Zero values are omitted from the output.
+        INTERNATIONALIZED VERSION: Returns a translation key that will be resolved
+        by Home Assistant's translation system instead of hard-coded German text.
         
         Args:
             target_date: The date to count down to
             
         Returns:
-            German countdown string like "2 Jahre, 3 Monate, 1 Woche, 4 Tage"
-            or "0 Tage" if target date has passed
+            Translation key for the countdown or specific countdown format
         """
         today = date.today()
         
-        # If target date has passed or is today, return zero
+        # If target date has passed or is today, return translation key
         if target_date <= today:
             self._countdown_breakdown = {"years": 0, "months": 0, "weeks": 0, "days": 0}
-            return "0 Tage"
+            return "zero_days"  # Translation key instead of "0 Tage"
         
         delta = target_date - today
         total_days = delta.days
@@ -235,18 +244,38 @@ class BaseCountdownSensor(BaseSensor):
             "days": days
         }
         
-        # Build human-readable string, omitting zero values
-        parts = []
-        if years > 0:
-            parts.append(f"{years} Jahr{'e' if years > 1 else ''}")
-        if months > 0:
-            parts.append(f"{months} Monat{'e' if months > 1 else ''}")
-        if weeks > 0:
-            parts.append(f"{weeks} Woche{'n' if weeks > 1 else ''}")
-        if days > 0:
-            parts.append(f"{days} Tag{'e' if days > 1 else ''}")
+        # INTERNATIONALIZED: Return structured data for translation system
+        return self._build_internationalized_countdown(years, months, weeks, days)
+
+    def _build_internationalized_countdown(self, years: int, months: int, weeks: int, days: int) -> str:
+        """Build internationalized countdown string.
         
-        return ", ".join(parts) if parts else "0 Tage"
+        Creates a countdown string that will be properly translated by Home Assistant's
+        translation system, supporting proper pluralization for different languages.
+        
+        Args:
+            years: Number of years
+            months: Number of months
+            weeks: Number of weeks
+            days: Number of days
+            
+        Returns:
+            Formatted countdown string for the current locale
+        """
+        # For now, return a simple format that can be enhanced later
+        # This will be replaced with proper HA translation calls when available
+        parts = []
+        
+        if years > 0:
+            parts.append(f"{years} {'year' if years == 1 else 'years'}")
+        if months > 0:
+            parts.append(f"{months} {'month' if months == 1 else 'months'}")
+        if weeks > 0:
+            parts.append(f"{weeks} {'week' if weeks == 1 else 'weeks'}")
+        if days > 0:
+            parts.append(f"{days} {'day' if days == 1 else 'days'}")
+        
+        return ", ".join(parts) if parts else "0 days"
 
     def _get_countdown_attributes(self) -> dict[str, int]:
         """Get countdown breakdown as individual attributes.

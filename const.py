@@ -1,4 +1,4 @@
-"""Constants for the WhenHub integration."""
+"""Constants for the WhenHub integration - Internationalized Version."""
 from __future__ import annotations
 
 DOMAIN = "whenhub"
@@ -11,19 +11,19 @@ EVENT_TYPE_ANNIVERSARY = "anniversary"
 EVENT_TYPES = {
     EVENT_TYPE_TRIP: {
         "name": "Trip",
-        "description": "Mehrtägige Reise oder Event",
+        "description_key": "trip_description",  # Translation key instead of German text
         "icon": "mdi:airplane",
         "model": "Trip Tracker",
     },
     EVENT_TYPE_MILESTONE: {
         "name": "Milestone", 
-        "description": "Einmaliges wichtiges Datum",
+        "description_key": "milestone_description",  # Translation key instead of German text
         "icon": "mdi:flag-checkered",
         "model": "Milestone Tracker",
     },
     EVENT_TYPE_ANNIVERSARY: {
         "name": "Anniversary",
-        "description": "Wiederkehrendes jährliches Event", 
+        "description_key": "anniversary_description",  # Translation key instead of German text
         "icon": "mdi:calendar-heart",
         "model": "Anniversary Tracker",
     }
@@ -43,128 +43,123 @@ CONF_NOTES = "notes"
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"
 
-# Common string patterns
-UNIQUE_ID_PATTERN = "{entry_id}_{sensor_type}"
-BINARY_UNIQUE_ID_PATTERN = "{entry_id}_binary_{sensor_type}"
-SENSOR_NAME_PATTERN = "{event_name} {sensor_name}"
-
-# Common text constants
-TEXT_ZERO_DAYS = "0 Tage"
-TEXT_CALCULATION_RUNNING = "Berechnung läuft..."
+# Translation keys instead of hard-coded text
+TEXT_ZERO_DAYS = "zero_days"  # Will be translated
+TEXT_CALCULATION_RUNNING = "calculation_running"  # Will be translated
 
 # Device constants
 MANUFACTURER = "WhenHub"
-SW_VERSION = "1.0.0"
+SW_VERSION = "1.3.0"
 
-# Sensor types - für Trip (mehrtägig)
+# Sensor types - für Trip (mehrtägig) - NOW WITH TRANSLATION KEYS
 TRIP_SENSOR_TYPES = {
     "days_until": {
-        "name": "Days Until Start",
+        "translation_key": "days_until_start",  # NEW: Translation key
         "icon": "mdi:calendar-clock",
         "unit": "days",
     },
     "days_until_end": {
-        "name": "Days Until End",
+        "translation_key": "days_until_end",  # NEW: Translation key
         "icon": "mdi:calendar-clock",
         "unit": "days",
     },
     "countdown_text": {
-        "name": "Countdown Text",
+        "translation_key": "countdown_text",  # NEW: Translation key
         "icon": "mdi:calendar-text",
         "unit": None,
     },
     "trip_left_days": {
-        "name": "Trip Left Days",
+        "translation_key": "trip_left_days",  # NEW: Translation key
         "icon": "mdi:calendar-minus",
         "unit": "days",
     },
     "trip_left_percent": {
-        "name": "Trip Left Percent",
+        "translation_key": "trip_left_percent",  # NEW: Translation key
         "icon": "mdi:progress-clock",
         "unit": "%",
     },
 }
 
-# Sensor types - für Milestone (eintägig, einmalig)
+# Sensor types - für Milestone (eintägig, einmalig) - NOW WITH TRANSLATION KEYS
 MILESTONE_SENSOR_TYPES = {
     "days_until": {
-        "name": "Days Until",
+        "translation_key": "days_until",  # NEW: Translation key
         "icon": "mdi:calendar-clock",
         "unit": "days",
     },
     "countdown_text": {
-        "name": "Countdown Text", 
+        "translation_key": "countdown_text",  # NEW: Translation key
         "icon": "mdi:calendar-text",
         "unit": None,
     },
 }
 
-# Sensor types - für Anniversary (eintägig, wiederkehrend)
+# Sensor types - für Anniversary (eintägig, wiederkehrend) - NOW WITH TRANSLATION KEYS
 ANNIVERSARY_SENSOR_TYPES = {
     "days_until_next": {
-        "name": "Days Until Next",
+        "translation_key": "days_until_next",  # NEW: Translation key
         "icon": "mdi:calendar-clock",
         "unit": "days",
     },
     "days_since_last": {
-        "name": "Days Since Last",
+        "translation_key": "days_since_last",  # NEW: Translation key
         "icon": "mdi:calendar-minus",
         "unit": "days",
     },
     "countdown_text": {
-        "name": "Countdown Text",
+        "translation_key": "countdown_text",  # NEW: Translation key
         "icon": "mdi:calendar-text", 
         "unit": None,
     },
     "occurrences_count": {
-        "name": "Occurrences Count",
+        "translation_key": "occurrences_count",  # NEW: Translation key
         "icon": "mdi:counter",
         "unit": "times",
     },
     "next_date": {
-        "name": "Next Date",
+        "translation_key": "next_date",  # NEW: Translation key
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
     },
     "last_date": {
-        "name": "Last Date",
+        "translation_key": "last_date",  # NEW: Translation key
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
     },
 }
 
-# Binary sensor types - für Trip
+# Binary sensor types - für Trip - NOW WITH TRANSLATION KEYS
 TRIP_BINARY_SENSOR_TYPES = {
     "trip_starts_today": {
-        "name": "Trip Starts Today",
+        "translation_key": "trip_starts_today",  # NEW: Translation key
         "icon": "mdi:calendar-start",
         "device_class": "occurrence",
     },
     "trip_active_today": {
-        "name": "Trip Active Today",
+        "translation_key": "trip_active_today",  # NEW: Translation key
         "icon": "mdi:calendar-check",
         "device_class": "occurrence",
     },
     "trip_ends_today": {
-        "name": "Trip Ends Today",
+        "translation_key": "trip_ends_today",  # NEW: Translation key
         "icon": "mdi:calendar-end",
         "device_class": "occurrence",
     },
 }
 
-# Binary sensor types - für Milestone
+# Binary sensor types - für Milestone - NOW WITH TRANSLATION KEYS
 MILESTONE_BINARY_SENSOR_TYPES = {
     "is_today": {
-        "name": "Is Today",
+        "translation_key": "is_today",  # NEW: Translation key
         "icon": "mdi:calendar-today",
         "device_class": "occurrence",
     },
 }
 
-# Binary sensor types - für Anniversary
+# Binary sensor types - für Anniversary - NOW WITH TRANSLATION KEYS
 ANNIVERSARY_BINARY_SENSOR_TYPES = {
     "is_today": {
-        "name": "Is Today",
+        "translation_key": "is_today",  # NEW: Translation key
         "icon": "mdi:calendar-today",
         "device_class": "occurrence",
     },
@@ -172,3 +167,16 @@ ANNIVERSARY_BINARY_SENSOR_TYPES = {
 
 # Legacy compatibility - wird durch TRIP_SENSOR_TYPES ersetzt
 SENSOR_TYPES = TRIP_SENSOR_TYPES
+
+# NEW: Countdown translation keys for internationalized formatting
+COUNTDOWN_TRANSLATION_KEYS = {
+    "units": {
+        "year": "year",
+        "month": "month", 
+        "week": "week",
+        "day": "day"
+    },
+    "zero": "zero_days",
+    "calculating": "calculation_running",
+    "separator": "countdown_separator"  # For comma/space between units
+}

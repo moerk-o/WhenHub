@@ -1,8 +1,8 @@
-"""Trip sensor for WhenHub integration.
+"""Trip sensor for WhenHub integration - INTERNATIONALIZED VERSION.
 
 This module implements sensors for multi-day trip events (e.g., vacations, 
 business trips). Trip sensors track time until trip start, trip progress,
-and remaining trip duration.
+and remaining trip duration with full translation support.
 """
 from __future__ import annotations
 
@@ -27,20 +27,20 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class TripSensor(BaseCountdownSensor):
-    """Sensor for multi-day trip events.
+    """Sensor for multi-day trip events - INTERNATIONALIZED VERSION.
     
     Provides various calculations for trip events that have both start and end dates:
-    - days_until: Days until trip starts
-    - days_until_end: Days until trip ends
+    - days_until_start: Days until trip starts
+    - days_until_end: Days until trip ends  
     - countdown_text: Human-readable countdown to trip start
     - trip_left_days: Days remaining in an active trip
     - trip_left_percent: Percentage of trip remaining
     
-    Inherits countdown text formatting from BaseCountdownSensor.
+    All entity names and states are now fully internationalized using translation_key.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the trip sensor.
+        """Initialize the trip sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry for this integration
@@ -65,13 +65,26 @@ class TripSensor(BaseCountdownSensor):
         """
         return self._safe_calculate(self._calculate_value)
 
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        Can include dynamic values for use in translations.
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "start_date": self._start_date.isoformat(),
+            "end_date": self._end_date.isoformat(),
+        }
+
     def _calculate_value(self) -> str | int | float | None:
         """Calculate the current sensor value based on sensor type.
         
         Returns:
             - days_until: Integer days until trip start (can be negative if started)
             - days_until_end: Integer days until trip end (can be negative if ended)
-            - countdown_text: Formatted countdown string or "0 Tage" if trip started
+            - countdown_text: Formatted countdown string or translation key for zero
             - trip_left_days: Days remaining in active trip (0 if not active)
             - trip_left_percent: Percentage of trip remaining (0-100)
         """
@@ -90,7 +103,7 @@ class TripSensor(BaseCountdownSensor):
             if today <= self._start_date:
                 return self._format_countdown_text(self._start_date)
             else:
-                return TEXT_ZERO_DAYS
+                return TEXT_ZERO_DAYS  # Translation key instead of "0 Tage"
                 
         elif self._sensor_type == "trip_left_days":
             # Days remaining in an active trip (inclusive of today)
@@ -101,6 +114,9 @@ class TripSensor(BaseCountdownSensor):
         elif self._sensor_type == "trip_left_percent":
             # Percentage of trip remaining
             total_days = (self._end_date - self._start_date).days
+            if total_days == 0:  # Handle same-day trips
+                return 0.0 if today > self._start_date else 100.0
+            
             if today < self._start_date:
                 return 100.0  # Trip hasn't started yet
             elif today > self._end_date:

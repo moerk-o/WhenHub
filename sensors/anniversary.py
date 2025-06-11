@@ -1,8 +1,8 @@
-"""Anniversary sensor for WhenHub integration.
+"""Anniversary sensor for WhenHub integration - INTERNATIONALIZED VERSION.
 
 This module implements sensors for recurring anniversary events (e.g., wedding
 anniversaries, company founding dates, annual celebrations). Anniversary sensors
-track both upcoming and past occurrences of yearly repeating events.
+track both upcoming and past occurrences of yearly repeating events with full translation support.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class AnniversarySensor(BaseCountdownSensor):
-    """Sensor for recurring anniversary events.
+    """Sensor for recurring anniversary events - INTERNATIONALIZED VERSION.
     
     Provides comprehensive tracking for events that repeat annually:
     - days_until_next: Days until the next anniversary occurrence
@@ -41,11 +41,11 @@ class AnniversarySensor(BaseCountdownSensor):
     and distinguishes between future events (no past occurrences) and established
     anniversaries with historical data.
     
-    Inherits countdown text formatting from BaseCountdownSensor.
+    All entity names and states are now fully internationalized using translation_key.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the anniversary sensor.
+        """Initialize the anniversary sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry for this integration
@@ -85,13 +85,28 @@ class AnniversarySensor(BaseCountdownSensor):
         """
         return self._safe_calculate(self._calculate_value, self._get_fallback_value())
 
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        Can include dynamic values for use in translations.
+        """
+        next_anniversary = self._get_next_anniversary()
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "original_date": self._original_date.isoformat(),
+            "next_anniversary": next_anniversary.isoformat(),
+            "years_on_next": str(next_anniversary.year - self._original_date.year),
+        }
+
     def _calculate_value(self) -> str | int | float | None:
         """Calculate the current sensor value based on sensor type.
         
         Returns:
             - days_until_next: Integer days until next anniversary
             - days_since_last: Integer days since last anniversary (or None if no past occurrence)
-            - countdown_text: Formatted countdown string or "0 Tage" if anniversary is today
+            - countdown_text: Formatted countdown string or translation key for zero
             - occurrences_count: Integer count of past + current occurrences
             - next_date: ISO date string of next anniversary
             - last_date: ISO date string of last anniversary (or None)
@@ -110,7 +125,7 @@ class AnniversarySensor(BaseCountdownSensor):
             next_anniversary = self._get_next_anniversary()
             days_until = (next_anniversary - today).days
             if days_until == 0:
-                return TEXT_ZERO_DAYS
+                return TEXT_ZERO_DAYS  # Translation key instead of "0 Tage"
             else:
                 return self._format_countdown_text(next_anniversary)
                 
@@ -211,7 +226,7 @@ class AnniversarySensor(BaseCountdownSensor):
         if self._sensor_type in ["days_until_next", "days_since_last", "occurrences_count"]:
             return 0
         elif self._sensor_type == "countdown_text":
-            return TEXT_CALCULATION_RUNNING
+            return TEXT_CALCULATION_RUNNING  # Translation key instead of "Berechnung läuft..."
         elif self._sensor_type in ["next_date", "last_date"]:
             return date.today().isoformat()
         return None

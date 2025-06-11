@@ -1,9 +1,9 @@
-"""Sensor platform for WhenHub integration.
+"""Sensor platform for WhenHub integration - INTERNATIONALIZED VERSION.
 
 This module sets up the sensor platform that creates different types of
 sensors based on the event type (Trip, Milestone, Anniversary). It handles
 the platform initialization and delegates sensor creation to the appropriate
-sensor classes.
+sensor classes with full translation support.
 """
 from __future__ import annotations
 
@@ -34,11 +34,12 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up WhenHub sensors based on a config entry.
+    """Set up WhenHub sensors based on a config entry - INTERNATIONALIZED VERSION.
     
     Creates sensor entities based on the event type configuration. Each event type
     (Trip, Milestone, Anniversary) has its own set of relevant sensor types that
-    provide different calculations and information.
+    provide different calculations and information. All sensors now use translation_key
+    for proper internationalization.
     
     Args:
         hass: Home Assistant instance
@@ -78,7 +79,7 @@ async def async_setup_entry(
 
 
 def _create_trip_sensors(config_entry: ConfigEntry, event_data: dict) -> list[TripSensor]:
-    """Create sensor entities for Trip events.
+    """Create sensor entities for Trip events - INTERNATIONALIZED VERSION.
     
     Trip events have start and end dates and provide sensors for:
     - Days until trip starts
@@ -87,12 +88,14 @@ def _create_trip_sensors(config_entry: ConfigEntry, event_data: dict) -> list[Tr
     - Days remaining in active trip
     - Percentage of trip remaining
     
+    All sensors now use translation_key for proper internationalization.
+    
     Args:
         config_entry: Home Assistant config entry
         event_data: Trip event configuration data
         
     Returns:
-        List of TripSensor instances
+        List of TripSensor instances with translation support
     """
     sensors = []
     for sensor_type in TRIP_SENSOR_TYPES:
@@ -101,18 +104,20 @@ def _create_trip_sensors(config_entry: ConfigEntry, event_data: dict) -> list[Tr
 
 
 def _create_milestone_sensors(config_entry: ConfigEntry, event_data: dict) -> list[MilestoneSensor]:
-    """Create sensor entities for Milestone events.
+    """Create sensor entities for Milestone events - INTERNATIONALIZED VERSION.
     
     Milestone events have a single target date and provide sensors for:
     - Days until milestone date
     - Countdown text to milestone
+    
+    All sensors now use translation_key for proper internationalization.
     
     Args:
         config_entry: Home Assistant config entry
         event_data: Milestone event configuration data
         
     Returns:
-        List of MilestoneSensor instances
+        List of MilestoneSensor instances with translation support
     """
     sensors = []
     for sensor_type in MILESTONE_SENSOR_TYPES:
@@ -121,7 +126,7 @@ def _create_milestone_sensors(config_entry: ConfigEntry, event_data: dict) -> li
 
 
 def _create_anniversary_sensors(config_entry: ConfigEntry, event_data: dict) -> list[AnniversarySensor]:
-    """Create sensor entities for Anniversary events.
+    """Create sensor entities for Anniversary events - INTERNATIONALIZED VERSION.
     
     Anniversary events repeat annually and provide sensors for:
     - Days until next anniversary
@@ -131,12 +136,14 @@ def _create_anniversary_sensors(config_entry: ConfigEntry, event_data: dict) -> 
     - Next anniversary date
     - Last anniversary date
     
+    All sensors now use translation_key for proper internationalization.
+    
     Args:
         config_entry: Home Assistant config entry
         event_data: Anniversary event configuration data
         
     Returns:
-        List of AnniversarySensor instances
+        List of AnniversarySensor instances with translation support
     """
     sensors = []
     for sensor_type in ANNIVERSARY_SENSOR_TYPES:
@@ -145,21 +152,21 @@ def _create_anniversary_sensors(config_entry: ConfigEntry, event_data: dict) -> 
 
 
 class WhenHubSensor(TripSensor):
-    """Legacy sensor class for backwards compatibility.
+    """Legacy sensor class for backwards compatibility - INTERNATIONALIZED VERSION.
     
     This class exists to support configurations created with older versions
     of the integration. New installations should use the event-type specific
     sensor classes directly.
     
     Inherits from TripSensor as the original WhenHub implementation was
-    primarily focused on trip/vacation tracking.
+    primarily focused on trip/vacation tracking. Now includes full translation support.
     """
     
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize legacy sensor as trip sensor.
+        """Initialize legacy sensor as trip sensor with translation support.
         
         Ensures backwards compatibility by adding missing event type configuration
-        and delegating to TripSensor implementation.
+        and delegating to TripSensor implementation with internationalization.
         
         Args:
             config_entry: Home Assistant config entry

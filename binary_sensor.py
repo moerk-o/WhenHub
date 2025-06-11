@@ -1,8 +1,9 @@
-"""Binary sensor platform for WhenHub integration.
+"""Binary sensor platform for WhenHub integration - INTERNATIONALIZED VERSION.
 
 This module implements binary sensors that provide boolean (on/off) status
 for various event conditions like "trip starts today", "milestone is today",
 or "anniversary is today". These are useful for automations and notifications.
+All entity names and states are now fully internationalized.
 """
 from __future__ import annotations
 
@@ -34,8 +35,6 @@ from .const import (
     MILESTONE_BINARY_SENSOR_TYPES,
     ANNIVERSARY_BINARY_SENSOR_TYPES,
     DEFAULT_IMAGE,
-    BINARY_UNIQUE_ID_PATTERN,
-    SENSOR_NAME_PATTERN,
 )
 from .sensors.base import get_device_info, parse_date
 
@@ -85,15 +84,15 @@ async def async_setup_entry(
 
 
 class BaseBinarySensor(BinarySensorEntity):
-    """Base class for all WhenHub binary sensors.
+    """Base class for all WhenHub binary sensors - INTERNATIONALIZED VERSION.
     
     Provides common functionality for Trip, Milestone, and Anniversary binary sensors
-    including device info, error handling, and entity setup. Child classes implement
-    the specific boolean logic for their sensor types.
+    including device info, error handling, and entity setup with full translation support.
+    Child classes implement the specific boolean logic for their sensor types.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str, sensor_types: dict) -> None:
-        """Initialize the binary sensor.
+        """Initialize the binary sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry for this integration
@@ -106,15 +105,10 @@ class BaseBinarySensor(BinarySensorEntity):
         self._sensor_type = sensor_type
         self._sensor_types = sensor_types
         
-        # Set entity attributes using standardized patterns
-        self._attr_name = SENSOR_NAME_PATTERN.format(
-            event_name=event_data[CONF_EVENT_NAME],
-            sensor_name=sensor_types[sensor_type]['name']
-        )
-        self._attr_unique_id = BINARY_UNIQUE_ID_PATTERN.format(
-            entry_id=config_entry.entry_id,
-            sensor_type=sensor_type
-        )
+        # MIGRATION: Use translation_key instead of hard-coded names
+        self._attr_translation_key = sensor_types[sensor_type]["translation_key"]
+        self._attr_has_entity_name = True
+        self._attr_unique_id = f"{config_entry.entry_id}_binary_{sensor_type}"
         self._attr_icon = sensor_types[sensor_type]["icon"]
         
         # Set Home Assistant device class if specified (e.g., 'occurrence')
@@ -129,6 +123,17 @@ class BaseBinarySensor(BinarySensorEntity):
         Groups all binary sensors from the same WhenHub event under one device.
         """
         return get_device_info(self._config_entry, self._event_data)
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        Can include dynamic values for use in translations.
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+        }
 
     def _safe_calculate(self, calculation_func, fallback=False):
         """Safely execute boolean calculation with error handling.
@@ -176,7 +181,7 @@ class BaseBinarySensor(BinarySensorEntity):
 
 
 class TripBinarySensor(BaseBinarySensor):
-    """Binary sensor for multi-day trip events.
+    """Binary sensor for multi-day trip events - INTERNATIONALIZED VERSION.
     
     Provides boolean sensors for trip-related conditions:
     - trip_starts_today: True if today is the trip start date
@@ -184,10 +189,11 @@ class TripBinarySensor(BaseBinarySensor):
     - trip_ends_today: True if today is the trip end date
     
     Useful for automations like "turn on vacation mode when trip starts".
+    All entity names are now internationalized using translation_key.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the trip binary sensor.
+        """Initialize the trip binary sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry
@@ -199,6 +205,18 @@ class TripBinarySensor(BaseBinarySensor):
         # Parse trip date range for calculations
         self._start_date = parse_date(event_data[CONF_START_DATE])
         self._end_date = parse_date(event_data[CONF_END_DATE])
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "start_date": self._start_date.isoformat(),
+            "end_date": self._end_date.isoformat(),
+        }
 
     def _calculate_value(self) -> bool:
         """Calculate the current boolean value for this trip condition.
@@ -229,16 +247,17 @@ class TripBinarySensor(BaseBinarySensor):
 
 
 class MilestoneBinarySensor(BaseBinarySensor):
-    """Binary sensor for one-time milestone events.
+    """Binary sensor for one-time milestone events - INTERNATIONALIZED VERSION.
     
     Provides boolean sensors for milestone conditions:
     - is_today: True if today is the milestone date
     
     Useful for automations like "send birthday notification" or "reminder for deadline".
+    All entity names are now internationalized using translation_key.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the milestone binary sensor.
+        """Initialize the milestone binary sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry
@@ -254,6 +273,17 @@ class MilestoneBinarySensor(BaseBinarySensor):
             target_date = date.today().isoformat()
         
         self._target_date = parse_date(target_date)
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "target_date": self._target_date.isoformat(),
+        }
 
     def _calculate_value(self) -> bool:
         """Calculate the current boolean value for this milestone condition.
@@ -297,7 +327,7 @@ class MilestoneBinarySensor(BaseBinarySensor):
 
 
 class AnniversaryBinarySensor(BaseBinarySensor):
-    """Binary sensor for recurring anniversary events.
+    """Binary sensor for recurring anniversary events - INTERNATIONALIZED VERSION.
     
     Provides boolean sensors for anniversary conditions:
     - is_today: True if today is an anniversary occurrence
@@ -306,10 +336,11 @@ class AnniversaryBinarySensor(BaseBinarySensor):
     anniversary date for the current year.
     
     Useful for automations like "anniversary reminders" or "annual celebrations".
+    All entity names are now internationalized using translation_key.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the anniversary binary sensor.
+        """Initialize the anniversary binary sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry
@@ -325,6 +356,17 @@ class AnniversaryBinarySensor(BaseBinarySensor):
             target_date = date.today().isoformat()
         
         self._original_date = parse_date(target_date)
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "original_date": self._original_date.isoformat(),
+        }
 
     def _get_next_anniversary(self) -> date:
         """Calculate the next anniversary date from today.

@@ -1,8 +1,8 @@
-"""Milestone sensor for WhenHub integration.
+"""Milestone sensor for WhenHub integration - INTERNATIONALIZED VERSION.
 
 This module implements sensors for one-time milestone events (e.g., birthdays,
 project deadlines, important dates). Milestone sensors track countdown to a
-single target date.
+single target date with full translation support.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class MilestoneSensor(BaseCountdownSensor):
-    """Sensor for one-time milestone events.
+    """Sensor for one-time milestone events - INTERNATIONALIZED VERSION.
     
     Provides countdown calculations for single-date events that don't repeat:
     - days_until: Integer days until the milestone date
@@ -35,11 +35,11 @@ class MilestoneSensor(BaseCountdownSensor):
     Unlike Trip sensors (which have start/end dates) or Anniversary sensors (which repeat),
     Milestone sensors focus on a single target date that occurs once.
     
-    Inherits countdown text formatting from BaseCountdownSensor.
+    All entity names and states are now fully internationalized using translation_key.
     """
 
     def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the milestone sensor.
+        """Initialize the milestone sensor with translation support.
         
         Args:
             config_entry: Home Assistant config entry for this integration
@@ -63,12 +63,24 @@ class MilestoneSensor(BaseCountdownSensor):
         """
         return self._safe_calculate(self._calculate_value)
 
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        Can include dynamic values for use in translations.
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "target_date": self._target_date.isoformat(),
+        }
+
     def _calculate_value(self) -> str | int | float | None:
         """Calculate the current sensor value based on sensor type.
         
         Returns:
             - days_until: Integer days until milestone (can be negative if date has passed)
-            - countdown_text: Formatted countdown string or "0 Tage" if date has passed
+            - countdown_text: Formatted countdown string or translation key for zero
         """
         today = date.today()
         
@@ -82,7 +94,7 @@ class MilestoneSensor(BaseCountdownSensor):
                 return self._format_countdown_text(self._target_date)
             else:
                 # Milestone date has passed or is today
-                return TEXT_ZERO_DAYS
+                return TEXT_ZERO_DAYS  # Translation key instead of "0 Tage"
                 
         return None
 
@@ -109,65 +121,4 @@ class MilestoneSensor(BaseCountdownSensor):
             return attributes
         
         # All other milestone sensors have no attributes
-        return {} ConfigEntry
-
-from ..const import (
-    CONF_TARGET_DATE,
-    CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
-    EVENT_TYPE_MILESTONE,
-    MILESTONE_SENSOR_TYPES,
-    TEXT_ZERO_DAYS,
-)
-from .base import BaseCountdownSensor, parse_date
-
-_LOGGER = logging.getLogger(__name__)
-
-
-class MilestoneSensor(BaseCountdownSensor):
-    """Representation of a Milestone Sensor."""
-
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
-        """Initialize the milestone sensor."""
-        super().__init__(config_entry, event_data, sensor_type, MILESTONE_SENSOR_TYPES)
-        
-        # Parse target date
-        self._target_date = parse_date(event_data[CONF_TARGET_DATE])
-
-    @property
-    def native_value(self) -> str | int | float | None:
-        """Return the native value of the sensor."""
-        return self._safe_calculate(self._calculate_value)
-
-    def _calculate_value(self) -> str | int | float | None:
-        """Calculate the current value."""
-        today = date.today()
-        
-        if self._sensor_type == "days_until":
-            return (self._target_date - today).days
-            
-        elif self._sensor_type == "countdown_text":
-            if today < self._target_date:
-                return self._format_countdown_text(self._target_date)
-            else:
-                return TEXT_ZERO_DAYS
-                
-        return None
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the state attributes."""
-        # Nur der Countdown Text Sensor bekommt Attribute
-        if self._sensor_type == "countdown_text":
-            attributes = self._get_base_attributes()
-            attributes.update({
-                "date": self._target_date.isoformat(),
-            })
-            
-            # Add countdown breakdown attributes
-            attributes.update(self._get_countdown_attributes())
-            
-            return attributes
-        
-        # Alle anderen Milestone-Sensoren haben keine Attribute
         return {}

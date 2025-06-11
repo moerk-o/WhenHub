@@ -1,8 +1,9 @@
-"""Image platform for WhenHub integration.
+"""Image platform for WhenHub integration - INTERNATIONALIZED VERSION.
 
 This module implements image entities that display visual representations
 for WhenHub events. Images can be user-provided (file paths or base64 data)
-or auto-generated SVG graphics based on event type.
+or auto-generated SVG graphics based on event type. All entity names are 
+now fully internationalized.
 """
 from __future__ import annotations
 
@@ -55,7 +56,7 @@ async def async_setup_entry(
 
 
 class WhenHubImage(ImageEntity):
-    """Image entity for WhenHub events.
+    """Image entity for WhenHub events - INTERNATIONALIZED VERSION.
     
     Displays visual representations of events with fallback hierarchy:
     1. User-uploaded base64 image data
@@ -64,10 +65,11 @@ class WhenHubImage(ImageEntity):
     
     Handles common image formats (JPEG, PNG, WebP, GIF, SVG) and provides
     appropriate content-type headers for browser compatibility.
+    All entity names are now fully internationalized using translation_key.
     """
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry, event_data: dict) -> None:
-        """Initialize the image entity.
+        """Initialize the image entity with translation support.
         
         Args:
             hass: Home Assistant instance
@@ -78,7 +80,10 @@ class WhenHubImage(ImageEntity):
         
         self._config_entry = config_entry
         self._event_data = event_data
-        self._attr_name = f"{event_data[CONF_EVENT_NAME]} Image"
+        
+        # MIGRATION: Use translation_key instead of hard-coded name
+        self._attr_translation_key = "event_image"
+        self._attr_has_entity_name = True
         self._attr_unique_id = f"{config_entry.entry_id}_image"
         
         # Extract image configuration
@@ -92,6 +97,17 @@ class WhenHubImage(ImageEntity):
         Groups this image entity with other entities from the same WhenHub event.
         """
         return get_device_info(self._config_entry, self._event_data)
+
+    @property
+    def translation_placeholders(self) -> dict[str, str]:
+        """Return translation placeholders.
+        
+        CRITICAL: Must return dict, never None to avoid HomeAssistant errors!
+        Can include dynamic values for use in translations.
+        """
+        return {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+        }
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
