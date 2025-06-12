@@ -104,7 +104,14 @@ class BaseSensor(SensorEntity):
         self._attr_has_entity_name = True
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
         self._attr_icon = sensor_types[sensor_type]["icon"]
-        self._attr_native_unit_of_measurement = sensor_types[sensor_type]["unit"]
+        
+        # CRITICAL FIX: Only set native_unit_of_measurement if unit is not None
+        # If unit is None, Home Assistant will look for unit translation in strings.json
+        unit = sensor_types[sensor_type]["unit"]
+        if unit is not None:
+            self._attr_native_unit_of_measurement = unit
+        # If unit is None, we deliberately DON'T set _attr_native_unit_of_measurement
+        # This allows Home Assistant to use the translation from strings.json
 
     @property
     def device_info(self) -> DeviceInfo:

@@ -101,19 +101,24 @@
   "entity": {
     "sensor": {
       "days_until_start": {
-        "name": "Days Until Start"
+        "name": "Days Until Start",
+        "unit_of_measurement": "days"
       },
       "days_until_end": {
-        "name": "Days Until End"
+        "name": "Days Until End",
+        "unit_of_measurement": "days"
       },
       "days_until": {
-        "name": "Days Until"
+        "name": "Days Until",
+        "unit_of_measurement": "days"
       },
       "days_until_next": {
-        "name": "Days Until Next"
+        "name": "Days Until Next",
+        "unit_of_measurement": "days"
       },
       "days_since_last": {
-        "name": "Days Since Last"
+        "name": "Days Since Last",
+        "unit_of_measurement": "days"
       },
       "countdown_text": {
         "name": "Countdown Text",
@@ -123,13 +128,16 @@
         }
       },
       "trip_left_days": {
-        "name": "Trip Days Left"
+        "name": "Trip Days Left",
+        "unit_of_measurement": "days"
       },
       "trip_left_percent": {
-        "name": "Trip Percentage Left"
+        "name": "Trip Percentage Left",
+        "unit_of_measurement": "%"
       },
       "occurrences_count": {
-        "name": "Occurrences Count"
+        "name": "Occurrences Count",
+        "unit_of_measurement": "times"
       },
       "next_date": {
         "name": "Next Date"
