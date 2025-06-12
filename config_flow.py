@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Any
 import voluptuous as vol
-from datetime import date
+from datetime import date, timedelta
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
@@ -119,10 +119,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show trip configuration form - INTERNATIONALIZED."""
+        # NEW: Calculate default dates for trips
+        today = date.today()
+        default_start_date = (today + timedelta(weeks=1)).isoformat()  # +1 week
+        default_end_date = (today + timedelta(weeks=2)).isoformat()    # +2 weeks
+        
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): str,
-            vol.Required(CONF_END_DATE, default="" if user_input is None else user_input.get(CONF_END_DATE, "")): str,
+            vol.Required(CONF_START_DATE, default=default_start_date if user_input is None else user_input.get(CONF_START_DATE, default_start_date)): str,
+            vol.Required(CONF_END_DATE, default=default_end_date if user_input is None else user_input.get(CONF_END_DATE, default_end_date)): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
             vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
             vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
@@ -172,9 +177,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show milestone configuration form - INTERNATIONALIZED."""
+        # NEW: Calculate default date for milestones
+        today = date.today()
+        default_target_date = (today + timedelta(weeks=1)).isoformat()  # +1 week
+        
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
+            vol.Required(CONF_TARGET_DATE, default=default_target_date if user_input is None else user_input.get(CONF_TARGET_DATE, default_target_date)): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
             vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
             vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
@@ -224,6 +233,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show anniversary configuration form - INTERNATIONALIZED."""
+        # Anniversary keeps current date as default (historical dates)
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
@@ -305,7 +315,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
                 return self.async_create_entry(title="", data={})
 
-        # Show current trip data
+        # Show current trip data (no changed defaults here - this is for editing existing)
         current_data = self.config_entry.data
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
