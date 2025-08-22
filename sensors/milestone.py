@@ -109,7 +109,7 @@ class MilestoneSensor(BaseCountdownSensor):
             return attributes
         
         # All other milestone sensors have no attributes
-        return {} ConfigEntry
+        return {}
 
 from ..const import (
     CONF_TARGET_DATE,
