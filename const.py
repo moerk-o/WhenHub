@@ -7,6 +7,7 @@ DOMAIN = "whenhub"
 EVENT_TYPE_TRIP = "trip"
 EVENT_TYPE_MILESTONE = "milestone"  
 EVENT_TYPE_ANNIVERSARY = "anniversary"
+EVENT_TYPE_SPECIAL = "special"
 
 EVENT_TYPES = {
     EVENT_TYPE_TRIP: {
@@ -26,6 +27,12 @@ EVENT_TYPES = {
         "description": "Wiederkehrendes jährliches Event", 
         "icon": "mdi:calendar-heart",
         "model": "Anniversary Tracker",
+    },
+    EVENT_TYPE_SPECIAL: {
+        "name": "Special Event",
+        "description": "Spezielle Feiertage und astronomische Events",
+        "icon": "mdi:star",
+        "model": "Special Event Tracker",
     }
 }
 
@@ -35,6 +42,7 @@ CONF_EVENT_NAME = "event_name"
 CONF_START_DATE = "start_date"
 CONF_END_DATE = "end_date"
 CONF_TARGET_DATE = "target_date"  # Für Milestone und Anniversary
+CONF_SPECIAL_TYPE = "special_type"  # Für Special Events
 CONF_IMAGE_PATH = "image_path"
 CONF_IMAGE_UPLOAD = "image_upload"
 CONF_WEBSITE_URL = "website_url"
@@ -167,6 +175,217 @@ ANNIVERSARY_BINARY_SENSOR_TYPES = {
         "name": "Is Today",
         "icon": "mdi:calendar-today",
         "device_class": "occurrence",
+    },
+}
+
+# Sensor types - für Special Events
+SPECIAL_SENSOR_TYPES = {
+    "days_until": {
+        "name": "Days Until",
+        "icon": "mdi:calendar-clock",
+        "unit": "days",
+    },
+    "days_since_last": {
+        "name": "Days Since Last",
+        "icon": "mdi:calendar-minus",
+        "unit": "days",
+    },
+    "countdown_text": {
+        "name": "Countdown Text",
+        "icon": "mdi:calendar-text",
+        "unit": None,
+    },
+    "next_date": {
+        "name": "Next Date",
+        "icon": "mdi:calendar-arrow-right",
+        "unit": None,
+    },
+    "last_date": {
+        "name": "Last Date",
+        "icon": "mdi:calendar-arrow-left",
+        "unit": None,
+    },
+}
+
+# Binary sensor types - für Special Events
+SPECIAL_BINARY_SENSOR_TYPES = {
+    "is_today": {
+        "name": "Is Today",
+        "icon": "mdi:calendar-today",
+        "device_class": "occurrence",
+    },
+}
+
+# Special Event Definitionen
+SPECIAL_EVENTS = {
+    "christmas": {
+        "name": "Weihnachten",
+        "type": "fixed",  # Fixed date each year
+        "month": 12,
+        "day": 24,
+    },
+    "christmas_day": {
+        "name": "1. Weihnachtstag",
+        "type": "fixed",
+        "month": 12,
+        "day": 25,
+    },
+    "boxing_day": {
+        "name": "2. Weihnachtstag",
+        "type": "fixed",
+        "month": 12,
+        "day": 26,
+    },
+    "new_year": {
+        "name": "Neujahr",
+        "type": "fixed",
+        "month": 1,
+        "day": 1,
+    },
+    "new_years_eve": {
+        "name": "Silvester",
+        "type": "fixed",
+        "month": 12,
+        "day": 31,
+    },
+    "epiphany": {
+        "name": "Heilige Drei Könige",
+        "type": "fixed",
+        "month": 1,
+        "day": 6,
+    },
+    "valentines": {
+        "name": "Valentinstag",
+        "type": "fixed",
+        "month": 2,
+        "day": 14,
+    },
+    "carnival": {
+        "name": "Rosenmontag",
+        "type": "calculated",
+        "calculation": "carnival",  # 48 days before Easter
+    },
+    "ash_wednesday": {
+        "name": "Aschermittwoch",
+        "type": "calculated",
+        "calculation": "ash_wednesday",  # 46 days before Easter
+    },
+    "easter": {
+        "name": "Ostersonntag",
+        "type": "calculated",
+        "calculation": "easter",
+    },
+    "good_friday": {
+        "name": "Karfreitag",
+        "type": "calculated",
+        "calculation": "good_friday",  # 2 days before Easter
+    },
+    "easter_monday": {
+        "name": "Ostermontag",
+        "type": "calculated",
+        "calculation": "easter_monday",  # 1 day after Easter
+    },
+    "may_day": {
+        "name": "Tag der Arbeit",
+        "type": "fixed",
+        "month": 5,
+        "day": 1,
+    },
+    "mothers_day": {
+        "name": "Muttertag",
+        "type": "calculated",
+        "calculation": "mothers_day",  # 2nd Sunday in May
+    },
+    "fathers_day": {
+        "name": "Vatertag/Christi Himmelfahrt",
+        "type": "calculated",
+        "calculation": "ascension",  # 39 days after Easter
+    },
+    "pentecost": {
+        "name": "Pfingstsonntag",
+        "type": "calculated",
+        "calculation": "pentecost",  # 49 days after Easter
+    },
+    "pentecost_monday": {
+        "name": "Pfingstmontag",
+        "type": "calculated",
+        "calculation": "pentecost_monday",  # 50 days after Easter
+    },
+    "german_unity": {
+        "name": "Tag der Deutschen Einheit",
+        "type": "fixed",
+        "month": 10,
+        "day": 3,
+    },
+    "halloween": {
+        "name": "Halloween",
+        "type": "fixed",
+        "month": 10,
+        "day": 31,
+    },
+    "reformation_day": {
+        "name": "Reformationstag",
+        "type": "fixed",
+        "month": 10,
+        "day": 31,
+    },
+    "all_saints": {
+        "name": "Allerheiligen",
+        "type": "fixed",
+        "month": 11,
+        "day": 1,
+    },
+    "st_martin": {
+        "name": "St. Martin",
+        "type": "fixed",
+        "month": 11,
+        "day": 11,
+    },
+    "nikolaus": {
+        "name": "Nikolaus",
+        "type": "fixed",
+        "month": 12,
+        "day": 6,
+    },
+    "advent_1": {
+        "name": "1. Advent",
+        "type": "calculated",
+        "calculation": "advent_1",  # 4th Sunday before Christmas
+    },
+    "advent_2": {
+        "name": "2. Advent",
+        "type": "calculated",
+        "calculation": "advent_2",  # 3rd Sunday before Christmas
+    },
+    "advent_3": {
+        "name": "3. Advent",
+        "type": "calculated",
+        "calculation": "advent_3",  # 2nd Sunday before Christmas
+    },
+    "advent_4": {
+        "name": "4. Advent",
+        "type": "calculated",
+        "calculation": "advent_4",  # Sunday before Christmas
+    },
+    "summer_solstice": {
+        "name": "Sommersonnenwende",
+        "type": "calculated",
+        "calculation": "summer_solstice",
+    },
+    "winter_solstice": {
+        "name": "Wintersonnenwende",
+        "type": "calculated",
+        "calculation": "winter_solstice",
+    },
+    "spring_equinox": {
+        "name": "Frühlingsanfang",
+        "type": "calculated",
+        "calculation": "spring_equinox",
+    },
+    "autumn_equinox": {
+        "name": "Herbstanfang",
+        "type": "calculated",
+        "calculation": "autumn_equinox",
     },
 }
 

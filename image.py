@@ -23,9 +23,12 @@ from .const import (
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
+    EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
     CONF_IMAGE_PATH,
+    CONF_SPECIAL_TYPE,
+    SPECIAL_EVENTS,
 )
 from .sensors.base import get_device_info
 
@@ -214,6 +217,10 @@ class WhenHubImage(ImageEntity):
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             color = "#e91e63"  # Pink for celebrations/love
             icon_path = "M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"  # Heart icon
+        elif event_type == EVENT_TYPE_SPECIAL:
+            # Use consistent star icon and purple color for all special events
+            color = "#673ab7"  # Purple for special events (matches const.py icon color scheme)
+            icon_path = "M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"  # Star icon
         else:
             # Fallback for unknown event types
             color = "#4a90e2"  # Default blue

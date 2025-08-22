@@ -22,17 +22,21 @@ from .const import (
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
+    EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
     CONF_START_DATE,
     CONF_END_DATE,
     CONF_TARGET_DATE,
+    CONF_SPECIAL_TYPE,
     CONF_IMAGE_PATH,
     CONF_WEBSITE_URL,
     CONF_NOTES,
     TRIP_BINARY_SENSOR_TYPES,
     MILESTONE_BINARY_SENSOR_TYPES,
     ANNIVERSARY_BINARY_SENSOR_TYPES,
+    SPECIAL_BINARY_SENSOR_TYPES,
+    SPECIAL_EVENTS,
     DEFAULT_IMAGE,
     BINARY_UNIQUE_ID_PATTERN,
     SENSOR_NAME_PATTERN,
@@ -75,6 +79,10 @@ async def async_setup_entry(
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             for sensor_type in ANNIVERSARY_BINARY_SENSOR_TYPES:
                 binary_sensors.append(AnniversaryBinarySensor(config_entry, event_data, sensor_type))
+        
+        elif event_type == EVENT_TYPE_SPECIAL:
+            for sensor_type in SPECIAL_BINARY_SENSOR_TYPES:
+                binary_sensors.append(SpecialBinarySensor(config_entry, event_data, sensor_type))
         
         if binary_sensors:
             _LOGGER.info("Created %d binary sensors for %s", len(binary_sensors), event_data[CONF_EVENT_NAME])
@@ -404,5 +412,96 @@ class AnniversaryBinarySensor(BaseBinarySensor):
             "next_anniversary": next_anniversary.isoformat(),
             "years_on_next": next_anniversary.year - self._original_date.year,
         })
+        
+        return attributes
+
+
+class SpecialBinarySensor(BaseBinarySensor):
+    """Binary sensor for special holiday and astronomical events.
+    
+    Provides boolean sensors for special event conditions:
+    - is_today: True if today is the special event occurrence
+    
+    Handles both fixed dates (Christmas, Halloween) and calculated dates 
+    (Easter, Solstices) with intelligent date calculation algorithms.
+    
+    Useful for automations like "holiday notifications" or "seasonal celebrations".
+    """
+
+    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
+        """Initialize the special event binary sensor.
+        
+        Args:
+            config_entry: Home Assistant config entry
+            event_data: Special event configuration with special_type
+            sensor_type: Type of special event binary sensor to create
+        """
+        super().__init__(config_entry, event_data, sensor_type, SPECIAL_BINARY_SENSOR_TYPES)
+        
+        # Get the special event type and info
+        self._special_type = event_data.get(CONF_SPECIAL_TYPE, "christmas")
+        self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas"])
+        
+        # Use consistent star icon for all special events (matches other event types)
+
+    def _get_next_event_date(self):
+        """Calculate the next occurrence of this special event.
+        
+        Returns:
+            Date of the next event occurrence, or None if calculation fails
+        """
+        # Import from special sensor to reuse calculation logic
+        from .sensors.special import SpecialEventSensor
+        
+        # Create a temporary special sensor to use its calculation methods
+        temp_sensor = SpecialEventSensor(self._config_entry, self._event_data, "next_date")
+        return temp_sensor._get_next_event_date()
+
+    def _calculate_value(self) -> bool:
+        """Calculate the current boolean value for this special event condition.
+        
+        Returns:
+            Boolean indicating if today is the special event occurrence
+        """
+        if self._sensor_type == "is_today":
+            # Special event is today
+            today = date.today()
+            next_event_date = self._get_next_event_date()
+            return today == next_event_date if next_event_date else False
+        return False
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return state attributes for this sensor.
+        
+        Special event binary sensors include comprehensive metadata including
+        event type information and next occurrence date for automation use.
+        
+        Returns:
+            Dictionary with event details, special event info, and optional user metadata
+        """
+        attributes = {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
+            "special_type": self._special_type,
+            "special_name": self._special_info.get("name", "Unknown"),
+        }
+        
+        # Add next event date
+        next_date = self._get_next_event_date()
+        if next_date:
+            attributes["next_date"] = next_date.isoformat()
+        
+        # Add optional user-provided attributes
+        if self._event_data.get(CONF_IMAGE_PATH):
+            attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
+        else:
+            attributes["image_path"] = DEFAULT_IMAGE
+            
+        if self._event_data.get(CONF_WEBSITE_URL):
+            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
+            
+        if self._event_data.get(CONF_NOTES):
+            attributes["notes"] = self._event_data[CONF_NOTES]
         
         return attributes

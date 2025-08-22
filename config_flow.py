@@ -19,15 +19,18 @@ from .const import (
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
+    EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
     CONF_START_DATE,
     CONF_END_DATE,
     CONF_TARGET_DATE,
+    CONF_SPECIAL_TYPE,
     CONF_IMAGE_PATH,
     CONF_IMAGE_UPLOAD,
     CONF_WEBSITE_URL,
     CONF_NOTES,
+    SPECIAL_EVENTS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -58,6 +61,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_milestone()
         elif self._event_type == EVENT_TYPE_ANNIVERSARY:
             return await self.async_step_anniversary()
+        elif self._event_type == EVENT_TYPE_SPECIAL:
+            return await self.async_step_special()
 
     async def _show_event_type_form(self) -> FlowResult:
         """Show event type selection form."""
@@ -263,6 +268,57 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
+    async def async_step_special(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle special event configuration."""
+        if user_input is None:
+            return await self._show_special_form()
+
+        # Add event type to data
+        user_input[CONF_EVENT_TYPE] = self._event_type
+        
+        # Create unique ID
+        event_name = user_input[CONF_EVENT_NAME]
+        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
+        self._abort_if_unique_id_configured()
+
+        return self.async_create_entry(
+            title=event_name,
+            data=user_input,
+        )
+
+    async def _show_special_form(
+        self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
+    ) -> FlowResult:
+        """Show special event configuration form."""
+        # Create options for special event types
+        special_options = {
+            key: f"{info['name']}" 
+            for key, info in SPECIAL_EVENTS.items()
+        }
+        
+        data_schema = vol.Schema({
+            vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
+            vol.Required(CONF_SPECIAL_TYPE, default="christmas" if user_input is None else user_input.get(CONF_SPECIAL_TYPE, "christmas")): vol.In(special_options),
+            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
+            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
+        })
+
+        return self.async_show_form(
+            step_id="special",
+            data_schema=data_schema,
+            errors=errors or {},
+            description_placeholders={
+                "event_name": "z.B. Weihnachts-Countdown",
+                "special_type": "Wähle den Feiertag oder astronomisches Event",
+                "image_path": "z.B. /local/images/event.jpg (optional)",
+                "website_url": "Relevante URL (optional)",
+                "notes": "Zusätzliche Notizen (optional)",
+            },
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
@@ -291,6 +347,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return await self.async_step_milestone_options(user_input)
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             return await self.async_step_anniversary_options(user_input)
+        elif event_type == EVENT_TYPE_SPECIAL:
+            return await self.async_step_special_options(user_input)
 
     async def async_step_trip_options(
         self, user_input: dict[str, Any] | None = None
@@ -437,6 +495,53 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             description_placeholders={
                 "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
                 "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
+                "image_path": "z.B. /local/images/event.jpg (optional)",
+                "website_url": "Relevante URL (optional)",
+                "notes": "Zusätzliche Notizen (optional)",
+            },
+        )
+
+    async def async_step_special_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle special event options."""
+        if user_input is not None:
+            user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
+            
+            new_data = dict(self.config_entry.data)
+            new_data.update(user_input)
+            
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, 
+                data=new_data,
+                title=user_input[CONF_EVENT_NAME]
+            )
+            
+            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+            return self.async_create_entry(title="", data={})
+
+        current_data = self.config_entry.data
+        
+        # Create options for special event types
+        special_options = {
+            key: f"{info['name']}" 
+            for key, info in SPECIAL_EVENTS.items()
+        }
+        
+        data_schema = vol.Schema({
+            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
+            vol.Required(CONF_SPECIAL_TYPE, default=current_data.get(CONF_SPECIAL_TYPE, "christmas")): vol.In(special_options),
+            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
+            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
+        })
+
+        return self.async_show_form(
+            step_id="special_options",
+            data_schema=data_schema,
+            description_placeholders={
+                "event_name": "z.B. Weihnachts-Countdown",
+                "special_type": "Wähle den Feiertag oder astronomisches Event",
                 "image_path": "z.B. /local/images/event.jpg (optional)",
                 "website_url": "Relevante URL (optional)",
                 "notes": "Zusätzliche Notizen (optional)",

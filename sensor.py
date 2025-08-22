@@ -18,13 +18,15 @@ from .const import (
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
+    EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
     TRIP_SENSOR_TYPES,
     MILESTONE_SENSOR_TYPES,
     ANNIVERSARY_SENSOR_TYPES,
+    SPECIAL_SENSOR_TYPES,
 )
-from .sensors import TripSensor, MilestoneSensor, AnniversarySensor
+from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -60,6 +62,9 @@ async def async_setup_entry(
                 
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             sensors.extend(_create_anniversary_sensors(config_entry, event_data))
+            
+        elif event_type == EVENT_TYPE_SPECIAL:
+            sensors.extend(_create_special_sensors(config_entry, event_data))
             
         else:
             # Fallback for unknown event types - use trip sensors as default
@@ -141,6 +146,29 @@ def _create_anniversary_sensors(config_entry: ConfigEntry, event_data: dict) -> 
     sensors = []
     for sensor_type in ANNIVERSARY_SENSOR_TYPES:
         sensors.append(AnniversarySensor(config_entry, event_data, sensor_type))
+    return sensors
+
+
+def _create_special_sensors(config_entry: ConfigEntry, event_data: dict) -> list[SpecialEventSensor]:
+    """Create sensor entities for Special events.
+    
+    Special events are holidays and astronomical events that provide sensors for:
+    - Days until next occurrence
+    - Days since last occurrence
+    - Countdown text to next occurrence
+    - Next occurrence date
+    - Last occurrence date
+    
+    Args:
+        config_entry: Home Assistant config entry
+        event_data: Special event configuration data
+        
+    Returns:
+        List of SpecialEventSensor instances
+    """
+    sensors = []
+    for sensor_type in SPECIAL_SENSOR_TYPES:
+        sensors.append(SpecialEventSensor(config_entry, event_data, sensor_type))
     return sensors
 
 

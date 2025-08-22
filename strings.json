@@ -66,6 +66,24 @@
           "website_url": "Relevante URL zum Event",
           "notes": "Zusätzliche Informationen über das Anniversary"
         }
+      },
+      "special": {
+        "title": "Special Event einrichten",
+        "description": "Richte ein neues Special Event bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Special Events",
+          "special_type": "Typ des Special Events",
+          "image_path": "Bildpfad (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notizen (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Weihnachts-Countdown' oder 'Oster-Countdown'",
+          "special_type": "Wähle den Feiertag oder astronomisches Event",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg",
+          "website_url": "Relevante URL zum Event",
+          "notes": "Zusätzliche Informationen über das Special Event"
+        }
       }
     },
     "error": {
@@ -94,6 +112,10 @@
       "anniversary_options": {
         "title": "Anniversary Optionen",
         "description": "Bearbeite die Einstellungen für dieses Anniversary"
+      },
+      "special_options": {
+        "title": "Special Event Optionen",
+        "description": "Bearbeite die Einstellungen für dieses Special Event"
       }
     }
   }
