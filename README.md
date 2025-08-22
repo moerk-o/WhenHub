@@ -171,8 +171,9 @@ Special events track holidays and astronomical events that repeat annually. Thes
 
 When setting up a Special Event, you configure:
 
+- **Event Category**: Choose from 3 categories (Traditional Holidays, Calendar Holidays, Astronomical Events)
 - **Event Name**: e.g., "Weihnachts-Countdown" or "Oster-Countdown"
-- **Special Event Type**: Choose from 25+ predefined holidays and astronomical events
+- **Special Event Type**: Choose from 17 predefined holidays and astronomical events
 - **Image Path** *(optional)*: 
   - Leave empty = Automatically generated default image (purple star icon)
   - File path = e.g., `/local/images/christmas.jpg` for custom images
@@ -210,51 +211,39 @@ When setting up a Special Event, you configure:
 
 ### Available Special Events
 
-#### Fixed Date Events
-These events occur on the same date every year:
+Special Events are organized into 3 categories with a total of 17 events:
 
-- **Neujahr** - January 1st
-- **Heilige Drei Könige** - January 6th
-- **Valentinstag** - February 14th
-- **Tag der Arbeit** - May 1st
-- **Tag der Deutschen Einheit** - October 3rd
+#### Traditional Holidays (11 Events)
+Fixed and calculated events celebrating traditional holidays:
+
+**Fixed Date Events:**
+- **Heilig Abend** - December 24th (Christmas Eve)
+- **1. Weihnachtstag** - December 25th (Christmas Day)
+- **2. Weihnachtstag** - December 26th (Boxing Day)
 - **Halloween** - October 31st
-- **Reformationstag** - October 31st
-- **Allerheiligen** - November 1st
-- **St. Martin** - November 11th
-- **Nikolaus** - December 6th
-- **Weihnachten** - December 24th
-- **1. Weihnachtstag** - December 25th
-- **2. Weihnachtstag** - December 26th
-- **Silvester** - December 31st
+- **Nikolaus** - December 6th (St. Nicholas Day)
 
-#### Calculated Events
-These events use complex algorithms to determine their dates:
-
-##### Easter-Based Events
-Calculated using the **Gauss Easter Algorithm** for Western Christianity:
-- **Rosenmontag** - 48 days before Easter (Carnival Monday)
-- **Aschermittwoch** - 46 days before Easter (Ash Wednesday)
-- **Karfreitag** - 2 days before Easter (Good Friday)
+**Calculated Events using the Gauss Easter Algorithm:**
 - **Ostersonntag** - Easter Sunday (base calculation)
-- **Ostermontag** - 1 day after Easter (Easter Monday)
-- **Vatertag/Christi Himmelfahrt** - 39 days after Easter (Ascension Day)
 - **Pfingstsonntag** - 49 days after Easter (Pentecost Sunday)
-- **Pfingstmontag** - 50 days after Easter (Pentecost Monday)
 
-##### Other Calculated Events
-- **Muttertag** - 2nd Sunday in May (Mother's Day)
+**Advent Sundays (calculated from Christmas Eve):**
 - **1. Advent** - 4th Sunday before Christmas Eve
-- **2. Advent** - 3rd Sunday before Christmas Eve
+- **2. Advent** - 3rd Sunday before Christmas Eve  
 - **3. Advent** - 2nd Sunday before Christmas Eve
-- **4. Advent** - Sunday before Christmas Eve (or Christmas Eve if it's a Sunday)
+- **4. Advent** - Sunday before Christmas Eve
 
-##### Astronomical Events
-Simplified calculations for seasonal transitions:
-- **Frühlingsanfang** - Spring Equinox (≈ March 20th)
-- **Sommersonnenwende** - Summer Solstice (≈ June 21st)
-- **Herbstanfang** - Autumn Equinox (≈ September 22nd/23rd)
-- **Wintersonnenwende** - Winter Solstice (≈ December 21st)
+#### Calendar Holidays (2 Events)
+Fixed calendar events marking year transitions:
+- **Neujahr** - January 1st (New Year's Day)
+- **Silvester** - December 31st (New Year's Eve)
+
+#### Astronomical Events (4 Events)
+Fixed dates for seasonal transitions:
+- **Frühlingsanfang** - March 20th (Spring Equinox)
+- **Sommeranfang** - June 21st (Summer Solstice)
+- **Herbstanfang** - September 23rd (Autumn Equinox)  
+- **Winteranfang** - December 21st (Winter Solstice)
 
 *Note: Astronomical events use simplified approximations. Actual dates may vary by ±1 day due to Earth's orbital mechanics.*
 
@@ -275,12 +264,13 @@ Advent Sundays are calculated by:
 4. Special handling when Christmas Eve itself falls on a Sunday
 
 #### Astronomical Events
-Astronomical events use simplified approximations based on:
-- Average orbital mechanics
-- Leap year adjustments
-- Historical date patterns
+Astronomical events use fixed dates for consistent scheduling:
+- Spring Equinox: March 20th
+- Summer Solstice: June 21st  
+- Autumn Equinox: September 23rd
+- Winter Solstice: December 21st
 
-For precise astronomical calculations, consider using specialized astronomy integrations.
+These are simplified approximations for seasonal planning. For precise astronomical calculations, consider using specialized astronomy integrations.
 
 ## Advanced Features
 
