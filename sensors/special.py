@@ -159,39 +159,11 @@ class SpecialEventSensor(BaseCountdownSensor):
             
             if calculation == "easter":
                 return self._calculate_easter(year)
-            elif calculation == "good_friday":
-                easter = self._calculate_easter(year)
-                return easter - timedelta(days=2) if easter else None
-            elif calculation == "easter_monday":
-                easter = self._calculate_easter(year)
-                return easter + timedelta(days=1) if easter else None
-            elif calculation == "carnival":
-                easter = self._calculate_easter(year)
-                return easter - timedelta(days=48) if easter else None
-            elif calculation == "ash_wednesday":
-                easter = self._calculate_easter(year)
-                return easter - timedelta(days=46) if easter else None
-            elif calculation == "ascension":
-                easter = self._calculate_easter(year)
-                return easter + timedelta(days=39) if easter else None
             elif calculation == "pentecost":
                 easter = self._calculate_easter(year)
                 return easter + timedelta(days=49) if easter else None
-            elif calculation == "pentecost_monday":
-                easter = self._calculate_easter(year)
-                return easter + timedelta(days=50) if easter else None
-            elif calculation == "mothers_day":
-                return self._calculate_mothers_day(year)
             elif calculation.startswith("advent_"):
                 return self._calculate_advent(year, calculation)
-            elif calculation == "summer_solstice":
-                return self._calculate_summer_solstice(year)
-            elif calculation == "winter_solstice":
-                return self._calculate_winter_solstice(year)
-            elif calculation == "spring_equinox":
-                return self._calculate_spring_equinox(year)
-            elif calculation == "autumn_equinox":
-                return self._calculate_autumn_equinox(year)
             else:
                 _LOGGER.warning("Unknown calculation type: %s", calculation)
                 return None
@@ -232,27 +204,6 @@ class SpecialEventSensor(BaseCountdownSensor):
             _LOGGER.error("Failed to calculate Easter for year %d", year)
             return None
 
-    def _calculate_mothers_day(self, year: int) -> Optional[date]:
-        """Calculate Mother's Day (2nd Sunday in May).
-        
-        Args:
-            year: Year to calculate Mother's Day for
-            
-        Returns:
-            Date of Mother's Day in the given year
-        """
-        # Find first day of May
-        first_may = date(year, 5, 1)
-        
-        # Find first Sunday in May
-        days_until_sunday = (6 - first_may.weekday()) % 7
-        first_sunday = first_may + timedelta(days=days_until_sunday)
-        
-        # Second Sunday is 7 days later
-        second_sunday = first_sunday + timedelta(days=7)
-        
-        return second_sunday
-
     def _calculate_advent(self, year: int, advent_num: str) -> Optional[date]:
         """Calculate Advent Sunday dates.
         
@@ -285,79 +236,6 @@ class SpecialEventSensor(BaseCountdownSensor):
             return advent_4 - timedelta(days=21)
         
         return None
-
-    def _calculate_summer_solstice(self, year: int) -> date:
-        """Calculate summer solstice date.
-        
-        Simplified calculation - actual date varies between June 20-22.
-        For more accuracy, an astronomical library would be needed.
-        
-        Args:
-            year: Year to calculate summer solstice for
-            
-        Returns:
-            Approximate date of summer solstice
-        """
-        # Simplified: Summer solstice is usually June 21
-        # In reality it varies between June 20-22
-        if year % 4 == 0:
-            return date(year, 6, 20)
-        else:
-            return date(year, 6, 21)
-
-    def _calculate_winter_solstice(self, year: int) -> date:
-        """Calculate winter solstice date.
-        
-        Simplified calculation - actual date varies between December 20-22.
-        
-        Args:
-            year: Year to calculate winter solstice for
-            
-        Returns:
-            Approximate date of winter solstice
-        """
-        # Simplified: Winter solstice is usually December 21
-        # In reality it varies between December 20-22
-        if (year - 1) % 4 == 0:
-            return date(year, 12, 22)
-        else:
-            return date(year, 12, 21)
-
-    def _calculate_spring_equinox(self, year: int) -> date:
-        """Calculate spring equinox date.
-        
-        Simplified calculation - actual date is usually March 20 or 21.
-        
-        Args:
-            year: Year to calculate spring equinox for
-            
-        Returns:
-            Approximate date of spring equinox
-        """
-        # Simplified: Spring equinox is usually March 20
-        # In reality it can be March 19-21
-        if year % 4 == 0:
-            return date(year, 3, 20)
-        else:
-            return date(year, 3, 20)
-
-    def _calculate_autumn_equinox(self, year: int) -> date:
-        """Calculate autumn equinox date.
-        
-        Simplified calculation - actual date is usually September 22 or 23.
-        
-        Args:
-            year: Year to calculate autumn equinox for
-            
-        Returns:
-            Approximate date of autumn equinox
-        """
-        # Simplified: Autumn equinox is usually September 23
-        # In reality it can be September 22-24
-        if year % 4 <= 1:
-            return date(year, 9, 22)
-        else:
-            return date(year, 9, 23)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

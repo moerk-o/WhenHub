@@ -14,6 +14,7 @@ WhenHub is a Home Assistant integration for tracking various events and importan
 **Trip** - Multi-day events like vacations or visiting grandma  
 **Milestone** - One-time important dates like school events or 'when is the new pet coming'  
 **Anniversary** - Yearly recurring events like birthdays or holidays  
+**Special Event** - Predefined holidays and astronomical events like Christmas, Easter, or Solstices  
 
 ## Installation
 
@@ -162,6 +163,125 @@ When setting up an Anniversary event, you configure:
 ### Leap Year Handling
 Anniversary events handle leap years intelligently: When the original date is February 29th, non-leap years automatically use February 28th.
 
+## Special Events
+
+Special events track holidays and astronomical events that repeat annually. These include both fixed-date holidays and calculated events with complex date algorithms.
+
+### Configuration
+
+When setting up a Special Event, you configure:
+
+- **Event Name**: e.g., "Weihnachts-Countdown" or "Oster-Countdown"
+- **Special Event Type**: Choose from 25+ predefined holidays and astronomical events
+- **Image Path** *(optional)*: 
+  - Leave empty = Automatically generated default image (purple star icon)
+  - File path = e.g., `/local/images/christmas.jpg` for custom images
+  - Base64 string = Directly embedded encoded image
+- **Website URL** *(optional)*: Relevant URL for the event
+- **Notes** *(optional)*: Additional information
+
+### Available Entities
+
+#### Sensors
+- **Days Until** - Days until next occurrence
+- **Days Since Last** - Days since last occurrence
+- **Countdown Text** - Formatted countdown text to next occurrence
+  - **Attributes**: 
+    - `event_name` - Name of the event
+    - `event_type` - Type of event (special)
+    - `special_type` - Specific holiday type (e.g., "christmas", "easter")
+    - `special_name` - Display name of the holiday
+    - `next_date` - Date of next occurrence
+    - `text_years` - Years from countdown text until next
+    - `text_months` - Months from countdown text until next
+    - `text_weeks` - Weeks from countdown text until next
+    - `text_days` - Days from countdown text until next
+- **Next Date** - ISO date of next occurrence
+- **Last Date** - ISO date of last occurrence
+
+#### Binary Sensors
+- **Is Today** - `true` when today is the special event day
+
+#### Image
+- **Event Image** - Shows the configured image or default purple star icon
+  - **Attributes**: 
+    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
+    - `image_path` - Path to image, "base64_data" or "default_svg"
+
+### Available Special Events
+
+#### Fixed Date Events
+These events occur on the same date every year:
+
+- **Neujahr** - January 1st
+- **Heilige Drei Könige** - January 6th
+- **Valentinstag** - February 14th
+- **Tag der Arbeit** - May 1st
+- **Tag der Deutschen Einheit** - October 3rd
+- **Halloween** - October 31st
+- **Reformationstag** - October 31st
+- **Allerheiligen** - November 1st
+- **St. Martin** - November 11th
+- **Nikolaus** - December 6th
+- **Weihnachten** - December 24th
+- **1. Weihnachtstag** - December 25th
+- **2. Weihnachtstag** - December 26th
+- **Silvester** - December 31st
+
+#### Calculated Events
+These events use complex algorithms to determine their dates:
+
+##### Easter-Based Events
+Calculated using the **Gauss Easter Algorithm** for Western Christianity:
+- **Rosenmontag** - 48 days before Easter (Carnival Monday)
+- **Aschermittwoch** - 46 days before Easter (Ash Wednesday)
+- **Karfreitag** - 2 days before Easter (Good Friday)
+- **Ostersonntag** - Easter Sunday (base calculation)
+- **Ostermontag** - 1 day after Easter (Easter Monday)
+- **Vatertag/Christi Himmelfahrt** - 39 days after Easter (Ascension Day)
+- **Pfingstsonntag** - 49 days after Easter (Pentecost Sunday)
+- **Pfingstmontag** - 50 days after Easter (Pentecost Monday)
+
+##### Other Calculated Events
+- **Muttertag** - 2nd Sunday in May (Mother's Day)
+- **1. Advent** - 4th Sunday before Christmas Eve
+- **2. Advent** - 3rd Sunday before Christmas Eve
+- **3. Advent** - 2nd Sunday before Christmas Eve
+- **4. Advent** - Sunday before Christmas Eve (or Christmas Eve if it's a Sunday)
+
+##### Astronomical Events
+Simplified calculations for seasonal transitions:
+- **Frühlingsanfang** - Spring Equinox (≈ March 20th)
+- **Sommersonnenwende** - Summer Solstice (≈ June 21st)
+- **Herbstanfang** - Autumn Equinox (≈ September 22nd/23rd)
+- **Wintersonnenwende** - Winter Solstice (≈ December 21st)
+
+*Note: Astronomical events use simplified approximations. Actual dates may vary by ±1 day due to Earth's orbital mechanics.*
+
+### Date Calculation Details
+
+#### Easter Algorithm
+Special Events uses the **Gauss Easter Algorithm** to calculate Easter dates without requiring lunar data or external dependencies. This algorithm:
+- Works for any year in the Gregorian calendar
+- Calculates Western (Catholic/Protestant) Easter
+- Handles leap years and calendar irregularities automatically
+- Provides the foundation for all Easter-dependent holidays
+
+#### Advent Calculation
+Advent Sundays are calculated by:
+1. Finding Christmas Eve (December 24th)
+2. Determining the day of the week
+3. Calculating backwards to find the 4th, 3rd, 2nd, and 1st Sundays before
+4. Special handling when Christmas Eve itself falls on a Sunday
+
+#### Astronomical Events
+Astronomical events use simplified approximations based on:
+- Average orbital mechanics
+- Leap year adjustments
+- Historical date patterns
+
+For precise astronomical calculations, consider using specialized astronomy integrations.
+
 ## Advanced Features
 
 ### Image Management
@@ -173,6 +293,7 @@ WhenHub supports various types of images for your events:
    - **Trip**: Blue airplane icon
    - **Milestone**: Red flag
    - **Anniversary**: Pink heart
+   - **Special Event**: Purple star icon
 3. **Supported Formats**: JPEG, PNG, WebP, GIF, SVG
 
 Images are stored in Home Assistant's `www/` directory and referenced via `/local/` paths.

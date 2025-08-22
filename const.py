@@ -43,6 +43,7 @@ CONF_START_DATE = "start_date"
 CONF_END_DATE = "end_date"
 CONF_TARGET_DATE = "target_date"  # Für Milestone und Anniversary
 CONF_SPECIAL_TYPE = "special_type"  # Für Special Events
+CONF_SPECIAL_CATEGORY = "special_category"  # Für Special Event Kategorien
 CONF_IMAGE_PATH = "image_path"
 CONF_IMAGE_UPLOAD = "image_upload"
 CONF_WEBSITE_URL = "website_url"
@@ -216,176 +217,144 @@ SPECIAL_BINARY_SENSOR_TYPES = {
     },
 }
 
+# Special Event Kategorien
+SPECIAL_EVENT_CATEGORIES = {
+    "traditional": {
+        "name": "Traditionelle Feiertage",
+        "description": "Weihnachten, Ostern, Advent und andere traditionelle Feste",
+        "icon": "mdi:cross"
+    },
+    "calendar": {
+        "name": "Kalendarische Feiertage",
+        "description": "Neujahr und Silvester",
+        "icon": "mdi:calendar"
+    },
+    "astronomical": {
+        "name": "Astronomische Events",
+        "description": "Jahreszeitenanfänge",
+        "icon": "mdi:weather-sunny"
+    }
+}
+
 # Special Event Definitionen
 SPECIAL_EVENTS = {
-    "christmas": {
-        "name": "Weihnachten",
-        "type": "fixed",  # Fixed date each year
+    # Traditionelle Feiertage (11 Events)
+    "christmas_eve": {
+        "name": "Heilig Abend",
+        "category": "traditional",
+        "type": "fixed",
         "month": 12,
         "day": 24,
     },
     "christmas_day": {
         "name": "1. Weihnachtstag",
+        "category": "traditional",
         "type": "fixed",
         "month": 12,
         "day": 25,
     },
     "boxing_day": {
         "name": "2. Weihnachtstag",
+        "category": "traditional",
         "type": "fixed",
         "month": 12,
         "day": 26,
     },
-    "new_year": {
-        "name": "Neujahr",
+    "halloween": {
+        "name": "Halloween",
+        "category": "traditional",
         "type": "fixed",
-        "month": 1,
-        "day": 1,
-    },
-    "new_years_eve": {
-        "name": "Silvester",
-        "type": "fixed",
-        "month": 12,
+        "month": 10,
         "day": 31,
-    },
-    "epiphany": {
-        "name": "Heilige Drei Könige",
-        "type": "fixed",
-        "month": 1,
-        "day": 6,
-    },
-    "valentines": {
-        "name": "Valentinstag",
-        "type": "fixed",
-        "month": 2,
-        "day": 14,
-    },
-    "carnival": {
-        "name": "Rosenmontag",
-        "type": "calculated",
-        "calculation": "carnival",  # 48 days before Easter
-    },
-    "ash_wednesday": {
-        "name": "Aschermittwoch",
-        "type": "calculated",
-        "calculation": "ash_wednesday",  # 46 days before Easter
     },
     "easter": {
         "name": "Ostersonntag",
+        "category": "traditional",
         "type": "calculated",
         "calculation": "easter",
     },
-    "good_friday": {
-        "name": "Karfreitag",
-        "type": "calculated",
-        "calculation": "good_friday",  # 2 days before Easter
-    },
-    "easter_monday": {
-        "name": "Ostermontag",
-        "type": "calculated",
-        "calculation": "easter_monday",  # 1 day after Easter
-    },
-    "may_day": {
-        "name": "Tag der Arbeit",
-        "type": "fixed",
-        "month": 5,
-        "day": 1,
-    },
-    "mothers_day": {
-        "name": "Muttertag",
-        "type": "calculated",
-        "calculation": "mothers_day",  # 2nd Sunday in May
-    },
-    "fathers_day": {
-        "name": "Vatertag/Christi Himmelfahrt",
-        "type": "calculated",
-        "calculation": "ascension",  # 39 days after Easter
-    },
     "pentecost": {
         "name": "Pfingstsonntag",
+        "category": "traditional",
         "type": "calculated",
-        "calculation": "pentecost",  # 49 days after Easter
-    },
-    "pentecost_monday": {
-        "name": "Pfingstmontag",
-        "type": "calculated",
-        "calculation": "pentecost_monday",  # 50 days after Easter
-    },
-    "german_unity": {
-        "name": "Tag der Deutschen Einheit",
-        "type": "fixed",
-        "month": 10,
-        "day": 3,
-    },
-    "halloween": {
-        "name": "Halloween",
-        "type": "fixed",
-        "month": 10,
-        "day": 31,
-    },
-    "reformation_day": {
-        "name": "Reformationstag",
-        "type": "fixed",
-        "month": 10,
-        "day": 31,
-    },
-    "all_saints": {
-        "name": "Allerheiligen",
-        "type": "fixed",
-        "month": 11,
-        "day": 1,
-    },
-    "st_martin": {
-        "name": "St. Martin",
-        "type": "fixed",
-        "month": 11,
-        "day": 11,
+        "calculation": "pentecost",
     },
     "nikolaus": {
         "name": "Nikolaus",
+        "category": "traditional",
         "type": "fixed",
         "month": 12,
         "day": 6,
     },
     "advent_1": {
         "name": "1. Advent",
+        "category": "traditional",
         "type": "calculated",
-        "calculation": "advent_1",  # 4th Sunday before Christmas
+        "calculation": "advent_1",
     },
     "advent_2": {
         "name": "2. Advent",
+        "category": "traditional",
         "type": "calculated",
-        "calculation": "advent_2",  # 3rd Sunday before Christmas
+        "calculation": "advent_2",
     },
     "advent_3": {
         "name": "3. Advent",
+        "category": "traditional",
         "type": "calculated",
-        "calculation": "advent_3",  # 2nd Sunday before Christmas
+        "calculation": "advent_3",
     },
     "advent_4": {
         "name": "4. Advent",
+        "category": "traditional",
         "type": "calculated",
-        "calculation": "advent_4",  # Sunday before Christmas
+        "calculation": "advent_4",
     },
-    "summer_solstice": {
-        "name": "Sommersonnenwende",
-        "type": "calculated",
-        "calculation": "summer_solstice",
+    
+    # Kalendarische Feiertage (2 Events)
+    "new_year": {
+        "name": "Neujahr",
+        "category": "calendar",
+        "type": "fixed",
+        "month": 1,
+        "day": 1,
     },
-    "winter_solstice": {
-        "name": "Wintersonnenwende",
-        "type": "calculated",
-        "calculation": "winter_solstice",
+    "new_years_eve": {
+        "name": "Silvester",
+        "category": "calendar",
+        "type": "fixed",
+        "month": 12,
+        "day": 31,
     },
-    "spring_equinox": {
+    
+    # Astronomische Events (4 Events)
+    "spring_start": {
         "name": "Frühlingsanfang",
-        "type": "calculated",
-        "calculation": "spring_equinox",
+        "category": "astronomical",
+        "type": "fixed",
+        "month": 3,
+        "day": 20,
     },
-    "autumn_equinox": {
+    "summer_start": {
+        "name": "Sommeranfang",
+        "category": "astronomical",
+        "type": "fixed",
+        "month": 6,
+        "day": 21,
+    },
+    "autumn_start": {
         "name": "Herbstanfang",
-        "type": "calculated",
-        "calculation": "autumn_equinox",
+        "category": "astronomical",
+        "type": "fixed",
+        "month": 9,
+        "day": 23,
+    },
+    "winter_start": {
+        "name": "Winteranfang",
+        "category": "astronomical",
+        "type": "fixed",
+        "month": 12,
+        "day": 21,
     },
 }
 
