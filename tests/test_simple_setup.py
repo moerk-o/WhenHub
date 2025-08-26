@@ -29,15 +29,18 @@ async def test_setup_component_minimal(hass: HomeAssistant):
 
 @pytest.mark.asyncio  
 async def test_manual_config_entry_setup(hass: HomeAssistant, trip_config_entry):
-    """Test manual config entry setup."""
-    from custom_components.whenhub import async_setup_entry
-    
+    """Test manual config entry setup using proper Home Assistant flow."""
     # Add the entry to hass
     trip_config_entry.add_to_hass(hass)
     
-    # Try to setup directly
-    result = await async_setup_entry(hass, trip_config_entry)
+    # Use the proper Home Assistant setup flow
+    assert await hass.config_entries.async_setup(trip_config_entry.entry_id)
     await hass.async_block_till_done()
     
-    assert result is True
-    print("✅ Direct config entry setup works")
+    # Verify the entry is loaded
+    from homeassistant.config_entries import ConfigEntryState
+    assert trip_config_entry.state == ConfigEntryState.LOADED
+    
+    # Verify entities were created
+    assert hass.states.get("sensor.danemark_2026_days_until_start") is not None
+    print("✅ Config entry setup through Home Assistant flow works")
