@@ -1,18 +1,32 @@
 """Common test fixtures for WhenHub integration tests."""
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-from datetime import date
+import sys
+import os
 
-DOMAIN = "whenhub"
+# Add project root to Python path so custom_components can be found
+project_root = os.path.dirname(os.path.dirname(__file__))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Use pytest-homeassistant-custom-component plugin
+pytest_plugins = "pytest_homeassistant_custom_component"
+
+# This fixture is required for custom components (versions >=2021.6.0b0)
+@pytest.fixture(autouse=True)  
+def auto_enable_custom_integrations(enable_custom_integrations):
+    """Enable loading of custom integrations in Home Assistant."""
+    return enable_custom_integrations
 
 @pytest.fixture
 def trip_config_entry():
     """Create a mock config entry for a trip event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
     return MockConfigEntry(
-        domain=DOMAIN,
+        domain="whenhub",
         data={
             "event_name": "Dänemark 2026",
-            "event_type": "trip",
+            "event_type": "trip", 
             "start_date": "2026-07-12",
             "end_date": "2026-07-26",
             "image_path": "",
@@ -26,8 +40,10 @@ def trip_config_entry():
 @pytest.fixture
 def milestone_config_entry():
     """Create a mock config entry for a milestone event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
     return MockConfigEntry(
-        domain=DOMAIN,
+        domain="whenhub",
         data={
             "event_name": "Projektabgabe",
             "event_type": "milestone",
@@ -43,8 +59,10 @@ def milestone_config_entry():
 @pytest.fixture
 def anniversary_config_entry():
     """Create a mock config entry for an anniversary event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
     return MockConfigEntry(
-        domain=DOMAIN,
+        domain="whenhub",
         data={
             "event_name": "Geburtstag Max",
             "event_type": "anniversary",
@@ -60,8 +78,10 @@ def anniversary_config_entry():
 @pytest.fixture
 def special_config_entry():
     """Create a mock config entry for a special event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
     return MockConfigEntry(
-        domain=DOMAIN,
+        domain="whenhub",
         data={
             "event_name": "Weihnachts-Countdown",
             "event_type": "special",

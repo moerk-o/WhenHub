@@ -22,7 +22,7 @@ async def test_trip_setup_creates_entities(hass: HomeAssistant, trip_config_entr
     assert hass.states.get("binary_sensor.danemark_2026_trip_ends_today") is not None
     
     # Check image entity
-    assert hass.states.get("image.danemark_2026_event_image") is not None
+    assert hass.states.get("image.danemark_2026_image") is not None
 
 @pytest.mark.asyncio
 async def test_milestone_setup_creates_entities(hass: HomeAssistant, milestone_config_entry):
@@ -39,7 +39,7 @@ async def test_milestone_setup_creates_entities(hass: HomeAssistant, milestone_c
     assert hass.states.get("binary_sensor.projektabgabe_is_today") is not None
     
     # Check image entity
-    assert hass.states.get("image.projektabgabe_event_image") is not None
+    assert hass.states.get("image.projektabgabe_image") is not None
 
 @pytest.mark.asyncio
 async def test_anniversary_setup_creates_entities(hass: HomeAssistant, anniversary_config_entry):
@@ -60,7 +60,7 @@ async def test_anniversary_setup_creates_entities(hass: HomeAssistant, anniversa
     assert hass.states.get("binary_sensor.geburtstag_max_is_today") is not None
     
     # Check image entity
-    assert hass.states.get("image.geburtstag_max_event_image") is not None
+    assert hass.states.get("image.geburtstag_max_image") is not None
 
 @pytest.mark.asyncio
 async def test_special_setup_creates_entities(hass: HomeAssistant, special_config_entry):
@@ -80,4 +80,4 @@ async def test_special_setup_creates_entities(hass: HomeAssistant, special_confi
     assert hass.states.get("binary_sensor.weihnachts_countdown_is_today") is not None
     
     # Check image entity
-    assert hass.states.get("image.weihnachts_countdown_event_image") is not None
+    assert hass.states.get("image.weihnachts_countdown_image") is not None

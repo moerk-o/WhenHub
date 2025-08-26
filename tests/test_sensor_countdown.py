@@ -36,10 +36,10 @@ async def test_trip_active_during_trip(hass: HomeAssistant, trip_config_entry):
         assert binary is not None
         assert binary.state == "on"
         
-        # Check remaining days (11 days left from 15th to 26th)
+        # Check remaining days (12 days left from 15th to 26th, inclusive)
         remaining = hass.states.get("sensor.danemark_2026_trip_left_days")
         assert remaining is not None
-        assert int(remaining.state) == 11
+        assert int(remaining.state) == 12
 
 @pytest.mark.asyncio
 async def test_milestone_countdown_future(hass: HomeAssistant, milestone_config_entry):
@@ -87,10 +87,10 @@ async def test_anniversary_next_occurrence(hass: HomeAssistant, anniversary_conf
         assert sensor is not None
         assert int(sensor.state) == 19
         
-        # Check occurrences count (16 years from 2010 to 2026)
+        # Check occurrences count (16 occurrences from 2010-2025, including birth year)
         count = hass.states.get("sensor.geburtstag_max_occurrences_count")
         assert count is not None
-        assert int(count.state) == 15  # 15 past occurrences (2011-2025)
+        assert int(count.state) == 16  # 16 occurrences (2010-2025)
         
         # Check next date
         next_date = hass.states.get("sensor.geburtstag_max_next_date")
