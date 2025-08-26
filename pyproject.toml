@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+addopts = "-q --maxfail=1 --disable-warnings"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+select = ["E", "F", "W"]
+ignore = ["E501"]
+
+[tool.coverage.run]
+source = ["custom_components/whenhub"]

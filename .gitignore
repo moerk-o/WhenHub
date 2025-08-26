@@ -11,6 +11,13 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
 
 # Home Assistant
 .storage/

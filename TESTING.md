@@ -1,0 +1,123 @@
+# WhenHub Testing Setup
+
+## Lokales Test-Setup
+
+### 1. Virtuelle Umgebung einrichten
+
+```bash
+# Venv erstellen
+python3 -m venv .venv
+
+# Aktivieren (Linux/macOS)
+source .venv/bin/activate
+
+# Aktivieren (Windows PowerShell)
+.venv\Scripts\Activate.ps1
+```
+
+### 2. Dependencies installieren
+
+```bash
+# Pip upgraden
+pip install -U pip
+
+# Test-Dependencies installieren
+pip install -r requirements-test.txt
+```
+
+Die Installation kann 5-10 Minuten dauern, da Home Assistant und alle Dependencies installiert werden.
+
+### 3. VSCode konfigurieren
+
+VSCode sollte automatisch die Konfiguration aus `.vscode/settings.json` laden:
+- Python-Interpreter: `.venv/bin/python`
+- Test-Framework: pytest
+- Empfohlene Extensions: Python, Pylance, Ruff
+
+## Test-Befehle
+
+### Alle Tests ausführen
+```bash
+pytest -q
+```
+
+### Einzelne Test-Datei
+```bash
+pytest -q tests/test_sensor_countdown.py
+```
+
+### Mit Coverage
+```bash
+pytest --cov=custom_components/whenhub --cov-report=html
+```
+
+### Linting
+```bash
+ruff check custom_components/whenhub
+```
+
+## Abgedeckte Test-Fälle
+
+### Setup & Entity-Erstellung
+- ✅ Trip-Events: Alle Sensoren, Binärsensoren und Bilder
+- ✅ Milestone-Events: Countdown und Is-Today Sensoren
+- ✅ Anniversary-Events: Wiederkehrende Event-Sensoren
+- ✅ Special Events: Feiertags-Countdown (Weihnachten)
+
+### Countdown-Logik
+- ✅ Trip: 18 Tage vor Start
+- ✅ Trip: Aktiv während der Reise
+- ✅ Milestone: Countdown in die Zukunft
+- ✅ Milestone: Am Zieldatum (0 Tage)
+- ✅ Anniversary: Nächstes Vorkommen berechnen
+- ✅ Special: Weihnachts-Countdown
+
+### Binary "Is Today" Sensoren
+- ✅ Trip: Start-Tag, End-Tag, Aktiv-Status
+- ✅ Milestone: Am Zieldatum true/false
+- ✅ Anniversary: Am Jahrestag
+- ✅ Special: Am Feiertag (Heiligabend)
+
+## Bekannte Lücken (für spätere Tests)
+
+### Spezialfälle
+- ⏳ Schaltjahr-Handling (29. Februar)
+- ⏳ DST-Übergänge (Sommer-/Winterzeit)
+- ⏳ Vergangene Events (negative Tage)
+- ⏳ Ostern-Berechnung (Gauss-Algorithmus)
+- ⏳ Advent-Berechnung
+
+### Edge Cases
+- ⏳ Sehr lange Trips (> 365 Tage)
+- ⏳ Gleicher Start- und End-Tag
+- ⏳ Ungültige Datumsangaben
+- ⏳ Fehlende Pflichtfelder
+
+### Integration Tests
+- ⏳ Config Flow UI Tests
+- ⏳ Options Flow Updates
+- ⏳ Entity Registry Cleanup
+- ⏳ Device Info Consistency
+
+### Performance
+- ⏳ Viele Events gleichzeitig
+- ⏳ Update-Koordination
+- ⏳ Memory Leaks bei Reload
+
+## Test-Struktur
+
+```
+tests/
+├── conftest.py              # Fixtures für alle Tests
+├── test_manifest_and_setup.py  # Setup & Entity-Erstellung
+├── test_sensor_countdown.py    # Countdown-Berechnungen
+└── test_binary_today.py        # Binary Sensor Tests
+```
+
+## Nächste Schritte
+
+1. Tests ausführen und Fehler beheben
+2. Coverage erhöhen (Ziel: 80%)
+3. Edge Cases abdecken
+4. Integration Tests hinzufügen
+5. CI/CD Pipeline aufsetzen (GitHub Actions)
