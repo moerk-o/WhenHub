@@ -1,5 +1,7 @@
 # Bug #001: Special Events KeyError - Missing 'christmas' Key
 
+## Status: ✅ FIXED (2025-08-26)
+
 ## Summary
 The Special Events sensor crashes when trying to access a non-existent 'christmas' key in the SPECIAL_EVENTS dictionary, causing all Special Event tests to fail.
 
@@ -35,34 +37,19 @@ ERROR    custom_components.whenhub.sensor:sensor.py:79 Error setting up sensors 
 ERROR    custom_components.whenhub.binary_sensor:binary_sensor.py:91 Error setting up binary sensors for Weihnachts-Countdown: 'christmas'
 ```
 
-## Reproduction Steps
-1. Set up test environment with pytest-homeassistant-custom-component
-2. Create a Special Event config entry with any special_type
-3. Run any Special Event test:
-```bash
-source .venv/bin/activate
-python -m pytest tests/test_binary_today.py::test_special_christmas_is_today -v
-```
-
-## Expected Behavior
-The fallback should use a valid key that exists in SPECIAL_EVENTS, such as `"christmas_eve"` or `"christmas_day"`.
-
-## Proposed Fix
-Change line 53 in `custom_components/whenhub/sensors/special.py`:
-```python
-# From:
-self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas"])
-# To:
-self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas_eve"])
-```
+## Fix Applied
+Changed default and fallback from "christmas" to "christmas_eve" in:
+- `custom_components/whenhub/sensors/special.py` (line 52-53)
+- `custom_components/whenhub/binary_sensor.py` (line 442-443)
 
 ## Test Verification
-After fix, all 4 Special Event tests should pass:
+After fix, all 4 Special Event tests pass:
 ```bash
 python -m pytest -k "special" -v
+# Result: 5 passed (includes test_special_events_structure)
 ```
 
 ## Impact
-- 4 tests failing (16% of test suite)
-- Special Events feature completely non-functional
-- No entities created for Special Events
+- 4 tests now passing (previously failed)
+- Special Events feature fully functional
+- Test success rate increased from 80% to 96%

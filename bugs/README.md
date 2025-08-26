@@ -7,13 +7,13 @@ This directory contains documented bugs found in the WhenHub Home Assistant inte
 
 | Bug # | Title | Severity | Status | Tests Affected |
 |-------|-------|----------|--------|----------------|
-| 001 | [Special Events KeyError - Missing 'christmas' Key](bug_001_special_events_keyerror.md) | High | Open | 4 |
-| 002 | [Config Entry Not Loaded - Manual Setup API Test Failure](bug_002_config_entry_not_loaded.md) | Low | Open | 1 |
+| 001 | [Special Events KeyError - Missing 'christmas' Key](bug_001_special_events_keyerror.md) | High | ✅ Fixed | 4 |
+| 002 | [Config Entry Not Loaded - Manual Setup API Test Failure](bug_002_config_entry_not_loaded.md) | Low | ✅ Fixed | 1 |
 
 ## Test Suite Status
 - **Total Tests:** 25
-- **Passing:** 20 (80%)
-- **Failing:** 5 (20%)
+- **Passing:** 25 (100%) 🎉
+- **Failing:** 0 (0%)
 
 ## Bug Categories
 
