@@ -439,8 +439,8 @@ class SpecialBinarySensor(BaseBinarySensor):
         super().__init__(config_entry, event_data, sensor_type, SPECIAL_BINARY_SENSOR_TYPES)
         
         # Get the special event type and info
-        self._special_type = event_data.get(CONF_SPECIAL_TYPE, "christmas")
-        self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas"])
+        self._special_type = event_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
+        self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas_eve"])
         
         # Use consistent star icon for all special events (matches other event types)
 
