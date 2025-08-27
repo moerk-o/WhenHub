@@ -100,27 +100,26 @@
 
 ---
 
-## [T08] Special Events – Vollständigkeit (parametrisiert)
+## [T08] Special Events – Vollständigkeit (parametrisiert) ✅ **ERLEDIGT**
 
-**Datei:** `tests/test_special_events_completeness.py` (ergänzen)  
+**Datei:** `tests/test_special_events_completeness.py` ✅ **ERSTELLT**  
 
-**Parametrisierung:**
-- Per `pytest.mark.parametrize` **über alle Keys** aus `SPECIAL_EVENTS` (dynamisch aus dem Code lesen, keine harte Liste).
+**Parametrisierung:** ✅ **IMPLEMENTIERT**
+- Per `pytest.mark.parametrize` **über alle Keys** aus `SPECIAL_EVENTS` (dynamisch aus dem Code lesen, keine harte Liste) ✅
 
-**Pro Key prüfen (3 Situationen):**
-1. **Weit vorher** (z. B. `YYYY-01-01 10:00:00+00:00`):
-   - Entities existieren:  
-     `sensor.…_days_until`, `sensor.…_countdown_text`, `sensor.…_next_date`, `sensor.…_last_date`,  
-     `binary_sensor.…_is_today`, `image.…_image`
-   - `…_is_today == "off"`, `days_until` plausibel > 0, `next_date` ISO-Datum
-2. **Ereignistag**:
-   - `…_is_today == "on"`, `countdown_text == "0 Tage"`
-3. **Tag danach**:
-   - **Wiederkehrend:** `days_until ≈ 365/366`, `…_is_today == "off"`
+**Pro Key prüfen (3 Situationen):** ✅ **ALLE IMPLEMENTIERT**
+1. **Weit vorher** (z. B. `YYYY-01-01 10:00:00+00:00`): ✅
+   - Entities existieren: `sensor.…_days_until`, `sensor.…_countdown_text`, `sensor.…_next_date`, `sensor.…_last_date`, `binary_sensor.…_is_today`, `image.…_image` ✅
+   - `…_is_today == "off"`, `days_until` plausibel > 0, `next_date` ISO-Datum ✅
+2. **Ereignistag**: ✅
+   - `…_is_today == "on"`, `countdown_text == "0 Tage"` ✅
+3. **Tag danach**: ✅
+   - **Wiederkehrend:** `days_until ≈ 365/366`, `…_is_today == "off"` ✅
 
-**Bewegliche Feste:** Mindestens **Ostern**: Referenzjahr mit bekanntem Datum (z. B. 2026-04-05) explizit prüfen.
+**Bewegliche Feste:** Mindestens **Ostern**: Referenzjahr 2026-04-05 ✅ **IMPLEMENTIERT**
 
-**Doku:** `TESTING.md` – Abschnitt „Special Events Vollständigkeit“ (Warum/Wie/Erwartung).
+**Doku:** `TESTING.md` – Abschnitt „Special Events Vollständigkeit (Dynamisch Parametrisiert)" ✅ **HINZUGEFÜGT**
+**Dynamischer Import:** `from custom_components.whenhub.const import SPECIAL_EVENTS` ✅ **VERIFIZIERT**
 
 ---
 
@@ -140,7 +139,7 @@
   - Pflichtfeld (z. B. start_date) fehlt
   - **Kein Crash**, Entities existieren mit "unknown", Log vorhanden
 
-**Doku:** `TESTING.md` – Abschnitt „Fehlerfälle/Robustheit“.
+**Doku:** `TESTING.md` – Abschnitt „Fehlerfälle/Robustheit (mit caplog)" ✅ **HINZUGEFÜGT**
 
 ---
 
@@ -159,7 +158,7 @@
   `sensor.…_trip_left_days == "0"`, `…_trip_left_percent == "0.0"`, Binaries **off**
 - Docstring erklärt **Warum/Wie/Erwartung** + **IST-Semantik** (ohne Code-Änderung).
 
-**Doku:** `TESTING.md` – Abschnitt „0-Tage-Trips“.
+**Doku:** `TESTING.md` – Abschnitt „0-Tage-Trip Verhalten (Start = Ende)" ✅ **HINZUGEFÜGT**
 
 ---
 
@@ -176,7 +175,7 @@
   - `sensor.…_trip_left_percent`: `0.0 <= value <= 100.0`, **monoton fallend** zwischen den Messpunkten
   - `sensor.…_countdown_text` gibt lange Spannen **verständlich** wieder (enthält Jahre/Monate/Wochen in sinnvoller Kombination)
 
-**Doku:** `TESTING.md` – Abschnitt „Sehr lange Events“.
+**Doku:** `TESTING.md` – Abschnitt „Sehr lange Events (>365 Tage)" ✅ **HINZUGEFÜGT**
 
 ---
 

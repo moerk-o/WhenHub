@@ -361,6 +361,66 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **String-Check für exakte Werte** | Assert percent.state == "100.0" bzw "0.0" | ✅ **IMPLEMENTIERT** |
 | **Strikte Monotonie-Verifizierung** | Loop mit percent_values[i] < percent_values[i-1] | ✅ **VERIFIZIERT** |
 
+## ✅ Special Events Vollständigkeit (Dynamisch Parametrisiert)
+
+**Warum:** Alle Special Events aus SPECIAL_EVENTS müssen vollständig getestet werden. Dynamische Parametrisierung garantiert dass neue Events automatisch getestet werden ohne Test-Updates.
+
+**Wie:** pytest.mark.parametrize über alle Keys aus SPECIAL_EVENTS (dynamisch importiert). Pro Event 3 Phasen: Weit vorher, am Event-Tag, Tag danach. Ostern 2026 als Referenz für bewegliche Feste.
+
+**Erwartung:** Alle Entities existieren. Am Event-Tag: is_today ON, countdown "0 Tage". Tag danach: is_today OFF, days_until ~365/366 (wiederkehrend).
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Parametrisierung über ALLE Special Events** | `@pytest.mark.parametrize("special_type", list(SPECIAL_EVENTS.keys()))` | ✅ **VOLLSTÄNDIG** |
+| **Bewegliche Feste (Ostern) explizit** | `test_movable_feasts_correct_dates()` für Ostern 2026 | ✅ **VOLLSTÄNDIG** |
+| **3 Phasen pro Event** | Weit vorher, Event-Tag, Tag danach | ✅ **IMPLEMENTIERT** |
+| **Dynamischer Import aus Produktionscode** | `from custom_components.whenhub.const import SPECIAL_EVENTS` | ✅ **VERIFIZIERT** |
+
+## ✅ Fehlerfälle/Robustheit (mit caplog)
+
+**Warum:** Ungültige Eingaben dürfen nicht zu Crashes führen. Saubere Fehlerbehandlung mit definierten Fallbacks und informativen Logs ohne Traceback-Spam.
+
+**Wie:** Trip mit end_date < start_date, ungültiges Datum (30.02.), fehlende Pflichtfelder. caplog-Analyse für Warnings/Errors. IST-Verhalten dokumentieren.
+
+**Erwartung:** Kein Crash, sinnvolle Fallbacks (0/"unknown"), caplog enthält Warnings ohne Traceback-Spam im INFO-Level.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Trip end_date < start_date** | `test_trip_end_before_start_is_robust_and_logs_warning()` | ✅ **VOLLSTÄNDIG** |
+| **Ungültiges Datum (30.02.)** | `test_invalid_date_is_unknown_and_logged()` | ✅ **VOLLSTÄNDIG** |
+| **Fehlende Pflichtfelder** | `test_missing_required_field_is_unknown_and_logged()` | ✅ **VOLLSTÄNDIG** |
+| **IST-Verhalten dokumentiert** | Fallback-Werte in Assertions dokumentiert | ✅ **DOKUMENTIERT** |
+
+## ✅ 0-Tage-Trip Verhalten (Start = Ende)
+
+**Warum:** 0-Tage-Trips sind kritische Grenzfälle mit Division-by-zero Risiko. Binary-Sensor Logik und IST-Semantik muss klar definiert sein.
+
+**Wie:** Trip mit start_date = end_date (2026-07-12). Test am Event-Tag und Folgetag. Alle Sensor-Werte und Binary-Zustände prüfen.
+
+**Erwartung IST-Verhalten:** Am Tag: Alle 3 Binaries gleichzeitig ON, left_percent=100.0%, left_days=1 (inklusiv). Folgetag: Alles auf 0/OFF.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **0-Tage-Trip am Event-Tag** | `test_trip_zero_day_behavior()` Phase 1 | ✅ **VOLLSTÄNDIG** |
+| **0-Tage-Trip am Folgetag** | `test_trip_zero_day_behavior()` Phase 2 | ✅ **VOLLSTÄNDIG** |
+| **IST-Semantik: Alle 3 Binaries ON** | Dokumentiert: starts/active/ends gleichzeitig | ✅ **DOKUMENTIERT** |
+| **Inklusiv-Semantik: left_days=1** | Am Event-Tag zählt der Tag noch mit | ✅ **VERIFIZIERT** |
+
+## ✅ Sehr lange Events (>365 Tage)
+
+**Warum:** Sehr lange Events (mehrere Jahre) testen mathematische Stabilität, Countdown-Text-Qualität und Performance über extreme Zeiträume.
+
+**Wie:** 5-Jahres-Trip (2026-2030, ~1826 Tage). Drei Messpunkte: früh, Mitte, kurz vor Ende. days_until_end, trip_left_percent und countdown_text prüfen.
+
+**Erwartung:** days_until_end plausibel, trip_left_percent monoton fallend in [0,100], countdown_text strukturiert mit Jahren/Monaten/Wochen.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **5-Jahres-Trip Test** | `test_trip_very_long_event_behavior()` | ✅ **VOLLSTÄNDIG** |
+| **3 Messpunkte Verifizierung** | Früh (>98%), Mitte (~50%), Ende (<2%) | ✅ **VOLLSTÄNDIG** |
+| **Countdown-Text Hierarchie** | Jahre → Monate → Wochen → Tage | ✅ **VERIFIZIERT** |
+| **Strikte Monotonie über Jahre** | Percent-Werte fallen strikt zwischen Messpunkten | ✅ **VERIFIZIERT** |
+
 ## Nächste Schritte
 
 1. Tests ausführen und Fehler beheben

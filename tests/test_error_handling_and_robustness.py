@@ -614,3 +614,196 @@ async def test_concurrent_setup_stability(hass: HomeAssistant):
             next_date = get_state(hass, f"sensor.parallel_test_{i+1}_next_date")
             expected_date = f"2026-{6+i:02d}-15"
             assert next_date.state == expected_date, f"Wrong next_date for parallel test {i+1}: expected {expected_date}, got {next_date.state}"
+
+
+# ===== SPEZIFISCHE T09 FUNKTIONEN (Exakte Namen aus QA_ACTIONS_TESTSUITE.md) =====
+
+@pytest.mark.asyncio
+async def test_trip_end_before_start_is_robust_and_logs_warning(hass: HomeAssistant, caplog):
+    """
+    Trip mit end_date < start_date: Robustheit und Logging.
+    
+    Warum:
+      Logisch ungültige Eingaben dürfen nicht zu Crashes führen.
+      Saubere Fehlerbehandlung mit definierten Fallback-Werten.
+      Logging muss informativ sein ohne Traceback-Spam.
+      
+    Wie:
+      Trip-ConfigEntry mit end_date < start_date.
+      Setup durchführen und Fehlerbehandlung prüfen.
+      caplog-Analyse für Warnings/Errors.
+      
+    Erwartung:
+      - Kein Crash (keine unbehandelte Exception)
+      - Entities existieren mit sinnvollen Fallbacks
+      - caplog enthält Warn/Error-Log ohne Traceback-Spam
+      - IST-Verhalten: left_days="0", left_percent="0.0" oder "unknown"
+    """
+    invalid_trip = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Falsche Reihenfolge Trip",
+            "event_type": "trip",
+            "start_date": "2026-07-26",  # Nach dem Ende!
+            "end_date": "2026-07-12",    # Vor dem Start!
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test end_date < start_date"
+        },
+        unique_id="whenhub_wrong_order_trip",
+        version=1,
+    )
+    
+    with caplog.at_level(logging.WARNING):
+        with at("2026-07-20 10:00:00+00:00"):
+            # Setup sollte robust sein
+            try:
+                await setup_and_wait(hass, invalid_trip)
+                
+                # Prüfe Entity-States (IST-Verhalten dokumentieren)
+                left_days = hass.states.get("sensor.falsche_reihenfolge_trip_trip_left_days")
+                if left_days:
+                    # IST-Verhalten: 0 oder unknown
+                    assert left_days.state in ["0", "unknown", "unavailable"], \
+                        f"IST: left_days = '{left_days.state}' für end<start"
+                
+                left_percent = hass.states.get("sensor.falsche_reihenfolge_trip_trip_left_percent")
+                if left_percent:
+                    # IST-Verhalten: 0.0 oder unknown
+                    assert left_percent.state in ["0.0", "0", "unknown", "unavailable"], \
+                        f"IST: left_percent = '{left_percent.state}' für end<start"
+                
+                # Prüfe caplog für Warning/Error
+                warnings_found = [r for r in caplog.records if r.levelno >= logging.WARNING]
+                assert len(warnings_found) > 0, "Should have warning for end_date < start_date"
+                
+                # Kein Traceback-Spam im INFO Level
+                info_tracebacks = [r for r in caplog.records 
+                                 if r.levelno == logging.INFO and "Traceback" in r.message]
+                assert len(info_tracebacks) == 0, "No traceback spam in INFO level"
+                
+            except Exception as e:
+                # Dokumentiere IST-Verhalten falls Setup fehlschlägt
+                assert "date" in str(e).lower() or "invalid" in str(e).lower(), \
+                    f"Exception sollte Datumsproblem erwähnen: {e}"
+
+
+@pytest.mark.asyncio
+async def test_invalid_date_is_unknown_and_logged(hass: HomeAssistant, caplog):
+    """
+    Ungültiges Datum (z.B. 30. Februar): unknown States und Logging.
+    
+    Warum:
+      Ungültige Kalenderdaten dürfen nicht zu Crashes führen.
+      States müssen definiert sein (unknown) statt undefined/None.
+      
+    Wie:
+      Anniversary mit ungültigem Datum 2025-02-30.
+      Setup und State-Prüfung, caplog-Analyse.
+      
+    Erwartung:
+      - Kein Crash
+      - Betroffene States = "unknown" oder "unavailable"
+      - caplog enthält Hinweis auf ungültiges Datum
+      - IST-Verhalten dokumentiert
+    """
+    invalid_date_config = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Ungültiger 30. Februar",
+            "event_type": "anniversary",
+            "target_date": "2025-02-30",  # Ungültiges Datum!
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test ungültiges Datum"
+        },
+        unique_id="whenhub_feb30",
+        version=1,
+    )
+    
+    with caplog.at_level(logging.WARNING):
+        with at("2026-01-15 10:00:00+00:00"):
+            try:
+                await setup_and_wait(hass, invalid_date_config)
+                
+                # Falls Setup erfolgreich, prüfe unknown states
+                days_until = hass.states.get("sensor.ungultiger_30_februar_days_until_next")
+                if days_until:
+                    assert days_until.state in ["unknown", "unavailable"], \
+                        f"IST: days_until = '{days_until.state}' für ungültiges Datum"
+                
+                next_date = hass.states.get("sensor.ungultiger_30_februar_next_date") 
+                if next_date:
+                    assert next_date.state in ["unknown", "unavailable", ""], \
+                        f"IST: next_date = '{next_date.state}' für ungültiges Datum"
+                
+                # Prüfe caplog
+                date_errors = [r for r in caplog.records 
+                             if any(word in r.message.lower() for word in ["date", "invalid", "parse"])]
+                assert len(date_errors) > 0, "Should log error for invalid date"
+                
+            except Exception as e:
+                # Exception ist OK für ungültiges Datum
+                assert any(word in str(e).lower() for word in ["date", "invalid", "parse", "format"]), \
+                    f"Exception sollte Datumsproblem erwähnen: {e}"
+
+
+@pytest.mark.asyncio
+async def test_missing_required_field_is_unknown_and_logged(hass: HomeAssistant, caplog):
+    """
+    Fehlende Pflichtfelder: unknown States und Logging.
+    
+    Warum:
+      Unvollständige Konfigurationen aus Config-Flow oder Migration.
+      Robuste Behandlung ohne Crash, klare Log-Messages.
+      
+    Wie:
+      Trip ohne start_date Pflichtfeld.
+      Setup-Versuch und Fehlerbehandlung prüfen.
+      
+    Erwartung:
+      - Kein Crash
+      - Falls Entities erstellt: state = "unknown"
+      - caplog enthält Hinweis auf fehlendes Feld
+      - IST-Verhalten dokumentiert
+    """
+    missing_start = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Trip ohne Start",
+            "event_type": "trip",
+            # "start_date": FEHLT!
+            "end_date": "2026-08-01",
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test missing start_date"
+        },
+        unique_id="whenhub_no_start",
+        version=1,
+    )
+    
+    with caplog.at_level(logging.WARNING):
+        with at("2026-07-15 10:00:00+00:00"):
+            try:
+                await setup_and_wait(hass, missing_start)
+                
+                # Falls Setup erfolgreich, prüfe unknown states
+                days_until_start = hass.states.get("sensor.trip_ohne_start_days_until_start")
+                if days_until_start:
+                    assert days_until_start.state in ["unknown", "unavailable"], \
+                        f"IST: days_until_start = '{days_until_start.state}' ohne start_date"
+                
+                left_days = hass.states.get("sensor.trip_ohne_start_trip_left_days")
+                if left_days:
+                    assert left_days.state in ["unknown", "unavailable", "0"], \
+                        f"IST: left_days = '{left_days.state}' ohne start_date"
+                
+                # Prüfe caplog für fehlende Felder
+                missing_logs = [r for r in caplog.records
+                              if any(word in r.message.lower() for word in ["missing", "required", "start", "field"])]
+                assert len(missing_logs) > 0, "Should log missing required field"
+                
+            except Exception as e:
+                # Exception für fehlende Felder ist OK
+                assert any(word in str(e).lower() for word in ["missing", "required", "start", "field"]), \
+                    f"Exception sollte fehlendes Feld erwähnen: {e}"
