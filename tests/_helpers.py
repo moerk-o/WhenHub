@@ -90,3 +90,23 @@ def with_time(dtstr: str):
     """
     with freeze_time(dtstr):
         yield
+
+# Alias for shorter usage
+at = with_time
+
+
+def get_state(hass: HomeAssistant, entity_id: str):
+    """
+    Alias für get() für kürzere Verwendung in Tests.
+    
+    Args:
+        hass: Home Assistant Instanz
+        entity_id: Die Entity ID
+        
+    Returns:
+        State object
+        
+    Raises:
+        AssertionError: Wenn Entity nicht existiert
+    """
+    return get(hass, entity_id)

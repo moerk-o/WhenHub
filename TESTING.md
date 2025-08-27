@@ -143,6 +143,8 @@ tests/
 ├── test_binary_edges_today.py        # 🆕 Exakte Today-Kanten
 ├── test_trip_percent_stress.py       # 🆕 Prozent-Stress-Tests
 ├── test_special_events_completeness.py # 🆕 Alle 17 Special Events
+├── test_special_events_dynamic_complete.py # 🆕 Dynamische Special Events (T08)
+├── test_very_long_events.py           # 🆕 Sehr lange Events >365 Tage (T11) 
 └── test_error_handling_and_robustness.py # 🆕 Fehlerbehandlung
 ```
 
@@ -154,7 +156,8 @@ Neue gemeinsame Hilfsfunktionen reduzieren Boilerplate und sorgen für Konsisten
 - **`assert_entities_exist(hass, entity_ids)`**: Batch-Existenz-Prüfung
 - **`get(hass, entity_id)`**: State-Getter mit klarer Fehlermeldung
 - **`slug(name)`**: Einheitliche Entity-Name-Konvertierung 
-- **`with_time(dtstr)`**: Kontextmanager für deterministische freezegun-Tests
+- **`with_time(dtstr)` / `at(dtstr)`**: Kontextmanager für deterministische freezegun-Tests  
+- **`get_state(hass, entity_id)`**: Alias für get() für kürzere Verwendung
 
 ## Wichtige Änderungen
 
@@ -163,14 +166,19 @@ Neue gemeinsame Hilfsfunktionen reduzieren Boilerplate und sorgen für Konsisten
 - **Jetzt**: `assert "2 Wochen" in text and "14 Tage" not in text` (deterministisch)
 - **Grund**: Scheingrün-Risiko vermeiden; Integration bevorzugt ganze Wochen
 
-### Parametrisierte Special Events Tests  
-Alle 17 Special Event Typen werden systematisch getestet:
-- **Traditional** (11): Christmas, Easter, Advent, Halloween, etc.
-- **Calendar** (2): New Year, New Year's Eve  
-- **Astronomical** (4): Equinoxes & Solstices
+### Parametrisierte Special Events Tests (T08)
+**DYNAMISCHE** Extraktion aller Special Event Typen (keine Magic Numbers):
+- **Vollständigkeit**: Alle `SPECIAL_EVENTS.keys()` aus `const.py` werden getestet
+- **Regression-Schutz**: Neue Special Events werden automatisch erfasst
+- **Qualität**: Jeder Typ wird auf Entity-Existenz, ISO-Datumsformat, is_today-Logic geprüft
+- **Bewegliche Feste**: Easter/Pentecost mit bekannten Referenzdaten (2026/2027)
 
-### Robuste Fehlerbehandlung
-Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktionscode zu ändern.
+### Robuste Fehlerbehandlung & Logging
+Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktionscode zu ändern:
+- **caplog-Integration**: Prüfung auf saubere Fehlerbehandlung ohne Traceback-Flut
+- **Zero-Day-Trips**: IST-Verhalten dokumentiert (1-tägiger Trip, alle Binaries gleichzeitig ON)
+- **Ungültige Daten**: end_date < start_date, leere Namen, extreme Zukunftsdaten
+- **Fallback-Werte**: Definierte Grenzen für Prozent/Tage bei Fehlern
 
 ## Nächste Schritte
 

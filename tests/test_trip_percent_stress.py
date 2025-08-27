@@ -207,29 +207,33 @@ async def test_trip_percent_precision(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio 
-async def test_trip_percent_before_during_after(hass: HomeAssistant, trip_config_entry):
+async def test_trip_percent_strict_monotonic_decrease(hass: HomeAssistant, trip_config_entry):
     """
     Warum:
-      Vollständiger Lebenszyklus-Test der Prozent-Berechnung.
+      Vollständiger Lebenszyklus-Test der Prozent-Berechnung mit strikter Monotonie.
+      Prozente dürfen NIEMALS ansteigen während eines Trips.
     Wie:
       Teste systematisch vor, am Start, während, am Ende, nach dem Trip.
     Erwartet:
-      - Monoton fallende Prozentwerte während des Trips
-      - Klare Grenzen bei 0% und 100%
+      - STRIKT monoton fallende Prozentwerte während des Trips (nie gleich, nur kleiner)
+      - Exakte Grenzen: 100.0% vor Start, 0.0% nach Ende
+      - Keine Rundungsartefakte die Monotonie brechen
     """
     test_dates = [
-        ("2026-07-11", 100.0, "vor Start"),      # Vor Start
-        ("2026-07-12", 100.0, "am Starttag"),    # Starttag  
-        ("2026-07-13", None, "Tag 2"),           # Tag 2 (< 100%)
-        ("2026-07-19", None, "Mitte"),           # Mitte
-        ("2026-07-25", None, "vorletzter Tag"),  # Vorletzter Tag (> 0%)
-        ("2026-07-26", None, "Endtag"),          # Endtag (> 0%, da inklusiv)
-        ("2026-07-27", 0.0, "nach Ende"),        # Nach Ende
+        ("2026-07-11", 100.0, "vor Start", False),      # Vor Start
+        ("2026-07-12", 100.0, "am Starttag", False),    # Starttag (noch 100%)
+        ("2026-07-13", None, "Tag 2", True),            # Tag 2 (< 100%, streng fallend)
+        ("2026-07-16", None, "Tag 5", True),            # Tag 5 (streng fallend)
+        ("2026-07-19", None, "Mitte", True),            # Mitte (streng fallend)
+        ("2026-07-22", None, "Tag 11", True),           # Tag 11 (streng fallend)
+        ("2026-07-25", None, "vorletzter Tag", True),   # Vorletzter Tag (> 0%)
+        ("2026-07-26", None, "Endtag", True),           # Endtag (≥ 0%, inklusiv)
+        ("2026-07-27", 0.0, "nach Ende", False),        # Nach Ende (exakt 0%)
     ]
     
-    previous_percent = 101.0  # Start mit unmöglichem Wert
+    previous_percent = 101.0  # Start mit unmöglichem Wert für ersten Check
     
-    for date_str, expected, description in test_dates:
+    for date_str, expected, description, must_decrease in test_dates:
         with with_time(f"{date_str} 10:00:00+00:00"):
             if date_str == "2026-07-11":
                 await setup_and_wait(hass, trip_config_entry)
@@ -240,15 +244,61 @@ async def test_trip_percent_before_during_after(hass: HomeAssistant, trip_config
             percent = get(hass, "sensor.danemark_2026_trip_left_percent")
             percent_val = float(percent.state)
             
-            # Prüfe erwartete Werte
+            # Prüfe erwartete exakte Werte
             if expected is not None:
-                assert percent_val == expected, f"{description}: Expected {expected}%, got {percent_val}%"
+                assert percent_val == expected, f"{description}: Expected exactly {expected}%, got {percent_val}%"
             
-            # Prüfe Monotonie (sollte niemals steigen)
+            # Prüfe STRIKTE Monotonie
             if previous_percent < 101.0:  # Skip ersten Durchlauf
-                assert percent_val <= previous_percent, f"{description}: Percent increased from {previous_percent}% to {percent_val}%"
+                if must_decrease:
+                    assert percent_val < previous_percent, f"{description}: Percent must strictly decrease from {previous_percent}% to {percent_val}%"
+                else:
+                    assert percent_val <= previous_percent, f"{description}: Percent must not increase from {previous_percent}% to {percent_val}%"
             
-            # Prüfe Grenzen
+            # Prüfe exakte Grenzen
             assert 0.0 <= percent_val <= 100.0, f"{description}: Percent out of bounds: {percent_val}%"
             
+            # Prüfe dass Werte sinnvoll gerundet sind (max 2 Dezimalstellen bei Rundung)
+            percent_str = str(percent_val)
+            if '.' in percent_str:
+                decimal_places = len(percent_str.split('.')[1])
+                assert decimal_places <= 2, f"{description}: Too many decimal places: {percent_val}"
+            
             previous_percent = percent_val
+
+
+@pytest.mark.asyncio
+async def test_trip_percent_boundaries_exact(hass: HomeAssistant, trip_config_entry):
+    """
+    Warum:
+      Exakte Grenzen-Tests: Prozente müssen EXAKT 0.0% oder 100.0% sein, niemals 99.99% oder 0.01%.
+    Wie:
+      Teste Vor-Start und Nach-Ende mit präzisen Erwartungen.
+    Erwartet:
+      - Vor Start: EXAKT 100.0% (nicht 99.x%)
+      - Nach Ende: EXAKT 0.0% (nicht 0.x%)
+      - Während Trip: Strikt zwischen 0.0 und 100.0 (exklusiv)
+    """
+    # Vor Trip-Start - MUSS exakt 100.0% sein
+    with with_time("2026-07-10 10:00:00+00:00"):  # 2 Tage vor Start
+        await setup_and_wait(hass, trip_config_entry)
+        
+        percent = get(hass, "sensor.danemark_2026_trip_left_percent")
+        assert float(percent.state) == 100.0, f"Before start must be exactly 100.0%, got {percent.state}"
+    
+    # Nach Trip-Ende - MUSS exakt 0.0% sein  
+    with with_time("2026-07-28 10:00:00+00:00"):  # 2 Tage nach Ende
+        await hass.config_entries.async_reload(trip_config_entry.entry_id)
+        await hass.async_block_till_done()
+        
+        percent = get(hass, "sensor.danemark_2026_trip_left_percent")
+        assert float(percent.state) == 0.0, f"After end must be exactly 0.0%, got {percent.state}"
+    
+    # Während Trip - MUSS zwischen 0 und 100 liegen (exklusiv)
+    with with_time("2026-07-19 10:00:00+00:00"):  # Mitte des Trips
+        await hass.config_entries.async_reload(trip_config_entry.entry_id)
+        await hass.async_block_till_done()
+        
+        percent = get(hass, "sensor.danemark_2026_trip_left_percent")
+        percent_val = float(percent.state)
+        assert 0.0 < percent_val < 100.0, f"During trip must be between 0 and 100 (exclusive), got {percent_val}"
