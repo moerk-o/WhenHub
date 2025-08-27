@@ -145,7 +145,7 @@ async def test_anniversary_feb29_year_calculation(hass: HomeAssistant, anniversa
 @pytest.mark.asyncio
 async def test_anniversary_leap_year_behavior(hass: HomeAssistant, anniversary_leap_year_entry):
     """
-    T03 - Vollständiges Leap-Year Handling für Anniversaries mit 29.02.
+    Vollständiges Leap-Year Handling für Anniversaries mit 29.02.
     
     Warum:
       Anniversaries am 29.02. müssen in Nicht-Schaltjahren auf 28.02. ausweichen.
@@ -168,65 +168,65 @@ async def test_anniversary_leap_year_behavior(hass: HomeAssistant, anniversary_l
     with at("2023-02-01 10:00:00+00:00"):  # Nicht-Schaltjahr 2023
         await setup_and_wait(hass, anniversary_leap_year_entry)
         
-        # T03: next_date muss auf 28.02. ausweichen (2023 ist kein Schaltjahr)
+        # next_date muss auf 28.02. ausweichen (2023 ist kein Schaltjahr)
         next_date = get_state(hass, "sensor.schaltjahr_anniversary_next_date")
-        assert next_date.state == "2023-02-28", f"T03: Expected 2023-02-28 in non-leap year, got {next_date.state}"
+        assert next_date.state == "2023-02-28", f"Expected 2023-02-28 in non-leap year, got {next_date.state}"
         
-        # T03: is_today muss OFF sein (nicht der Ersatztag)
+        # is_today muss OFF sein (nicht der Ersatztag)
         is_today = get_state(hass, "binary_sensor.schaltjahr_anniversary_is_today")
-        assert is_today.state == "off", f"T03: is_today should be OFF on Feb 1st, got {is_today.state}"
+        assert is_today.state == "off", f"is_today should be OFF on Feb 1st, got {is_today.state}"
         
-        # T03: days_until sollte plausibel sein (27 Tage vom 01.02 bis 28.02)
+        # days_until sollte plausibel sein (27 Tage vom 01.02 bis 28.02)
         days_until = get_state(hass, "sensor.schaltjahr_anniversary_days_until_next")
-        assert int(days_until.state) == 27, f"T03: Expected 27 days until, got {days_until.state}"
+        assert int(days_until.state) == 27, f"Expected 27 days until, got {days_until.state}"
     
     # Szenario 2: 2023-02-28 → is_today=ON, next_date=2023-02-28
     with at("2023-02-28 10:00:00+00:00"):  # Ersatztag für 29.02 in Nicht-Schaltjahr
         await hass.config_entries.async_reload(anniversary_leap_year_entry.entry_id)
         await hass.async_block_till_done()
         
-        # T03: is_today muss ON sein (28.02 ist der korrekte Ersatztag)
+        # is_today muss ON sein (28.02 ist der korrekte Ersatztag)
         is_today = get_state(hass, "binary_sensor.schaltjahr_anniversary_is_today")
-        assert is_today.state == "on", f"T03: is_today should be ON on replacement day Feb 28th, got {is_today.state}"
+        assert is_today.state == "on", f"is_today should be ON on replacement day Feb 28th, got {is_today.state}"
         
-        # T03: next_date sollte heute sein
+        # next_date sollte heute sein
         next_date = get_state(hass, "sensor.schaltjahr_anniversary_next_date")
-        assert next_date.state == "2023-02-28", f"T03: next_date should be today (2023-02-28), got {next_date.state}"
+        assert next_date.state == "2023-02-28", f"next_date should be today (2023-02-28), got {next_date.state}"
         
-        # T03: days_until sollte 0 sein
+        # days_until sollte 0 sein
         days_until = get_state(hass, "sensor.schaltjahr_anniversary_days_until_next")
-        assert int(days_until.state) == 0, f"T03: days_until should be 0 on anniversary day, got {days_until.state}"
+        assert int(days_until.state) == 0, f"days_until should be 0 on anniversary day, got {days_until.state}"
     
     # Szenario 3: 2024-02-01 → nächster Jahrestag soll 2024-02-29 sein
     with at("2024-02-01 10:00:00+00:00"):  # Schaltjahr 2024
         await hass.config_entries.async_reload(anniversary_leap_year_entry.entry_id)
         await hass.async_block_till_done()
         
-        # T03: next_date muss 29.02. sein (2024 ist Schaltjahr!)
+        # next_date muss 29.02. sein (2024 ist Schaltjahr!)
         next_date = get_state(hass, "sensor.schaltjahr_anniversary_next_date")
-        assert next_date.state == "2024-02-29", f"T03: Expected 2024-02-29 in leap year, got {next_date.state}"
+        assert next_date.state == "2024-02-29", f"Expected 2024-02-29 in leap year, got {next_date.state}"
         
-        # T03: is_today muss OFF sein (nicht der Jahrestag)
+        # is_today muss OFF sein (nicht der Jahrestag)
         is_today = get_state(hass, "binary_sensor.schaltjahr_anniversary_is_today")
-        assert is_today.state == "off", f"T03: is_today should be OFF on Feb 1st, got {is_today.state}"
+        assert is_today.state == "off", f"is_today should be OFF on Feb 1st, got {is_today.state}"
         
-        # T03: days_until sollte 28 sein (vom 01.02 bis 29.02)
+        # days_until sollte 28 sein (vom 01.02 bis 29.02)
         days_until = get_state(hass, "sensor.schaltjahr_anniversary_days_until_next")
-        assert int(days_until.state) == 28, f"T03: Expected 28 days until leap day, got {days_until.state}"
+        assert int(days_until.state) == 28, f"Expected 28 days until leap day, got {days_until.state}"
     
     # Szenario 4: 2024-02-29 → is_today=ON, next_date=2024-02-29
     with at("2024-02-29 10:00:00+00:00"):  # Echter Schaltjahr-Tag
         await hass.config_entries.async_reload(anniversary_leap_year_entry.entry_id)
         await hass.async_block_till_done()
         
-        # T03: is_today muss ON sein (echter 29.02 im Schaltjahr)
+        # is_today muss ON sein (echter 29.02 im Schaltjahr)
         is_today = get_state(hass, "binary_sensor.schaltjahr_anniversary_is_today")
-        assert is_today.state == "on", f"T03: is_today should be ON on real leap day, got {is_today.state}"
+        assert is_today.state == "on", f"is_today should be ON on real leap day, got {is_today.state}"
         
-        # T03: next_date sollte heute sein
+        # next_date sollte heute sein
         next_date = get_state(hass, "sensor.schaltjahr_anniversary_next_date")
-        assert next_date.state == "2024-02-29", f"T03: next_date should be today (2024-02-29), got {next_date.state}"
+        assert next_date.state == "2024-02-29", f"next_date should be today (2024-02-29), got {next_date.state}"
         
-        # T03: days_until sollte 0 sein
+        # days_until sollte 0 sein
         days_until = get_state(hass, "sensor.schaltjahr_anniversary_days_until_next")
-        assert int(days_until.state) == 0, f"T03: days_until should be 0 on leap day anniversary, got {days_until.state}"
+        assert int(days_until.state) == 0, f"days_until should be 0 on leap day anniversary, got {days_until.state}"

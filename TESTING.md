@@ -87,11 +87,11 @@ ruff check custom_components/whenhub
 - ✅ **NEU**: Anniversary nach Jahrestag (nächstes Jahr)
 - ✅ **NEU**: Special Events nach Feiertag (Jahreswechsel)
 
-### Schaltjahr-Handling (T03)
+### Schaltjahr-Handling
 - ✅ **NEU**: Anniversary am 29.02. in Schalt- und Nicht-Schaltjahren
 - ✅ **NEU**: Korrekte Datumsberechnung (29.02. → 28.02.)
 - ✅ **NEU**: is_today Logic am Ersatztag (28.02.)
-- ✅ **T03**: Vollständiges Leap-Year Handling mit allen 4 Freeze-Szenarien
+- ✅ **Vollständig**: Leap-Year Handling mit allen 4 Freeze-Szenarien getestet
 
 ### Trip-Prozent-Berechnungen
 - ✅ **NEU**: 1-Tages-Trips (100% → 0%)
@@ -193,7 +193,7 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | Kommentierung: Warum/Wie/Erwartung | Vollständiger Docstring mit T01-Referenz | ✅ **DOKUMENTIERT** |
 | TESTING.md Ergänzung | Abgedeckte Testfälle + SOLL-vs-IST Tabelle | ✅ **AKTUALISIERT** |
 
-## ✅ T03 Leap-Year Anniversaries
+## ✅ Leap-Year Anniversaries
 
 **Warum:** Anniversaries am 29. Februar sind ein kritischer Sonderfall - sie müssen in Nicht-Schaltjahren korrekt auf den 28. Februar ausweichen, aber in echten Schaltjahren wieder den 29. Februar erkennen.
 
@@ -208,7 +208,7 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **2024-02-01: next_date=2024-02-29, is_today=OFF** | `test_anniversary_leap_year_behavior()` Szenario 3 | ✅ **VOLLSTÄNDIG** |
 | **2024-02-29: is_today=ON, next_date=2024-02-29** | `test_anniversary_leap_year_behavior()` Szenario 4 | ✅ **VOLLSTÄNDIG** |
 | Fixture mit anniversary_leap_year_entry | `conftest.py` - Startdatum 29.02.2020 | ✅ **VERFÜGBAR** |
-| Kommentierung: Warum/Wie/Erwartung | Vollständiger Docstring mit T03-Details | ✅ **DOKUMENTIERT** |
+| Kommentierung: Warum/Wie/Erwartung | Vollständiger Docstring mit Leap-Year Details | ✅ **DOKUMENTIERT** |
 
 ## Nächste Schritte
 
