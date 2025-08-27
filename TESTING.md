@@ -301,6 +301,20 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Monotone Werteentwicklung über Jahre** | Strikte Assertions in allen Multi-Jahr Tests | ✅ **VERIFIZIERT** |
 | **Fixtures erstellt** | `trip_multi_year_entry`, `milestone_multi_decade_entry`, `anniversary_century_entry` | ✅ **VERFÜGBAR** |
 
+## ✅ Countdown-Text Exakte Formatierung
+
+**Warum:** Der Countdown-Text soll bei spezifischen Zeitspannen strukturierte Formate verwenden. Exakt 14 Tage sollten als "2 Wochen" dargestellt werden, nicht als "14 Tage". Dies verbessert die Nutzerfreundlichkeit und zeigt die hierarchische Zeitformatierung.
+
+**Wie:** Trip "Dänemark 2026" mit Start 2026-07-12. Test genau 14 Tage vorher (2026-06-28) mit strikten Assertions für "2 Wochen" Format und Ausschluss von "14 Tage".
+
+**Erwartung:** Strikte Formatierung ohne Toleranz - countdown_text enthält "2 Wochen" und enthält explizit NICHT "14 Tage".
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Exakt 14-Tage → "2 Wochen"** | `test_countdown_text_exact_two_weeks()` | ✅ **VOLLSTÄNDIG** |
+| **Strikte Formatierung ohne "14 Tage"** | Negative Assertion in test_countdown_text_exact.py | ✅ **VERIFIZIERT** |
+| **IST-Semantik dokumentiert** | Docstring mit Warum/Wie/Erwartung Struktur | ✅ **DOKUMENTIERT** |
+
 ## Nächste Schritte
 
 1. Tests ausführen und Fehler beheben
