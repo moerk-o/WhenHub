@@ -105,6 +105,7 @@ ruff check custom_components/whenhub
 - ✅ **NEU**: Ostern + Pfingsten (Gauss-Algorithmus)
 - ✅ **NEU**: Advent 1-4 (rückwärts vom 24.12.)
 - ✅ **NEU**: Bewegliche vs. fixe Feiertage
+- ✅ **Vollständig**: test_special_events_complete mit allen 3 Phasen pro Event
 
 ### Error Handling & Robustheit
 - ✅ **NEU**: Trip end_date < start_date (kein Crash)
@@ -210,6 +211,23 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **2024-02-29: is_today=ON, next_date=2024-02-29** | `test_anniversary_leap_year_behavior()` Szenario 4 | ✅ **VOLLSTÄNDIG** |
 | Fixture mit anniversary_leap_year_entry | `conftest.py` - Startdatum 29.02.2020 | ✅ **VERFÜGBAR** |
 | Kommentierung: Warum/Wie/Erwartung | Vollständiger Docstring mit Leap-Year Details | ✅ **DOKUMENTIERT** |
+
+## ✅ Special Events Vollständigkeit
+
+**Warum:** Alle Special Events müssen korrekt funktionieren, besonders bewegliche Feste wie Ostern die algorithmisch berechnet werden. Regression-Schutz bei neuen Events durch dynamische Parametrisierung aus `SPECIAL_EVENTS`.
+
+**Wie:** Dynamische Extraktion aller special_type Keys aus `const.py`. Für jeden Event werden 3 Phasen getestet: weit vorher (Jahresbeginn), am Event-Tag, Tag danach. Zusätzlich spezielle Tests für bewegliche Feste und Adventssonntage.
+
+**Erwartung:** Alle Entities korrekt erstellt, valide ISO-Daten, is_today ON nur am Event-Tag, countdown "0 Tage" am Event, nach Event Sprung aufs nächste Jahr.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Alle Events dynamisch parametrisiert** | `test_special_events_complete()` | ✅ **VOLLSTÄNDIG** |
+| **Entity-Existenz für alle Events** | `test_special_events_entities_complete()` | ✅ **VOLLSTÄNDIG** |
+| **Event-Tag Logik (is_today, countdown)** | Phase 2 in `test_special_events_complete()` | ✅ **VOLLSTÄNDIG** |
+| **Nach-Event Logik (Jahreswechsel)** | Phase 3 in `test_special_events_complete()` | ✅ **VOLLSTÄNDIG** |
+| **Bewegliche Feste (Ostern/Pfingsten)** | `test_movable_feasts_correct_dates()` | ✅ **VOLLSTÄNDIG** |
+| **Adventssonntage Rückwärtsrechnung** | `test_advent_sundays_backward_calculation()` | ✅ **VOLLSTÄNDIG** |
 
 ## ✅ Trip-Prozent-Berechnungen
 

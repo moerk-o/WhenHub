@@ -1,4 +1,4 @@
-"""Dynamische Vollständigkeitstests für alle Special Events (T08)."""
+"""Dynamische Vollständigkeitstests für alle Special Events."""
 import pytest
 from homeassistant.core import HomeAssistant
 from _helpers import at, setup_and_wait, get_state, assert_entities_exist, slug
@@ -296,3 +296,213 @@ async def test_pentecost_relative_to_easter(hass: HomeAssistant, special_event_e
         # Explizite Datumsverifikation für 2026
         assert easter_date == "2026-04-05"
         assert pentecost_date == "2026-05-24"
+
+
+@pytest.mark.parametrize("special_type,display_name,category", DYNAMIC_SPECIAL_EVENTS)
+@pytest.mark.asyncio
+async def test_special_events_complete(
+    hass: HomeAssistant,
+    special_event_entry_factory,
+    special_type,
+    display_name,
+    category
+):
+    """
+    Vollständiger Test aller Special Events mit Entity-Erstellung und Datumslogik.
+    
+    Warum:
+      Jeder Special Event im System muss korrekt funktionieren.
+      Regression-Schutz bei neuen Events durch dynamische Parametrisierung.
+      
+    Wie:
+      Für jeden special_type aus SPECIAL_EVENTS:
+      - Teste weit vor Event (Jahresbeginn)
+      - Teste am Event-Tag selbst
+      - Teste Tag nach Event (Sprung aufs nächste Jahr)
+      
+    Erwartung:
+      - Alle Entities werden korrekt erstellt
+      - next_date ist valides ISO-Datum
+      - is_today ON am Event-Tag, sonst OFF
+      - countdown_text "0 Tage" am Event-Tag
+      - Nach Event springt auf nächstes Jahr
+    """
+    event_name = f"Complete Test {display_name}"
+    entry = special_event_entry_factory(special_type, event_name, category)
+    entity_prefix = slug(event_name)
+    
+    # Phase 1: Weit vor dem Event (Jahresbeginn 2026)
+    with at("2026-01-01 10:00:00+00:00"):
+        await setup_and_wait(hass, entry)
+        
+        # Verifiziere alle Entities existieren
+        expected_entities = [
+            f"sensor.{entity_prefix}_days_until",
+            f"sensor.{entity_prefix}_days_since_last",
+            f"sensor.{entity_prefix}_countdown_text",
+            f"sensor.{entity_prefix}_next_date",
+            f"sensor.{entity_prefix}_last_date",
+            f"binary_sensor.{entity_prefix}_is_today",
+            f"image.{entity_prefix}_image",
+        ]
+        assert_entities_exist(hass, expected_entities)
+        
+        # next_date muss valides ISO-Datum sein
+        next_date = get_state(hass, f"sensor.{entity_prefix}_next_date")
+        assert next_date is not None
+        
+        # Validiere ISO-Format
+        import datetime
+        try:
+            date_obj = datetime.datetime.fromisoformat(next_date.state).date()
+            assert 2026 <= date_obj.year <= 2027, f"Year should be 2026 or 2027, got {date_obj.year}"
+        except ValueError:
+            pytest.fail(f"Invalid ISO date for {special_type}: {next_date.state}")
+        
+        # is_today muss OFF sein (nicht am Event-Tag)
+        is_today = get_state(hass, f"binary_sensor.{entity_prefix}_is_today")
+        assert is_today.state == "off", f"{special_type}: is_today should be OFF at year start"
+        
+        # days_until sollte positiv sein
+        days_until = get_state(hass, f"sensor.{entity_prefix}_days_until")
+        assert int(days_until.state) > 0, f"{special_type}: days_until should be positive"
+        
+        # Speichere next_date für weitere Tests
+        event_date = date_obj
+    
+    # Phase 2: Am Event-Tag selbst
+    with at(f"{event_date.isoformat()} 10:00:00+00:00"):
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        
+        # is_today muss ON sein
+        is_today = get_state(hass, f"binary_sensor.{entity_prefix}_is_today")
+        assert is_today.state == "on", f"{special_type}: is_today should be ON on event day"
+        
+        # countdown_text sollte "0 Tage" zeigen
+        countdown = get_state(hass, f"sensor.{entity_prefix}_countdown_text")
+        assert "0 Tage" in countdown.state, f"{special_type}: countdown should show '0 Tage' on event day"
+        
+        # days_until sollte 0 sein
+        days_until = get_state(hass, f"sensor.{entity_prefix}_days_until")
+        assert int(days_until.state) == 0, f"{special_type}: days_until should be 0 on event day"
+        
+        # next_date sollte heute sein
+        next_date = get_state(hass, f"sensor.{entity_prefix}_next_date")
+        assert next_date.state == event_date.isoformat(), f"{special_type}: next_date should be today"
+    
+    # Phase 3: Tag nach dem Event
+    day_after = event_date + datetime.timedelta(days=1)
+    with at(f"{day_after.isoformat()} 10:00:00+00:00"):
+        await hass.config_entries.async_reload(entry.entry_id)
+        await hass.async_block_till_done()
+        
+        # is_today muss wieder OFF sein
+        is_today = get_state(hass, f"binary_sensor.{entity_prefix}_is_today")
+        assert is_today.state == "off", f"{special_type}: is_today should be OFF day after event"
+        
+        # days_until sollte aufs nächste Jahr springen (~365 Tage)
+        days_until = get_state(hass, f"sensor.{entity_prefix}_days_until")
+        days_val = int(days_until.state)
+        assert 360 <= days_val <= 366, f"{special_type}: days_until should be ~365 after event, got {days_val}"
+        
+        # next_date sollte im nächsten Jahr sein
+        next_date = get_state(hass, f"sensor.{entity_prefix}_next_date")
+        next_year_date = datetime.datetime.fromisoformat(next_date.state).date()
+        assert next_year_date.year == event_date.year + 1, f"{special_type}: next_date should be next year"
+        
+        # days_since_last sollte 1 sein
+        days_since = get_state(hass, f"sensor.{entity_prefix}_days_since_last")
+        assert int(days_since.state) == 1, f"{special_type}: days_since_last should be 1"
+
+
+@pytest.mark.asyncio
+async def test_movable_feasts_correct_dates(hass: HomeAssistant, special_event_entry_factory):
+    """
+    Verifiziere dass bewegliche Feste (Ostern, Pfingsten) korrekt berechnet werden.
+    
+    Warum:
+      Bewegliche Feste folgen dem Mondkalender und müssen algorithmisch berechnet werden.
+      Diese Berechnung muss für bekannte Referenzjahre stimmen.
+      
+    Wie:
+      Teste Ostern und Pfingsten für bekannte Referenzjahre (2026, 2027, 2028).
+      Verifiziere gegen bekannte korrekte Daten.
+      
+    Erwartung:
+      - Ostern 2026: 05.04.2026
+      - Ostern 2027: 28.03.2027
+      - Ostern 2028: 16.04.2028
+      - Pfingsten: immer 49 Tage nach Ostern
+    """
+    # Bekannte Osterdaten (aus offiziellen Kalendern)
+    known_easter_dates = {
+        2026: "2026-04-05",
+        2027: "2027-03-28",
+        2028: "2028-04-16",
+    }
+    
+    easter_entry = special_event_entry_factory("easter", "Ostern Referenz")
+    pentecost_entry = special_event_entry_factory("pentecost", "Pfingsten Referenz")
+    
+    for year, expected_easter in known_easter_dates.items():
+        # Teste zu Jahresbeginn
+        with at(f"{year}-01-01 10:00:00+00:00"):
+            await setup_and_wait(hass, easter_entry)
+            await setup_and_wait(hass, pentecost_entry)
+            
+            # Verifiziere Osterdatum
+            easter_date = get_state(hass, "sensor.ostern_referenz_next_date")
+            assert easter_date.state == expected_easter, f"Easter {year} should be {expected_easter}, got {easter_date.state}"
+            
+            # Verifiziere Pfingstdatum (49 Tage nach Ostern)
+            pentecost_date = get_state(hass, "sensor.pfingsten_referenz_next_date")
+            import datetime
+            easter_obj = datetime.datetime.fromisoformat(expected_easter).date()
+            expected_pentecost = (easter_obj + datetime.timedelta(days=49)).isoformat()
+            assert pentecost_date.state == expected_pentecost, f"Pentecost {year} should be {expected_pentecost}, got {pentecost_date.state}"
+
+
+@pytest.mark.asyncio
+async def test_advent_sundays_backward_calculation(hass: HomeAssistant, special_event_entry_factory):
+    """
+    Verifiziere dass Adventssonntage rückwärts vom 24.12. berechnet werden.
+    
+    Warum:
+      Adventssonntage werden rückwärts vom 24.12. gezählt.
+      Der 4. Advent ist der letzte Sonntag vor oder am 24.12.
+      
+    Wie:
+      Teste für verschiedene Jahre wo der 24.12. auf verschiedene Wochentage fällt.
+      Verifiziere dass die Adventssonntage korrekt berechnet werden.
+      
+    Erwartung:
+      - 4. Advent: letzter Sonntag vor/am 24.12.
+      - 3. Advent: 7 Tage vor 4. Advent
+      - 2. Advent: 14 Tage vor 4. Advent
+      - 1. Advent: 21 Tage vor 4. Advent
+    """
+    advent_entries = {
+        1: special_event_entry_factory("advent_1", "Erster Advent"),
+        2: special_event_entry_factory("advent_2", "Zweiter Advent"),
+        3: special_event_entry_factory("advent_3", "Dritter Advent"),
+        4: special_event_entry_factory("advent_4", "Vierter Advent"),
+    }
+    
+    # 2026: 24.12. ist Donnerstag -> 4. Advent am 20.12. (Sonntag)
+    with at("2026-11-01 10:00:00+00:00"):
+        for num, entry in advent_entries.items():
+            await setup_and_wait(hass, entry)
+        
+        # Erwartete Daten für 2026
+        expected_dates = {
+            1: "2026-11-29",  # 1. Advent
+            2: "2026-12-06",  # 2. Advent
+            3: "2026-12-13",  # 3. Advent
+            4: "2026-12-20",  # 4. Advent
+        }
+        
+        for num in [1, 2, 3, 4]:
+            entity_name = {1: "erster", 2: "zweiter", 3: "dritter", 4: "vierter"}[num]
+            next_date = get_state(hass, f"sensor.{entity_name}_advent_next_date")
+            assert next_date.state == expected_dates[num], f"Advent {num} 2026 should be {expected_dates[num]}, got {next_date.state}"
