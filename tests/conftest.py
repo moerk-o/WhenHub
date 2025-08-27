@@ -115,6 +115,46 @@ def anniversary_leap_year_entry():
     )
 
 @pytest.fixture
+def trip_one_day_entry():
+    """Create a mock config entry for a 1-day trip."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Tagesausflug München",
+            "event_type": "trip",
+            "start_date": "2026-08-15",
+            "end_date": "2026-08-15",  # Same day = 1-day trip
+            "image_path": "",
+            "website_url": "",
+            "notes": "1-Tages-Trip Test"
+        },
+        unique_id="whenhub_tagesausflug_muenchen",
+        version=1,
+    )
+
+@pytest.fixture
+def trip_very_long_entry():
+    """Create a mock config entry for a very long trip (>2 years)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Weltreise 2026-2028",
+            "event_type": "trip",
+            "start_date": "2026-01-01",
+            "end_date": "2028-06-30",  # 2.5 years = 912 days
+            "image_path": "",
+            "website_url": "",
+            "notes": "Sehr langer Trip Test"
+        },
+        unique_id="whenhub_weltreise_2026_2028",
+        version=1,
+    )
+
+@pytest.fixture
 def special_event_entry_factory():
     """Factory for creating special event config entries."""
     from pytest_homeassistant_custom_component.common import MockConfigEntry

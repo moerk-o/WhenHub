@@ -98,6 +98,7 @@ ruff check custom_components/whenhub
 - ✅ **NEU**: Lange Trips >365 Tage (Prozent-Stabilität)
 - ✅ **NEU**: Grenzwert-Tests (niemals <0% oder >100%)
 - ✅ **NEU**: Monotone Abnahme während Trip-Verlauf
+- ✅ **Vollständig**: Prozent-Berechnung mit test_trip_percent_one_day und test_trip_percent_very_long
 
 ### Special Events Vollständigkeit
 - ✅ **NEU**: Alle 17 Events einzeln (Traditional, Calendar, Astronomical)
@@ -209,6 +210,23 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **2024-02-29: is_today=ON, next_date=2024-02-29** | `test_anniversary_leap_year_behavior()` Szenario 4 | ✅ **VOLLSTÄNDIG** |
 | Fixture mit anniversary_leap_year_entry | `conftest.py` - Startdatum 29.02.2020 | ✅ **VERFÜGBAR** |
 | Kommentierung: Warum/Wie/Erwartung | Vollständiger Docstring mit Leap-Year Details | ✅ **DOKUMENTIERT** |
+
+## ✅ Trip-Prozent-Berechnungen
+
+**Warum:** Die prozentuale Berechnung des verbleibenden Trip-Anteils (`_left_percent`) ist kritisch für die Benutzeroberfläche und muss besonders in Grenzfällen wie 1-Tages-Trips oder sehr langen Trips (>365 Tage) korrekt funktionieren.
+
+**Wie:** Spezielle Fixtures für 1-Tages-Trip (`trip_one_day_entry`) und sehr langen Trip (`trip_very_long_entry`, 912 Tage). Teste verschiedene Zeitpunkte mit Freeze-Time und verifiziere exakte Prozentwerte, monotone Abnahme und strikte Grenzen.
+
+**Erwartung:** Prozentwerte bleiben immer zwischen 0.0 und 100.0, fallen strikt monoton während der Reise, zeigen exakt 100% am Start und 0% nach Ende.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **1-Tages-Trip: 100% → 0%** | `test_trip_percent_one_day()` | ✅ **VOLLSTÄNDIG** |
+| **Sehr langer Trip (912 Tage)** | `test_trip_percent_very_long()` | ✅ **VOLLSTÄNDIG** |
+| **Exakte Grenzwerte (0.0/100.0)** | `test_trip_percent_boundaries_exact()` | ✅ **VOLLSTÄNDIG** |
+| **Strikte Monotonie** | `test_trip_percent_strict_monotonic_decrease()` | ✅ **VOLLSTÄNDIG** |
+| **Fixtures erstellt** | `conftest.py` - trip_one_day_entry, trip_very_long_entry | ✅ **VERFÜGBAR** |
+| **Helper-Funktionen aktualisiert** | Import-Konsistenz: at(), get_state() | ✅ **KORRIGIERT** |
 
 ## Nächste Schritte
 
