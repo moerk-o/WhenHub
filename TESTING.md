@@ -63,6 +63,7 @@ ruff check custom_components/whenhub
 - ✅ Milestone-Events: Countdown und Is-Today Sensoren
 - ✅ Anniversary-Events: Wiederkehrende Event-Sensoren
 - ✅ Special Events: Feiertags-Countdown (Weihnachten)
+- ✅ **NEU**: Alle 17 Special Event Typen vollständig (parametrisiert)
 
 ### Countdown-Logik
 - ✅ Trip: 18 Tage vor Start
@@ -71,27 +72,47 @@ ruff check custom_components/whenhub
 - ✅ Milestone: Am Zieldatum (0 Tage)
 - ✅ Anniversary: Nächstes Vorkommen berechnen
 - ✅ Special: Weihnachts-Countdown
+- ✅ **NEU**: Strikte 14-Tage-Erwartung ("2 Wochen", NICHT "14 Tage")
 
 ### Binary "Is Today" Sensoren
 - ✅ Trip: Start-Tag, End-Tag, Aktiv-Status
 - ✅ Milestone: Am Zieldatum true/false
 - ✅ Anniversary: Am Jahrestag
 - ✅ Special: Am Feiertag (Heiligabend)
+- ✅ **NEU**: Exakte Kanten-Tests für alle Event-Typen (Tag davor/danach)
 
-## Bekannte Lücken (für spätere Tests)
+### Nach-Event-Szenarien
+- ✅ **NEU**: Trip nach End-Datum (negative Tage, Binary=OFF)
+- ✅ **NEU**: Milestone nach Zieldatum (negative days_until)
+- ✅ **NEU**: Anniversary nach Jahrestag (nächstes Jahr)
+- ✅ **NEU**: Special Events nach Feiertag (Jahreswechsel)
 
-### Spezialfälle
-- ⏳ Schaltjahr-Handling (29. Februar)
-- ⏳ DST-Übergänge (Sommer-/Winterzeit)
-- ⏳ Vergangene Events (negative Tage)
-- ⏳ Ostern-Berechnung (Gauss-Algorithmus)
-- ⏳ Advent-Berechnung
+### Schaltjahr-Handling
+- ✅ **NEU**: Anniversary am 29.02. in Schalt- und Nicht-Schaltjahren
+- ✅ **NEU**: Korrekte Datumsberechnung (29.02. → 28.02.)
+- ✅ **NEU**: is_today Logic am Ersatztag (28.02.)
 
-### Edge Cases
-- ⏳ Sehr lange Trips (> 365 Tage)
-- ⏳ Gleicher Start- und End-Tag
-- ⏳ Ungültige Datumsangaben
-- ⏳ Fehlende Pflichtfelder
+### Trip-Prozent-Berechnungen
+- ✅ **NEU**: 1-Tages-Trips (100% → 0%)
+- ✅ **NEU**: Lange Trips >365 Tage (Prozent-Stabilität)
+- ✅ **NEU**: Grenzwert-Tests (niemals <0% oder >100%)
+- ✅ **NEU**: Monotone Abnahme während Trip-Verlauf
+
+### Special Events Vollständigkeit
+- ✅ **NEU**: Alle 17 Events einzeln (Traditional, Calendar, Astronomical)
+- ✅ **NEU**: Ostern + Pfingsten (Gauss-Algorithmus)
+- ✅ **NEU**: Advent 1-4 (rückwärts vom 24.12.)
+- ✅ **NEU**: Bewegliche vs. fixe Feiertage
+
+### Error Handling & Robustheit
+- ✅ **NEU**: Trip end_date < start_date (kein Crash)
+- ✅ **NEU**: Zero-Day-Trips (start_date == end_date)
+- ✅ **NEU**: Vergangene Milestones (negative Tage)
+- ✅ **NEU**: Leere Event-Namen (Fallback-Verhalten)
+- ✅ **NEU**: Ungültige special_type (definierte Fehlerbehandlung)
+- ✅ **NEU**: Extreme Zukunftsdaten (Jahr 2099+)
+
+## Verbleibende Lücken
 
 ### Integration Tests
 - ⏳ Config Flow UI Tests
@@ -104,15 +125,52 @@ ruff check custom_components/whenhub
 - ⏳ Update-Koordination
 - ⏳ Memory Leaks bei Reload
 
+### DST & Zeitzonen
+- ⏳ DST-Übergänge (Sommer-/Winterzeit)
+- ⏳ Timezone-Handling (Integration arbeitet nur mit Daten)
+
 ## Test-Struktur
 
 ```
 tests/
-├── conftest.py              # Fixtures für alle Tests
-├── test_manifest_and_setup.py  # Setup & Entity-Erstellung
-├── test_sensor_countdown.py    # Countdown-Berechnungen
-└── test_binary_today.py        # Binary Sensor Tests
+├── _helpers.py                        # 🆕 Gemeinsame Test-Utilities
+├── conftest.py                        # Fixtures (erweitert mit Factory)
+├── test_manifest_and_setup.py        # Setup & Entity-Erstellung
+├── test_sensor_countdown.py          # Countdown-Berechnungen (+ strikte "2 Wochen")
+├── test_binary_today.py              # Binary Sensor Tests
+├── test_after_event_and_negative.py  # 🆕 Nach-Event-Szenarien
+├── test_leap_year_anniversary.py     # 🆕 Schaltjahr 29.02. Tests
+├── test_binary_edges_today.py        # 🆕 Exakte Today-Kanten
+├── test_trip_percent_stress.py       # 🆕 Prozent-Stress-Tests
+├── test_special_events_completeness.py # 🆕 Alle 17 Special Events
+└── test_error_handling_and_robustness.py # 🆕 Fehlerbehandlung
 ```
+
+## Test-Utilities (_helpers.py)
+
+Neue gemeinsame Hilfsfunktionen reduzieren Boilerplate und sorgen für Konsistenz:
+
+- **`setup_and_wait(hass, entry)`**: Entry hinzufügen + Setup + block_till_done
+- **`assert_entities_exist(hass, entity_ids)`**: Batch-Existenz-Prüfung
+- **`get(hass, entity_id)`**: State-Getter mit klarer Fehlermeldung
+- **`slug(name)`**: Einheitliche Entity-Name-Konvertierung 
+- **`with_time(dtstr)`**: Kontextmanager für deterministische freezegun-Tests
+
+## Wichtige Änderungen
+
+### Strikte Countdown-Text-Erwartung
+- **Vorher**: `assert "18 Tage" in text or "2 Wochen" in text` (Toleranz)
+- **Jetzt**: `assert "2 Wochen" in text and "14 Tage" not in text` (deterministisch)
+- **Grund**: Scheingrün-Risiko vermeiden; Integration bevorzugt ganze Wochen
+
+### Parametrisierte Special Events Tests  
+Alle 17 Special Event Typen werden systematisch getestet:
+- **Traditional** (11): Christmas, Easter, Advent, Halloween, etc.
+- **Calendar** (2): New Year, New Year's Eve  
+- **Astronomical** (4): Equinoxes & Solstices
+
+### Robuste Fehlerbehandlung
+Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktionscode zu ändern.
 
 ## Nächste Schritte
 

@@ -94,3 +94,48 @@ def special_config_entry():
         unique_id="whenhub_weihnachts_countdown",
         version=1,
     )
+
+@pytest.fixture
+def anniversary_leap_year_entry():
+    """Create a mock config entry for an anniversary on Feb 29th."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Schaltjahr Anniversary",
+            "event_type": "anniversary",
+            "target_date": "2020-02-29",  # Schaltjahr - 29. Februar
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test für Schaltjahr-Handling"
+        },
+        unique_id="whenhub_schaltjahr_anniversary",
+        version=1,
+    )
+
+@pytest.fixture
+def special_event_entry_factory():
+    """Factory for creating special event config entries."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    def _create_entry(special_type: str, event_name: str = None, category: str = "traditional"):
+        if not event_name:
+            event_name = f"Test {special_type}"
+        
+        return MockConfigEntry(
+            domain="whenhub",
+            data={
+                "event_name": event_name,
+                "event_type": "special",
+                "special_type": special_type,
+                "special_category": category,
+                "image_path": "",
+                "website_url": "",
+                "notes": f"Test für {special_type}"
+            },
+            unique_id=f"whenhub_test_{special_type}",
+            version=1,
+        )
+    
+    return _create_entry

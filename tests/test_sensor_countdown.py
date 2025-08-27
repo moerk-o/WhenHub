@@ -2,6 +2,7 @@
 import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
+from _helpers import with_time, get
 
 @pytest.mark.asyncio
 async def test_trip_countdown_future_18_days(hass: HomeAssistant, trip_config_entry):
@@ -115,3 +116,24 @@ async def test_special_christmas_countdown(hass: HomeAssistant, special_config_e
         next_date = hass.states.get("sensor.weihnachts_countdown_next_date")
         assert next_date is not None
         assert next_date.state == "2026-12-24"
+
+@pytest.mark.asyncio
+async def test_countdown_text_exact_two_weeks(hass: HomeAssistant, trip_config_entry):
+    """
+    Warum:
+      Die Integration gibt ganze Wochen bevorzugt aus; 14 Tage -> '2 Wochen'.
+      Vorherige Toleranz ('14 Tage' ODER '2 Wochen') birgt Scheingrün-Risiko.
+    Wie:
+      Freeze auf exakt 14 Tage vor Start; Setup; Text prüfen.
+    Erwartung:
+      - countdown_text enthält '2 Wochen' (und NICHT '14 Tage').
+    """
+    with with_time("2026-06-28 10:00:00+00:00"):  # Exakt 14 Tage vor 2026-07-12
+        trip_config_entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(trip_config_entry.entry_id)
+        await hass.async_block_till_done()
+        
+        # Countdown-Text muss "2 Wochen" zeigen, NICHT "14 Tage"
+        text = get(hass, "sensor.danemark_2026_countdown_text").state
+        assert "2 Wochen" in text, f"Expected '2 Wochen' but got: {text}"
+        assert "14 Tage" not in text, f"Should not contain '14 Tage' but got: {text}"
