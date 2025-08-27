@@ -331,6 +331,21 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Special Tag danach: Sprung nächstes Jahr** | `test_special_day_after_jumps_to_next_year()` | ✅ **VOLLSTÄNDIG** |
 | **Trennung einmalig vs. wiederkehrend** | Unterschiedliche Erwartungen in Tests dokumentiert | ✅ **VERIFIZIERT** |
 
+## ✅ Schaltjahr-Jahrestage (29. Februar Behandlung)
+
+**Warum:** Anniversaries mit 29.02. Startdatum sind kritische Grenzfälle für Datumslogik. Sie müssen in Nicht-Schaltjahren korrekt auf 28.02. ausweichen, aber in echten Schaltjahren wieder den 29.02. verwenden. Dies erfordert korrekte Schaltjahr-Erkennung und Ausweichlogik.
+
+**Wie:** Anniversary mit Startdatum 2020-02-29. Tests in Nicht-Schaltjahr 2023 (Ausweichen auf 28.02.) und Schaltjahr 2024 (echter 29.02.). Strikte Prüfung von next_date und is_today Binary-Zuständen.
+
+**Erwartung:** Nicht-Schaltjahr: next_date = 28.02., is_today ON am 28.02. Schaltjahr: next_date = 29.02., is_today ON am 29.02. Keine Datums-Exceptions.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **29.02. in Nicht-Schaltjahr → 28.02. Ausweichen** | `test_anniversary_2902_next_date_in_non_leap_year()` | ✅ **VOLLSTÄNDIG** |
+| **29.02. in Schaltjahr → echter 29.02.** | `test_anniversary_2902_next_date_in_leap_year()` | ✅ **VOLLSTÄNDIG** |
+| **Korrekte Schaltjahr-Erkennung** | Tests 2023 (kein Schaltjahr) vs 2024 (Schaltjahr) | ✅ **VERIFIZIERT** |
+| **Fixture anniversary_2902_config_entry** | Startdatum 2020-02-29 in test_anniversary_leap_year.py | ✅ **VERFÜGBAR** |
+
 ## Nächste Schritte
 
 1. Tests ausführen und Fehler beheben
