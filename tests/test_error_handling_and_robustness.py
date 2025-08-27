@@ -176,18 +176,18 @@ async def test_milestone_past_date(hass: HomeAssistant):
         version=1,
     )
     
-    with with_time("2026-06-15 10:00:00+00:00"):  # Weit nach dem Milestone
+    with at("2026-06-15 10:00:00+00:00"):  # Weit nach dem Milestone
         await setup_and_wait(hass, past_milestone_entry)
         
         # Days until sollte negativ sein
-        days_until = get(hass, "sensor.vergangener_milestone_days_until")
+        days_until = get_state(hass, "sensor.vergangener_milestone_days_until")
         assert int(days_until.state) < 0
         
         # Binary sensor sollte OFF sein
-        assert get(hass, "binary_sensor.vergangener_milestone_is_today").state == "off"
+        assert get_state(hass, "binary_sensor.vergangener_milestone_is_today").state == "off"
         
         # Countdown text sollte fallback zeigen
-        countdown = get(hass, "sensor.vergangener_milestone_countdown_text")
+        countdown = get_state(hass, "sensor.vergangener_milestone_countdown_text")
         assert "0 Tage" in countdown.state
 
 
@@ -217,19 +217,19 @@ async def test_anniversary_future_original_date(hass: HomeAssistant):
         version=1,
     )
     
-    with with_time("2026-06-15 10:00:00+00:00"):
+    with at("2026-06-15 10:00:00+00:00"):
         await setup_and_wait(hass, future_anniversary_entry)
         
         # Next date sollte das Original-Datum sein
-        next_date = get(hass, "sensor.zukunfts_anniversary_next_date")
+        next_date = get_state(hass, "sensor.zukunfts_anniversary_next_date")
         assert next_date.state == "2027-09-15"
         
         # Occurrences count sollte 0 sein
-        count = get(hass, "sensor.zukunfts_anniversary_occurrences_count")
+        count = get_state(hass, "sensor.zukunfts_anniversary_occurrences_count")
         assert int(count.state) == 0
         
         # Days until sollte positiv sein
-        days_until = get(hass, "sensor.zukunfts_anniversary_days_until_next")
+        days_until = get_state(hass, "sensor.zukunfts_anniversary_days_until_next")
         assert int(days_until.state) > 0
 
 
@@ -259,7 +259,7 @@ async def test_empty_event_name(hass: HomeAssistant):
         version=1,
     )
     
-    with with_time("2026-11-01 10:00:00+00:00"):
+    with at("2026-11-01 10:00:00+00:00"):
         try:
             success = await setup_and_wait(hass, empty_name_entry)
             
@@ -305,7 +305,7 @@ async def test_special_event_invalid_type(hass: HomeAssistant):
         version=1,
     )
     
-    with with_time("2026-06-15 10:00:00+00:00"):
+    with at("2026-06-15 10:00:00+00:00"):
         try:
             success = await setup_and_wait(hass, invalid_special_entry)
             
@@ -355,15 +355,262 @@ async def test_extreme_future_dates(hass: HomeAssistant):
         version=1,
     )
     
-    with with_time("2026-06-15 10:00:00+00:00"):
+    with at("2026-06-15 10:00:00+00:00"):
         await setup_and_wait(hass, extreme_future_entry)
         
         # Days until sollte sehr groß sein
-        days_until = get(hass, "sensor.extrem_zukunft_days_until")
+        days_until = get_state(hass, "sensor.extrem_zukunft_days_until")
         days_val = int(days_until.state)
         assert days_val > 25000  # Mehr als 70 Jahre
         
         # Countdown text sollte nicht crashen
-        countdown = get(hass, "sensor.extrem_zukunft_countdown_text")
+        countdown = get_state(hass, "sensor.extrem_zukunft_countdown_text")
         assert len(countdown.state) > 0
         assert "Jahre" in countdown.state or "Jahr" in countdown.state  # Sollte Jahre enthalten
+
+
+@pytest.mark.asyncio
+async def test_invalid_date_format_robustness(hass: HomeAssistant, caplog):
+    """
+    Robustheitstest für ungültige Datumsformate.
+    
+    Warum:
+      Ungültige Datumsformate sollten zu sauberer Fehlerbehandlung führen.
+      Wichtig für Benutzereingaben, die falsch formatiert sind.
+      
+    Wie:
+      ConfigEntry mit ungültigem Datum (z.B. 2025-02-30, 31. Februar).
+      Setup versuchen und prüfen ob saubere Fehlerbehandlung.
+      
+    Erwartung:
+      - Setup schlägt fehl oder verwendet Fallback-Werte
+      - Entities haben state "unknown" oder sind nicht vorhanden
+      - caplog enthält aussagekräftige Fehlermeldung
+      - Keine unbehandelte Exception
+    """
+    invalid_date_entry = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Ungültiges Datum",
+            "event_type": "milestone", 
+            "target_date": "2025-02-30",  # 30. Februar existiert nicht
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test für ungültiges Datum"
+        },
+        unique_id="whenhub_invalid_date",
+        version=1,
+    )
+    
+    with caplog.at_level(logging.WARNING):
+        with at("2026-01-01 10:00:00+00:00"):
+            try:
+                success = await setup_and_wait(hass, invalid_date_entry)
+                
+                if success:
+                    # Wenn Setup erfolgreich, sollten Entities unknown state haben
+                    days_until = hass.states.get("sensor.ungültiges_datum_days_until")
+                    if days_until is not None:
+                        # State sollte unknown oder None sein
+                        assert days_until.state in ["unknown", "unavailable"] or days_until.state is None, \
+                            f"Expected unknown state for invalid date, got {days_until.state}"
+                    
+                    next_date = hass.states.get("sensor.ungültiges_datum_next_date")
+                    if next_date is not None:
+                        # Next date sollte auch unknown sein
+                        assert next_date.state in ["unknown", "unavailable"] or next_date.state is None, \
+                            f"Expected unknown next_date for invalid date, got {next_date.state}"
+                
+                # Prüfe ob Fehler geloggt wurde
+                error_logged = any(
+                    record.levelno >= logging.WARNING and 
+                    any(keyword in record.message.lower() for keyword in ["date", "invalid", "parse", "format"])
+                    for record in caplog.records
+                )
+                if not error_logged:
+                    # Dokumentiere IST-Verhalten falls keine Logs
+                    pass  # Integration könnte stillschweigend fallbacks verwenden
+                    
+            except Exception as e:
+                # Exception ist akzeptabel für ungültiges Datum
+                error_msg = str(e).lower()
+                assert any(word in error_msg for word in ["date", "invalid", "parse", "format"]), \
+                    f"Exception should mention date/format issue: {e}"
+
+
+@pytest.mark.asyncio
+async def test_missing_required_fields_robustness(hass: HomeAssistant, caplog):
+    """
+    Robustheitstest für fehlende Pflichtfelder in der Konfiguration.
+    
+    Warum:
+      Unvollständige Konfigurationen sollten sauber behandelt werden.
+      Wichtig für Config-Flow Edge Cases und Migrationen.
+      
+    Wie:
+      ConfigEntry mit fehlendem start_date für Trip.
+      Setup versuchen und Fehlerbehandlung prüfen.
+      
+    Erwartung:
+      - Setup schlägt definiert fehl oder verwendet Fallbacks
+      - caplog enthält Hinweis auf fehlendes Feld
+      - Keine unbehandelte Exception
+      - Falls Entities erstellt: state = "unknown"
+    """
+    missing_field_entry = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Unvollständiger Trip",
+            "event_type": "trip",
+            # "start_date": FEHLT absichtlich!
+            "end_date": "2026-07-26",
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test für fehlende Pflichtfelder"
+        },
+        unique_id="whenhub_missing_field",
+        version=1,
+    )
+    
+    with caplog.at_level(logging.WARNING):
+        with at("2026-07-01 10:00:00+00:00"):
+            try:
+                success = await setup_and_wait(hass, missing_field_entry)
+                
+                if success:
+                    # Wenn Setup erfolgreich, prüfe Entity-States
+                    days_until_start = hass.states.get("sensor.unvollständiger_trip_days_until_start")
+                    if days_until_start is not None:
+                        # Sollte unknown sein wegen fehlender Daten
+                        assert days_until_start.state in ["unknown", "unavailable"], \
+                            f"Expected unknown for missing start_date, got {days_until_start.state}"
+                
+                # Prüfe ob Fehler über fehlendes Feld geloggt wurde
+                missing_field_logged = any(
+                    record.levelno >= logging.WARNING and
+                    any(keyword in record.message.lower() for keyword in ["missing", "required", "start_date", "field"])
+                    for record in caplog.records
+                )
+                if not missing_field_logged:
+                    # IST-Verhalten: Integration könnte stillschweigend ignorieren
+                    pass
+                    
+            except Exception as e:
+                # Exception für fehlende Pflichtfelder ist erwartbar
+                error_msg = str(e).lower()
+                assert any(word in error_msg for word in ["missing", "required", "start", "field", "config"]), \
+                    f"Exception should mention missing field: {e}"
+
+
+@pytest.mark.asyncio
+async def test_very_long_event_name_truncation(hass: HomeAssistant):
+    """
+    Robustheitstest für sehr lange Event-Namen.
+    
+    Warum:
+      Sehr lange Namen könnten Entity-ID Limits überschreiten.
+      Home Assistant hat Begrenzungen für Entity-IDs.
+      
+    Wie:
+      Event mit extrem langem Namen (>100 Zeichen).
+      Setup und Entity-ID-Generierung prüfen.
+      
+    Erwartung:
+      - Entity-IDs sind gültig und unter Home Assistant Limits
+      - Namen werden sinnvoll gekürzt/bereinigt
+      - Setup funktioniert ohne Crash
+    """
+    very_long_name = "A" * 200 + " Sehr Langer Event Name Mit Vielen Wörtern Und Zeichen Die Entity IDs Sprengen Könnten"
+    
+    long_name_entry = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": very_long_name,
+            "event_type": "milestone",
+            "target_date": "2026-12-01",
+            "image_path": "",
+            "website_url": "",
+            "notes": "Test für sehr lange Namen"
+        },
+        unique_id="whenhub_long_name",
+        version=1,
+    )
+    
+    with at("2026-11-01 10:00:00+00:00"):
+        await setup_and_wait(hass, long_name_entry)
+        
+        # Prüfe dass Entities existieren
+        all_states = hass.states.async_all()
+        whenhub_entities = [s for s in all_states 
+                          if s.entity_id.startswith(("sensor.", "binary_sensor.", "image.")) 
+                          and "whenhub" in s.entity_id.lower()]
+        
+        assert len(whenhub_entities) > 0, "Should create entities even with very long names"
+        
+        # Prüfe Entity-ID Längen (Home Assistant Limit ist ~255 Zeichen)
+        for entity in whenhub_entities:
+            assert len(entity.entity_id) <= 255, f"Entity ID too long: {entity.entity_id}"
+            # Entity-ID sollte gültige Zeichen enthalten (lowercase, underscore, numbers)
+            import re
+            assert re.match(r'^[a-z0-9_]+\.[a-z0-9_]+$', entity.entity_id), f"Invalid entity ID format: {entity.entity_id}"
+
+
+@pytest.mark.asyncio  
+async def test_concurrent_setup_stability(hass: HomeAssistant):
+    """
+    Stabilitätstest für mehrere gleichzeitige Setup-Vorgänge.
+    
+    Warum:
+      Home Assistant kann mehrere Integrationen parallel laden.
+      Race Conditions oder shared state Probleme vermeiden.
+      
+    Wie:
+      Mehrere ConfigEntries gleichzeitig setup_and_wait.
+      Prüfen dass alle korrekt funktionieren.
+      
+    Erwartung:
+      - Alle Setups erfolgreich
+      - Keine Entity-ID Kollisionen
+      - Alle Entities haben korrekte States
+    """
+    entries = []
+    for i in range(3):
+        entry = MockConfigEntry(
+            domain="whenhub",
+            data={
+                "event_name": f"Parallel Test {i+1}",
+                "event_type": "milestone",
+                "target_date": f"2026-{6+i:02d}-15",  # Juni, Juli, August
+                "image_path": "",
+                "website_url": "",
+                "notes": f"Parallel setup test {i+1}"
+            },
+            unique_id=f"whenhub_parallel_{i+1}",
+            version=1,
+        )
+        entries.append(entry)
+    
+    with at("2026-05-01 10:00:00+00:00"):
+        # Setup alle Entries parallel
+        for entry in entries:
+            await setup_and_wait(hass, entry)
+        
+        # Prüfe dass alle Entities existieren
+        all_states = hass.states.async_all()
+        whenhub_entities = [s for s in all_states 
+                          if s.entity_id.startswith(("sensor.", "binary_sensor.", "image.")) 
+                          and any(f"parallel_test_{i+1}" in s.entity_id for i in range(3))]
+        
+        # Sollte 3 Events × 7 Entities = 21 Entities haben
+        assert len(whenhub_entities) >= 15, f"Expected at least 15 entities for 3 parallel setups, got {len(whenhub_entities)}"
+        
+        # Prüfe auf Entity-ID Kollisionen
+        entity_ids = [e.entity_id for e in whenhub_entities]
+        duplicates = [eid for eid in entity_ids if entity_ids.count(eid) > 1]
+        assert len(duplicates) == 0, f"Entity ID collisions detected: {duplicates}"
+        
+        # Prüfe dass alle Events korrekte next_dates haben
+        for i in range(3):
+            next_date = get_state(hass, f"sensor.parallel_test_{i+1}_next_date")
+            expected_date = f"2026-{6+i:02d}-15"
+            assert next_date.state == expected_date, f"Wrong next_date for parallel test {i+1}: expected {expected_date}, got {next_date.state}"

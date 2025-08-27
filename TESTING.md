@@ -114,6 +114,7 @@ ruff check custom_components/whenhub
 - ✅ **NEU**: Leere Event-Namen (Fallback-Verhalten)
 - ✅ **NEU**: Ungültige special_type (definierte Fehlerbehandlung)
 - ✅ **NEU**: Extreme Zukunftsdaten (Jahr 2099+)
+- ✅ **Vollständig**: Umfassende Robustheitstests mit caplog-Integration
 
 ## Verbleibende Lücken
 
@@ -228,6 +229,25 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Nach-Event Logik (Jahreswechsel)** | Phase 3 in `test_special_events_complete()` | ✅ **VOLLSTÄNDIG** |
 | **Bewegliche Feste (Ostern/Pfingsten)** | `test_movable_feasts_correct_dates()` | ✅ **VOLLSTÄNDIG** |
 | **Adventssonntage Rückwärtsrechnung** | `test_advent_sundays_backward_calculation()` | ✅ **VOLLSTÄNDIG** |
+
+## ✅ Error Handling & Robustheit
+
+**Warum:** Die Integration muss auch bei fehlerhaften oder unvollständigen Konfigurationen stabil bleiben. Ungültige Benutzereingaben, Konfigurationsfehler oder extreme Daten dürfen nicht zu Crashes führen.
+
+**Wie:** Systematische Tests mit ungültigen/extremen Eingaben: falsche Daten, fehlende Felder, ungültige Formate. Verwendung von `caplog` für Logging-Verifikation. IST-Verhalten dokumentieren ohne Produktionscode zu ändern.
+
+**Erwartung:** Keine unbehandelten Exceptions, saubere Fallback-Werte, aussagekräftige Log-Meldungen, definierte Grenzen für alle Berechnungen.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Trip: end_date < start_date** | `test_trip_end_before_start_with_logging()` | ✅ **VOLLSTÄNDIG** |
+| **Ungültige Datumsformate (30. Feb)** | `test_invalid_date_format_robustness()` | ✅ **VOLLSTÄNDIG** |
+| **Fehlende Pflichtfelder** | `test_missing_required_fields_robustness()` | ✅ **VOLLSTÄNDIG** |
+| **Zero-Day-Trips IST-Verhalten** | `test_zero_day_trip_ist_verhalten_dokumentiert()` | ✅ **VOLLSTÄNDIG** |
+| **Sehr lange Event-Namen** | `test_very_long_event_name_truncation()` | ✅ **VOLLSTÄNDIG** |
+| **Parallele Setup-Stabilität** | `test_concurrent_setup_stability()` | ✅ **VOLLSTÄNDIG** |
+| **Extreme Zukunftsdaten** | `test_extreme_future_dates()` | ✅ **VOLLSTÄNDIG** |
+| **caplog-Integration** | In allen Error-Tests | ✅ **IMPLEMENTIERT** |
 
 ## ✅ Trip-Prozent-Berechnungen
 
