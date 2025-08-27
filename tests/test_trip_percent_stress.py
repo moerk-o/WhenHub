@@ -471,3 +471,152 @@ async def test_trip_percent_very_long(hass: HomeAssistant, trip_very_long_entry)
         # Trip ist nicht mehr aktiv
         active = get_state(hass, "binary_sensor.weltreise_2026_2028_trip_active_today")
         assert active.state == "off", "Long trip should not be active after end"
+
+
+# ===== SPEZIFISCHE T07 FUNKTIONEN (Exakte Namen aus QA_ACTIONS_TESTSUITE.md) =====
+
+@pytest.mark.asyncio
+async def test_trip_percent_one_day_trip_exact_bounds(hass: HomeAssistant):
+    """
+    1-Tages-Trip Prozent-Berechnung mit exakten Grenzwerten.
+    
+    Warum:
+      1-Tages-Trips sind kritische Grenzfälle für Prozentberechnung. 
+      Division durch 1 Tag und Übergang von 100% zu 0% muss exakt funktionieren
+      ohne Rundungsfehler oder Off-by-One Probleme.
+      
+    Wie:
+      1-Tages-Trip-Fixture mit Start=2026-07-12, Ende=2026-07-13.
+      Teste am Starttag und am Folgetag mit strikten Assertions.
+      
+    Erwartung:
+      - Am Starttag: EXAKT "100.0" (String-Check)
+      - Am Folgetag: EXAKT "0.0" (String-Check)
+      - Keine Zwischenwerte, harter Übergang
+    """
+    # Erstelle 1-Tages-Trip-Fixture inline
+    one_day_trip_entry = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Eintages-Ausflug",
+            "event_type": "trip",
+            "start_date": "2026-07-12",
+            "end_date": "2026-07-13",  # 1-Tages-Trip: Start 12., Ende 13.
+            "image_path": "",
+            "website_url": "",
+            "notes": "1-Tages-Trip Test für exakte Bounds"
+        },
+        unique_id="whenhub_eintages_ausflug",
+        version=1,
+    )
+    
+    # Test am Starttag (12.07.2026)
+    with at("2026-07-12 10:00:00+00:00"):
+        await setup_and_wait(hass, one_day_trip_entry)
+        
+        # trip_left_percent muss EXAKT "100.0" sein
+        percent = get_state(hass, "sensor.eintages_ausflug_trip_left_percent")
+        assert percent.state == "100.0", f"Day 1 of 1-day trip must be exactly '100.0', got '{percent.state}'"
+        
+        # Verify als Float auch exakt 100.0
+        assert float(percent.state) == 100.0, f"Float conversion must be exactly 100.0"
+    
+    # Test am Folgetag (14.07.2026) - nach Ende des 1-Tages-Trips
+    with at("2026-07-14 10:00:00+00:00"):  # Tag nach Ende (13.07.)
+        await hass.config_entries.async_reload(one_day_trip_entry.entry_id)
+        await hass.async_block_till_done()
+        
+        # trip_left_percent muss EXAKT "0.0" sein
+        percent = get_state(hass, "sensor.eintages_ausflug_trip_left_percent")
+        assert percent.state == "0.0", f"After 1-day trip must be exactly '0.0', got '{percent.state}'"
+        
+        # Verify als Float auch exakt 0.0
+        assert float(percent.state) == 0.0, f"Float conversion must be exactly 0.0"
+
+
+@pytest.mark.asyncio
+async def test_trip_percent_very_long_trip_monotonic_and_bounds(hass: HomeAssistant):
+    """
+    Sehr langer Trip Prozent-Berechnung mit Monotonie und Bounds-Check.
+    
+    Warum:
+      Sehr lange Trips (mehrere Jahre) testen Stabilität der Prozentberechnung
+      über extreme Zeiträume. Werte müssen monoton fallen und in Bounds bleiben
+      ohne Overflow oder Rundungsprobleme.
+      
+    Wie:
+      Sehr langer Trip (Start 2026-01-01, Ende 2030-12-31 = ~5 Jahre).
+      Freeze 3 Messpunkte: früh / Mitte / kurz vor Ende.
+      Prüfe Bounds und strikte Monotonie zwischen Messpunkten.
+      
+    Erwartung:
+      - An jedem Punkt: 0.0 <= float(percent) <= 100.0
+      - Monoton fallend zwischen allen Messpunkten (strikt kleiner)
+      - Keine Sprünge oder Anomalien über lange Zeiträume
+    """
+    # Erstelle sehr langen Trip-Fixture inline  
+    very_long_trip_entry = MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Fünfjahres-Expedition",
+            "event_type": "trip",
+            "start_date": "2026-01-01",
+            "end_date": "2030-12-31",  # Fast 5 Jahre = ~1826 Tage
+            "image_path": "",
+            "website_url": "",
+            "notes": "Sehr langer Trip Test für Monotonie"
+        },
+        unique_id="whenhub_fuenfjahres_expedition",
+        version=1,
+    )
+    
+    percent_values = []
+    
+    # Messpunkt 1: Früh (30 Tage nach Start)
+    with at("2026-01-31 10:00:00+00:00"):
+        await setup_and_wait(hass, very_long_trip_entry)
+        
+        percent = get_state(hass, "sensor.funfjahres_expedition_trip_left_percent")
+        percent_val = float(percent.state)
+        
+        # Bounds-Check
+        assert 0.0 <= percent_val <= 100.0, f"Früh: Percent out of bounds: {percent_val}%"
+        # Sollte noch sehr hoch sein (>95%)
+        assert percent_val > 95.0, f"Früh: Should be >95%, got {percent_val}%"
+        percent_values.append(percent_val)
+    
+    # Messpunkt 2: Mitte (~2.5 Jahre später)
+    with at("2028-07-01 10:00:00+00:00"):
+        await hass.config_entries.async_reload(very_long_trip_entry.entry_id)
+        await hass.async_block_till_done()
+        
+        percent = get_state(hass, "sensor.funfjahres_expedition_trip_left_percent")
+        percent_val = float(percent.state)
+        
+        # Bounds-Check
+        assert 0.0 <= percent_val <= 100.0, f"Mitte: Percent out of bounds: {percent_val}%"
+        # Sollte etwa in der Mitte sein (40-60%)
+        assert 40.0 <= percent_val <= 60.0, f"Mitte: Should be 40-60%, got {percent_val}%"
+        percent_values.append(percent_val)
+    
+    # Messpunkt 3: Kurz vor Ende (30 Tage vor Ende)
+    with at("2030-12-01 10:00:00+00:00"):
+        await hass.config_entries.async_reload(very_long_trip_entry.entry_id)
+        await hass.async_block_till_done()
+        
+        percent = get_state(hass, "sensor.funfjahres_expedition_trip_left_percent")
+        percent_val = float(percent.state)
+        
+        # Bounds-Check
+        assert 0.0 <= percent_val <= 100.0, f"Kurz vor Ende: Percent out of bounds: {percent_val}%"
+        # Sollte sehr niedrig sein (<5%)
+        assert percent_val < 5.0, f"Kurz vor Ende: Should be <5%, got {percent_val}%"
+        assert percent_val > 0.0, f"Kurz vor Ende: Should still be >0%, got {percent_val}%"
+        percent_values.append(percent_val)
+    
+    # Verifiziere STRIKTE Monotonie
+    for i in range(1, len(percent_values)):
+        assert percent_values[i] < percent_values[i-1], \
+            f"Percent must be STRICTLY monotonic decreasing: {percent_values[i-1]}% -> {percent_values[i]}% (Messpunkt {i} zu {i+1})"
+    
+    print(f"✅ Monotone Abnahme verifiziert: {percent_values}")

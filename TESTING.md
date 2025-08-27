@@ -346,6 +346,21 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Korrekte Schaltjahr-Erkennung** | Tests 2023 (kein Schaltjahr) vs 2024 (Schaltjahr) | ✅ **VERIFIZIERT** |
 | **Fixture anniversary_2902_config_entry** | Startdatum 2020-02-29 in test_anniversary_leap_year.py | ✅ **VERFÜGBAR** |
 
+## ✅ Prozent-Berechnung Trips (Exakte Bounds und Monotonie)
+
+**Warum:** Trip-Prozentberechnungen müssen exakte Grenzwerte (100.0% und 0.0%) einhalten und strikt monoton fallen. Kritische Grenzfälle wie 1-Tages-Trips und sehr lange Trips (mehrere Jahre) testen die mathematische Stabilität.
+
+**Wie:** Zwei spezifische Tests: 1-Tages-Trip mit exakten String-Checks für "100.0" und "0.0". Sehr langer Trip (5 Jahre) mit 3 Messpunkten zur Verifizierung der strikten Monotonie und Bounds.
+
+**Erwartung:** 1-Tages-Trip: Exakt "100.0" am Starttag, exakt "0.0" am Folgetag. Sehr langer Trip: Werte immer in [0.0, 100.0], strikt monoton fallend zwischen Messpunkten.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **1-Tages-Trip exakte Bounds 100.0/0.0** | `test_trip_percent_one_day_trip_exact_bounds()` | ✅ **VOLLSTÄNDIG** |
+| **Sehr langer Trip Monotonie und Bounds** | `test_trip_percent_very_long_trip_monotonic_and_bounds()` | ✅ **VOLLSTÄNDIG** |
+| **String-Check für exakte Werte** | Assert percent.state == "100.0" bzw "0.0" | ✅ **IMPLEMENTIERT** |
+| **Strikte Monotonie-Verifizierung** | Loop mit percent_values[i] < percent_values[i-1] | ✅ **VERIFIZIERT** |
+
 ## Nächste Schritte
 
 1. Tests ausführen und Fehler beheben
