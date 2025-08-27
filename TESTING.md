@@ -283,6 +283,24 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Fixtures erstellt** | `conftest.py` - trip_one_day_entry, trip_very_long_entry | ✅ **VERFÜGBAR** |
 | **Helper-Funktionen aktualisiert** | Import-Konsistenz: at(), get_state() | ✅ **KORRIGIERT** |
 
+## ✅ Sehr lange Events (Multi-Jahr bis Multi-Dekade)
+
+**Warum:** Sehr lange Events (mehrere Jahre bis Jahrzehnte) testen die mathematische Stabilität und Performance der Integration bei extremen Zeitspannen. >1800 Tage für Trips, >10.000 Tage für Milestones und 100+ Vorkommen für Anniversaries müssen robust berechnet werden.
+
+**Wie:** Spezielle Fixtures für Multi-Jahr-Trip (5 Jahre), Multi-Dekaden-Milestone (30 Jahre) und Jahrhundert-Anniversary (100+ Jahre). Tests an verschiedenen Zeitpunkten über die gesamte Laufzeit mit Fokus auf Countdown-Text-Formatierung, Prozent-Stabilität und Performance.
+
+**Erwartung:** Monotone Werteentwicklung über Jahre, hierarchische Countdown-Formatierung (Jahre > Monate > Wochen), keine Overflow-Exceptions, stabile Performance bei extremen Berechnungen.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **5-Jahres-Trip Volltest** | `test_trip_very_long_event_behavior()` | ✅ **VOLLSTÄNDIG** |
+| **30-Jahre-Milestone Stabilität** | `test_milestone_multi_decade_stability()` | ✅ **VOLLSTÄNDIG** |
+| **Jahrhundert-Anniversary (100+ Vorkommen)** | `test_anniversary_century_occurrence_calculation()` | ✅ **VOLLSTÄNDIG** |
+| **Countdown-Text hierarchische Formatierung** | `test_countdown_text_formatting_very_long_durations()` | ✅ **VOLLSTÄNDIG** |
+| **Performance bei extremen Berechnungen** | `test_performance_stability_extreme_calculations()` | ✅ **VOLLSTÄNDIG** |
+| **Monotone Werteentwicklung über Jahre** | Strikte Assertions in allen Multi-Jahr Tests | ✅ **VERIFIZIERT** |
+| **Fixtures erstellt** | `trip_multi_year_entry`, `milestone_multi_decade_entry`, `anniversary_century_entry` | ✅ **VERFÜGBAR** |
+
 ## Nächste Schritte
 
 1. Tests ausführen und Fehler beheben

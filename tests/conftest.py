@@ -155,6 +155,64 @@ def trip_very_long_entry():
     )
 
 @pytest.fixture
+def trip_multi_year_entry():
+    """Create a mock config entry for a multi-year trip (5 years)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Fünfjahres-Weltreise",
+            "event_type": "trip",
+            "start_date": "2026-01-01",
+            "end_date": "2030-12-31",  # 5 Jahre = ~1826 Tage
+            "image_path": "",
+            "website_url": "",
+            "notes": "Sehr langer Trip Test - 5 Jahre"
+        },
+        unique_id="whenhub_fuenfjahres_weltreise",
+        version=1,
+    )
+
+@pytest.fixture
+def milestone_multi_decade_entry():
+    """Create a mock config entry for a multi-decade milestone (30 years)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Generationen-Ziel",
+            "event_type": "milestone",
+            "target_date": "2056-06-15",  # 30 Jahre in die Zukunft
+            "image_path": "",
+            "website_url": "",
+            "notes": "Sehr lange Zeitspanne Test - 30 Jahre"
+        },
+        unique_id="whenhub_generationen_ziel",
+        version=1,
+    )
+
+@pytest.fixture
+def anniversary_century_entry():
+    """Create a mock config entry for a century-old anniversary."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+    
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Jahrhundert-Jubiläum",
+            "event_type": "anniversary",
+            "target_date": "1925-05-20",  # 100+ Jahre zurück
+            "image_path": "",
+            "website_url": "",
+            "notes": "Jahrhundert-Anniversary Test"
+        },
+        unique_id="whenhub_jahrhundert_jubilaeum",
+        version=1,
+    )
+
+@pytest.fixture
 def special_event_entry_factory():
     """Factory for creating special event config entries."""
     from pytest_homeassistant_custom_component.common import MockConfigEntry
