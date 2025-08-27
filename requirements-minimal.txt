@@ -1,0 +1,6 @@
+# Minimal test requirements - ohne Home Assistant
+pytest==8.3.4
+pytest-asyncio==0.24.0
+freezegun==1.5.1
+voluptuous==0.15.2
+python-dateutil==2.9.0
