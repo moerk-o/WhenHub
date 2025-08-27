@@ -315,6 +315,22 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Strikte Formatierung ohne "14 Tage"** | Negative Assertion in test_countdown_text_exact.py | ✅ **VERIFIZIERT** |
 | **IST-Semantik dokumentiert** | Docstring mit Warum/Wie/Erwartung Struktur | ✅ **DOKUMENTIERT** |
 
+## ✅ Nach-Datum-Szenarien (Einmalige vs. Wiederkehrende Events)
+
+**Warum:** Events verhalten sich nach ihrem Datum unterschiedlich: Einmalige Events (Trip, Milestone) zeigen "0 Tage" und Binaries OFF. Wiederkehrende Events (Anniversary, Special) springen sofort auf das nächste Jahr (~365/366 Tage) ohne "0 Tage" zu zeigen.
+
+**Wie:** Vier spezifische Tests einen Tag nach Event-Datum mit exakten Freeze-Zeitpunkten. Trip (2026-07-27), Milestone (2026-03-16), Anniversary (2026-05-21), Special (2026-12-25). Strikte Assertions für unterschiedliche Verhaltensweisen.
+
+**Erwartung:** Einmalige Events: countdown "0 Tage", negative days_until, Binaries OFF. Wiederkehrende Events: countdown NICHT "0 Tage", days_until ~365/366, Binaries OFF.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Trip Tag danach: 0-Werte + Binaries OFF** | `test_trip_day_after_end_shows_zero_and_binaries_off()` | ✅ **VOLLSTÄNDIG** |
+| **Milestone Tag danach: 0-Werte + Binary OFF** | `test_milestone_day_after_target_shows_zero_and_binary_off()` | ✅ **VOLLSTÄNDIG** |
+| **Anniversary Tag danach: Sprung nächstes Jahr** | `test_anniversary_day_after_jumps_to_next_year()` | ✅ **VOLLSTÄNDIG** |
+| **Special Tag danach: Sprung nächstes Jahr** | `test_special_day_after_jumps_to_next_year()` | ✅ **VOLLSTÄNDIG** |
+| **Trennung einmalig vs. wiederkehrend** | Unterschiedliche Erwartungen in Tests dokumentiert | ✅ **VERIFIZIERT** |
+
 ## Nächste Schritte
 
 1. Tests ausführen und Fehler beheben

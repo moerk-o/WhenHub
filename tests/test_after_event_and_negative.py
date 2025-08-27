@@ -324,3 +324,157 @@ async def test_explicit_negative_values_after_events(hass: HomeAssistant, trip_c
         # Countdown-Text muss immer noch "0 Tage" sein (nie negativ angezeigt)
         countdown = get_state(hass, "sensor.projektabgabe_countdown_text")
         assert countdown.state == "0 Tage", f" countdown should still be '0 Tage', got {countdown.state}"
+
+
+# ===== SPEZIFISCHE T02/T06 FUNKTIONEN (Exakte Namen aus QA_ACTIONS_TESTSUITE.md) =====
+
+@pytest.mark.asyncio
+async def test_trip_day_after_end_shows_zero_and_binaries_off(hass: HomeAssistant, trip_config_entry):
+    """
+    Trip einen Tag nach Ende: Alle Werte auf 0 und alle Binaries auf OFF.
+    
+    Warum:
+      Trip-Events sind einmalig. Nach dem Ende-Datum müssen alle trip-spezifischen 
+      Sensoren definierte End-Werte zeigen und alle Binaries deaktiviert sein.
+      
+    Wie:
+      Trip "Dänemark 2026" (12.-26.07.2026). Freeze: 2026-07-27 10:00:00 UTC.
+      Strikte Prüfung aller Sensor-Werte und Binary-Zustände.
+      
+    Erwartung:
+      - countdown_text: "0 Tage" 
+      - days_until_end: < 0 (negativ erlaubt intern)
+      - trip_left_days: "0"
+      - trip_left_percent: "0.0" 
+      - Alle Binaries (starts_today, ends_today, active_today): OFF
+    """
+    with at("2026-07-27 10:00:00+00:00"):  # Einen Tag nach Trip-Ende (26.07.2026)
+        await setup_and_wait(hass, trip_config_entry)
+        
+        # Countdown-Text strikt "0 Tage"
+        countdown = get_state(hass, "sensor.danemark_2026_countdown_text")
+        assert countdown.state == "0 Tage", f"Expected '0 Tage' but got: {countdown.state}"
+        
+        # days_until_end negativ (vergangen)
+        days_until_end = get_state(hass, "sensor.danemark_2026_days_until_end")
+        assert int(days_until_end.state) < 0, f"days_until_end should be negative, got {days_until_end.state}"
+        
+        # Trip-Werte auf Null
+        left_days = get_state(hass, "sensor.danemark_2026_trip_left_days")
+        assert left_days.state == "0", f"trip_left_days should be '0', got {left_days.state}"
+        
+        left_percent = get_state(hass, "sensor.danemark_2026_trip_left_percent") 
+        assert left_percent.state == "0.0", f"trip_left_percent should be '0.0', got {left_percent.state}"
+        
+        # Alle Binaries OFF
+        starts_today = get_state(hass, "binary_sensor.danemark_2026_trip_starts_today")
+        ends_today = get_state(hass, "binary_sensor.danemark_2026_trip_ends_today")
+        active_today = get_state(hass, "binary_sensor.danemark_2026_trip_active_today")
+        
+        assert starts_today.state == "off", f"starts_today should be OFF, got {starts_today.state}"
+        assert ends_today.state == "off", f"ends_today should be OFF, got {ends_today.state}"
+        assert active_today.state == "off", f"active_today should be OFF, got {active_today.state}"
+
+
+@pytest.mark.asyncio
+async def test_milestone_day_after_target_shows_zero_and_binary_off(hass: HomeAssistant, milestone_config_entry):
+    """
+    Milestone einen Tag nach Zieldatum: 0-Werte und Binary OFF.
+    
+    Warum:
+      Milestone-Events sind einmalig. Nach dem Zieldatum müssen alle Sensoren
+      definierte End-Werte zeigen und is_today Binary deaktiviert sein.
+      
+    Wie:
+      Milestone "Projektabgabe" (Zieldatum: 2026-03-15). Freeze: 2026-03-16 10:00:00 UTC.
+      Strikte Prüfung von countdown, days_until und is_today Binary.
+      
+    Erwartung:
+      - countdown_text: "0 Tage"
+      - days_until: < 0 (negativ erlaubt intern)
+      - is_today Binary: OFF
+    """
+    with at("2026-03-16 10:00:00+00:00"):  # Einen Tag nach Milestone (15.03.2026)
+        await setup_and_wait(hass, milestone_config_entry)
+        
+        # Countdown-Text strikt "0 Tage"
+        countdown = get_state(hass, "sensor.projektabgabe_countdown_text")
+        assert countdown.state == "0 Tage", f"Expected '0 Tage' but got: {countdown.state}"
+        
+        # days_until negativ (vergangen)
+        days_until = get_state(hass, "sensor.projektabgabe_days_until")
+        assert int(days_until.state) < 0, f"days_until should be negative, got {days_until.state}"
+        
+        # Binary OFF
+        is_today = get_state(hass, "binary_sensor.projektabgabe_is_today")
+        assert is_today.state == "off", f"is_today should be OFF, got {is_today.state}"
+
+
+@pytest.mark.asyncio
+async def test_anniversary_day_after_jumps_to_next_year(hass: HomeAssistant, anniversary_config_entry):
+    """
+    Anniversary einen Tag nach Jahrestag: Sprung auf nächstes Jahr, KEIN "0 Tage".
+    
+    Warum:
+      Anniversary-Events sind wiederkehrend. Nach dem Jahrestag springt der
+      Countdown sofort auf das nächste Jahr (~365/366 Tage) und zeigt NICHT "0 Tage".
+      
+    Wie:
+      Anniversary "Geburtstag Max" (20.05.). Freeze: 2026-05-21 10:00:00 UTC.
+      Prüfung dass days_until auf nächstes Jahr springt und is_today OFF ist.
+      
+    Erwartung:
+      - days_until: ~365/366 (nächstes Jahr)
+      - is_today Binary: OFF
+      - countdown_text: NICHT "0 Tage" (sondern Countdown zum nächsten Jahr)
+    """
+    with at("2026-05-21 10:00:00+00:00"):  # Einen Tag nach Anniversary (20.05.2026)
+        await setup_and_wait(hass, anniversary_config_entry)
+        
+        # is_today Binary OFF
+        is_today = get_state(hass, "binary_sensor.geburtstag_max_is_today") 
+        assert is_today.state == "off", f"is_today should be OFF, got {is_today.state}"
+        
+        # days_until springt auf nächstes Jahr (~365/366 Tage)
+        days_until_next = get_state(hass, "sensor.geburtstag_max_days_until_next")
+        days_val = int(days_until_next.state)
+        assert 360 <= days_val <= 370, f"days_until should be ~365/366 for next year, got {days_val}"
+        
+        # countdown_text zeigt NICHT "0 Tage" sondern Countdown zum nächsten Jahr
+        countdown = get_state(hass, "sensor.geburtstag_max_countdown_text")
+        assert countdown.state != "0 Tage", f"Anniversary should NOT show '0 Tage', got {countdown.state}"
+
+
+@pytest.mark.asyncio  
+async def test_special_day_after_jumps_to_next_year(hass: HomeAssistant, special_config_entry):
+    """
+    Special Event einen Tag nach Weihnachten: Sprung auf nächstes Jahr, KEIN "0 Tage".
+    
+    Warum:
+      Special Events sind wiederkehrend wie Anniversary. Nach dem Event-Tag springt
+      der Countdown sofort auf das nächste Jahr (~365/366 Tage) und zeigt NICHT "0 Tage".
+      
+    Wie:
+      Special Event "Weihnachts-Countdown" (24.12.). Freeze: 2026-12-25 10:00:00 UTC.
+      Prüfung dass days_until auf nächstes Jahr springt und is_today OFF ist.
+      
+    Erwartung:
+      - days_until: ~365/366 (nächstes Jahr)  
+      - is_today Binary: OFF
+      - countdown_text: NICHT "0 Tage" (sondern Countdown zum nächsten Jahr)
+    """
+    with at("2026-12-25 10:00:00+00:00"):  # Einen Tag nach Weihnachten (24.12.2026)
+        await setup_and_wait(hass, special_config_entry)
+        
+        # is_today Binary OFF
+        is_today = get_state(hass, "binary_sensor.weihnachts_countdown_is_today")
+        assert is_today.state == "off", f"is_today should be OFF, got {is_today.state}"
+        
+        # days_until springt auf nächstes Jahr (~365/366 Tage)
+        days_until = get_state(hass, "sensor.weihnachts_countdown_days_until")
+        days_val = int(days_until.state)
+        assert 360 <= days_val <= 370, f"days_until should be ~365/366 for next year, got {days_val}"
+        
+        # countdown_text zeigt NICHT "0 Tage" sondern Countdown zum nächsten Jahr  
+        countdown = get_state(hass, "sensor.weihnachts_countdown_countdown_text")
+        assert countdown.state != "0 Tage", f"Special Event should NOT show '0 Tage', got {countdown.state}"
