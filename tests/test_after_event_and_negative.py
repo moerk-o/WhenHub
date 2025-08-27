@@ -1,4 +1,4 @@
-"""T02/T06 - Test für Szenarien nach dem Event-Datum und negative Tage."""
+"""Tests für Szenarien nach dem Event-Datum und negative Tage."""
 import pytest
 from homeassistant.core import HomeAssistant
 from _helpers import at, setup_and_wait, get_state
@@ -137,11 +137,11 @@ async def test_special_after_christmas(hass: HomeAssistant, special_config_entry
         assert next_date.state == "2027-12-24"
 
 
-# T02/T06 - Spezifische Nach-Event-Tests gemäß Anforderungen
+# Nach-Event-Tests mit strikten Assertions
 @pytest.mark.asyncio
 async def test_trip_after_end_shows_zero(hass: HomeAssistant, trip_config_entry):
     """
-    T02 - Trip einen Tag nach Ende: Alle Werte auf 0/OFF.
+    Trip einen Tag nach Ende: Alle Werte auf 0/OFF.
     
     Warum:
       Nach Trip-Ende müssen Sensoren definierte 0-Werte zeigen.
@@ -159,25 +159,25 @@ async def test_trip_after_end_shows_zero(hass: HomeAssistant, trip_config_entry)
     with at("2026-07-27 10:00:00+00:00"):  # Einen Tag nach Trip-Ende
         await setup_and_wait(hass, trip_config_entry)
         
-        # T02 - Countdown-Text zeigt "0 Tage"
+        # Countdown-Text zeigt "0 Tage"
         countdown = get_state(hass, "sensor.danemark_2026_countdown_text")
-        assert countdown.state == "0 Tage", f"T02: Expected '0 Tage' but got: {countdown.state}"
+        assert countdown.state == "0 Tage", f" Expected '0 Tage' but got: {countdown.state}"
         
-        # T02 - days_until < 0 intern erlaubt
+        # days_until < 0 intern erlaubt
         days_until_start = get_state(hass, "sensor.danemark_2026_days_until_start")
-        assert int(days_until_start.state) < 0, f"T02: days_until_start should be negative, got {days_until_start.state}"
+        assert int(days_until_start.state) < 0, f" days_until_start should be negative, got {days_until_start.state}"
         
         days_until_end = get_state(hass, "sensor.danemark_2026_days_until_end")
-        assert int(days_until_end.state) < 0, f"T02: days_until_end should be negative, got {days_until_end.state}"
+        assert int(days_until_end.state) < 0, f" days_until_end should be negative, got {days_until_end.state}"
         
-        # T02 - Trip-spezifische Werte
+        # Trip-spezifische Werte
         left_days = get_state(hass, "sensor.danemark_2026_trip_left_days")
-        assert int(left_days.state) == 0, f"T02: trip_left_days should be 0, got {left_days.state}"
+        assert int(left_days.state) == 0, f" trip_left_days should be 0, got {left_days.state}"
         
         left_percent = get_state(hass, "sensor.danemark_2026_trip_left_percent")
-        assert float(left_percent.state) == 0.0, f"T02: trip_left_percent should be 0.0, got {left_percent.state}"
+        assert float(left_percent.state) == 0.0, f" trip_left_percent should be 0.0, got {left_percent.state}"
         
-        # T02 - Alle Binary-Sensoren OFF
+        # Alle Binary-Sensoren OFF
         assert get_state(hass, "binary_sensor.danemark_2026_trip_active_today").state == "off"
         assert get_state(hass, "binary_sensor.danemark_2026_trip_starts_today").state == "off"
         assert get_state(hass, "binary_sensor.danemark_2026_trip_ends_today").state == "off"
@@ -186,7 +186,7 @@ async def test_trip_after_end_shows_zero(hass: HomeAssistant, trip_config_entry)
 @pytest.mark.asyncio
 async def test_milestone_after_target_shows_zero(hass: HomeAssistant, milestone_config_entry):
     """
-    T02 - Milestone einen Tag nach Zieldatum: 0-Werte und OFF-Binaries.
+    Milestone einen Tag nach Zieldatum: 0-Werte und OFF-Binaries.
     
     Warum:
       Nach Milestone-Zieldatum müssen Sensoren definierte Endwerte zeigen.
@@ -201,23 +201,23 @@ async def test_milestone_after_target_shows_zero(hass: HomeAssistant, milestone_
     with at("2026-03-16 10:00:00+00:00"):  # Einen Tag nach Milestone
         await setup_and_wait(hass, milestone_config_entry)
         
-        # T02 - Countdown-Text zeigt "0 Tage"
+        # Countdown-Text zeigt "0 Tage"
         countdown = get_state(hass, "sensor.projektabgabe_countdown_text")
-        assert countdown.state == "0 Tage", f"T02: Expected '0 Tage' but got: {countdown.state}"
+        assert countdown.state == "0 Tage", f" Expected '0 Tage' but got: {countdown.state}"
         
-        # T02 - days_until < 0 intern erlaubt
+        # days_until < 0 intern erlaubt
         days_until = get_state(hass, "sensor.projektabgabe_days_until")
-        assert int(days_until.state) < 0, f"T02: days_until should be negative, got {days_until.state}"
+        assert int(days_until.state) < 0, f" days_until should be negative, got {days_until.state}"
         
-        # T02 - Binary-Sensor OFF
+        # Binary-Sensor OFF
         is_today = get_state(hass, "binary_sensor.projektabgabe_is_today")
-        assert is_today.state == "off", f"T02: is_today should be OFF, got {is_today.state}"
+        assert is_today.state == "off", f" is_today should be OFF, got {is_today.state}"
 
 
 @pytest.mark.asyncio
 async def test_anniversary_after_event_shows_zero_today(hass: HomeAssistant, anniversary_config_entry):
     """
-    T02 - Anniversary einen Tag nach Jahrestag: is_today OFF, nächstes Jahr aktiv.
+    Anniversary einen Tag nach Jahrestag: is_today OFF, nächstes Jahr aktiv.
     
     Warum:
       Nach Anniversary sollte is_today OFF sein, aber nicht "0 Tage" (nächstes Jahr aktiv).
@@ -234,26 +234,26 @@ async def test_anniversary_after_event_shows_zero_today(hass: HomeAssistant, ann
     with at("2026-05-21 10:00:00+00:00"):  # Einen Tag nach Anniversary
         await setup_and_wait(hass, anniversary_config_entry)
         
-        # T02 - Binary-Sensor OFF
+        # Binary-Sensor OFF
         is_today = get_state(hass, "binary_sensor.geburtstag_max_is_today")
-        assert is_today.state == "off", f"T02: is_today should be OFF, got {is_today.state}"
+        assert is_today.state == "off", f" is_today should be OFF, got {is_today.state}"
         
         # Anniversary-Spezialverhalten: zeigt nächstes Jahr (nicht "0 Tage")
         countdown = get_state(hass, "sensor.geburtstag_max_countdown_text")
-        assert countdown.state != "0 Tage", f"T02: Anniversary should NOT show '0 Tage', got {countdown.state}"
+        assert countdown.state != "0 Tage", f" Anniversary should NOT show '0 Tage', got {countdown.state}"
         
         # Positive Werte für nächstes Jahr
         days_until_next = get_state(hass, "sensor.geburtstag_max_days_until_next")
-        assert int(days_until_next.state) > 0, f"T02: days_until_next should be positive, got {days_until_next.state}"
+        assert int(days_until_next.state) > 0, f" days_until_next should be positive, got {days_until_next.state}"
         
         days_since_last = get_state(hass, "sensor.geburtstag_max_days_since_last")
-        assert int(days_since_last.state) > 0, f"T02: days_since_last should be positive, got {days_since_last.state}"
+        assert int(days_since_last.state) > 0, f" days_since_last should be positive, got {days_since_last.state}"
 
 
 @pytest.mark.asyncio
 async def test_special_christmas_after_event_shows_zero_today(hass: HomeAssistant, special_config_entry):
     """
-    T02 - Special Event einen Tag nach Weihnachten: is_today OFF, nächstes Jahr aktiv.
+    Special Event einen Tag nach Weihnachten: is_today OFF, nächstes Jahr aktiv.
     
     Warum:
       Special Events verhalten sich wie Anniversary - nach Event zeigt nächstes Jahr.
@@ -269,27 +269,27 @@ async def test_special_christmas_after_event_shows_zero_today(hass: HomeAssistan
     with at("2026-12-25 10:00:00+00:00"):  # Einen Tag nach Heiligabend
         await setup_and_wait(hass, special_config_entry)
         
-        # T02 - Binary-Sensor OFF
+        # Binary-Sensor OFF
         is_today = get_state(hass, "binary_sensor.weihnachts_countdown_is_today")
-        assert is_today.state == "off", f"T02: is_today should be OFF, got {is_today.state}"
+        assert is_today.state == "off", f" is_today should be OFF, got {is_today.state}"
         
         # Special Event-Spezialverhalten: zeigt nächstes Jahr (nicht "0 Tage")
         countdown = get_state(hass, "sensor.weihnachts_countdown_countdown_text")
-        assert countdown.state != "0 Tage", f"T02: Special Event should NOT show '0 Tage', got {countdown.state}"
+        assert countdown.state != "0 Tage", f" Special Event should NOT show '0 Tage', got {countdown.state}"
         
         # Positive Werte für nächstes Jahr
         days_until = get_state(hass, "sensor.weihnachts_countdown_days_until")
-        assert int(days_until.state) > 0, f"T02: days_until should be positive (next year), got {days_until.state}"
+        assert int(days_until.state) > 0, f" days_until should be positive (next year), got {days_until.state}"
         
         days_since_last = get_state(hass, "sensor.weihnachts_countdown_days_since_last") 
-        assert int(days_since_last.state) > 0, f"T02: days_since_last should be positive, got {days_since_last.state}"
+        assert int(days_since_last.state) > 0, f" days_since_last should be positive, got {days_since_last.state}"
 
 
-# T06 - Explizite Tests für negative Werte (Ergänzung zu T02)
+# Explizite Tests für negative Werte (Ergänzung zu T02)
 @pytest.mark.asyncio
 async def test_explicit_negative_values_after_events(hass: HomeAssistant, trip_config_entry, milestone_config_entry):
     """
-    T06 - Explizite Verifikation dass negative Werte nach Events erlaubt sind.
+    Explizite Verifikation dass negative Werte nach Events erlaubt sind.
     
     Warum:
       Negative days_until Werte sind intern erlaubt und dokumentieren vergangene Events.
@@ -307,11 +307,11 @@ async def test_explicit_negative_values_after_events(hass: HomeAssistant, trip_c
         
         days_until_start = get_state(hass, "sensor.danemark_2026_days_until_start")
         start_val = int(days_until_start.state)
-        assert start_val < -15, f"T06: days_until_start should be very negative, got {start_val}"
+        assert start_val < -15, f" days_until_start should be very negative, got {start_val}"
         
         days_until_end = get_state(hass, "sensor.danemark_2026_days_until_end")
         end_val = int(days_until_end.state)
-        assert end_val < -5, f"T06: days_until_end should be negative, got {end_val}"
+        assert end_val < -5, f" days_until_end should be negative, got {end_val}"
     
     # Milestone: 1 Monat nach Zieldatum
     with at("2026-04-15 10:00:00+00:00"):  # 31 Tage nach Milestone
@@ -319,8 +319,8 @@ async def test_explicit_negative_values_after_events(hass: HomeAssistant, trip_c
         
         days_until = get_state(hass, "sensor.projektabgabe_days_until")
         milestone_val = int(days_until.state)
-        assert milestone_val < -25, f"T06: milestone days_until should be very negative, got {milestone_val}"
+        assert milestone_val < -25, f" milestone days_until should be very negative, got {milestone_val}"
         
         # Countdown-Text muss immer noch "0 Tage" sein (nie negativ angezeigt)
         countdown = get_state(hass, "sensor.projektabgabe_countdown_text")
-        assert countdown.state == "0 Tage", f"T06: countdown should still be '0 Tage', got {countdown.state}"
+        assert countdown.state == "0 Tage", f" countdown should still be '0 Tage', got {countdown.state}"
