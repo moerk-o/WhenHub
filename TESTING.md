@@ -109,7 +109,7 @@ ruff check custom_components/whenhub
 
 ### Error Handling & Robustheit
 - ✅ **NEU**: Trip end_date < start_date (kein Crash)
-- ✅ **NEU**: Zero-Day-Trips (start_date == end_date)
+- ✅ **NEU**: Zero-Day-Trips (start_date == end_date) - Siehe eigener Abschnitt
 - ✅ **NEU**: Vergangene Milestones (negative Tage)
 - ✅ **NEU**: Leere Event-Namen (Fallback-Verhalten)
 - ✅ **NEU**: Ungültige special_type (definierte Fehlerbehandlung)
@@ -248,6 +248,23 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 | **Parallele Setup-Stabilität** | `test_concurrent_setup_stability()` | ✅ **VOLLSTÄNDIG** |
 | **Extreme Zukunftsdaten** | `test_extreme_future_dates()` | ✅ **VOLLSTÄNDIG** |
 | **caplog-Integration** | In allen Error-Tests | ✅ **IMPLEMENTIERT** |
+
+## ✅ 0-Tage-Trips (Zero-Day Behavior)
+
+**Warum:** 0-Tage-Trips (start_date == end_date) sind kritische Grenzfälle für alle Trip-Berechnungen. Division-by-zero Risiko, Binary-Sensor Logik und Prozent-Berechnungen müssen robust funktionieren. Das IST-Verhalten muss klar dokumentiert sein.
+
+**Wie:** Trip mit identischem Start- und End-Datum (trip_one_day_entry Fixture). Teste am Ereignistag selbst und am Folgetag. Verifiziere alle Sensor-Werte, Binary-Zustände und mathematische Robustheit bei verschiedenen Uhrzeiten.
+
+**Erwartung:** Am Ereignistag alle drei Binary-Sensoren gleichzeitig ON, left_days=1 (inklusiv), left_percent=100%. Am Folgetag alles auf 0/OFF. Keine Exceptions oder Division-by-zero Fehler.
+
+| Testfall | Implementierung | Status |
+|----------|-----------------|---------|
+| **Vollständiges 0-Tage-Trip Verhalten** | `test_trip_zero_day_behavior()` | ✅ **VOLLSTÄNDIG** |
+| **Edge Cases verschiedene Uhrzeiten** | `test_zero_day_trip_edge_cases()` | ✅ **VOLLSTÄNDIG** |
+| **Division-by-zero Robustheit** | `test_zero_day_trip_no_division_by_zero()` | ✅ **VOLLSTÄNDIG** |
+| **Vergleich mit regulärem Trip** | `test_zero_day_trip_vs_regular_trip_comparison()` | ✅ **VOLLSTÄNDIG** |
+| **IST-Verhalten dokumentiert** | Alle Binary-Sensoren gleichzeitig ON | ✅ **DOKUMENTIERT** |
+| **Mathematische Stabilität** | Keine NaN/Inf Werte, definierte Berechnungen | ✅ **VERIFIZIERT** |
 
 ## ✅ Trip-Prozent-Berechnungen
 
