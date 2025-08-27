@@ -72,7 +72,7 @@ ruff check custom_components/whenhub
 - ✅ Milestone: Am Zieldatum (0 Tage)
 - ✅ Anniversary: Nächstes Vorkommen berechnen
 - ✅ Special: Weihnachts-Countdown
-- ✅ **NEU**: Strikte 14-Tage-Erwartung ("2 Wochen", NICHT "14 Tage")
+- ✅ **T01**: Strikte 14-Tage-Erwartung ("2 Wochen" MUSS enthalten sein, "14 Tage" DARF NICHT enthalten sein)
 
 ### Binary "Is Today" Sensoren
 - ✅ Trip: Start-Tag, End-Tag, Aktiv-Status
@@ -179,6 +179,18 @@ Tests dokumentieren das IST-Verhalten bei ungültigen Eingaben, ohne Produktions
 - **Zero-Day-Trips**: IST-Verhalten dokumentiert (1-tägiger Trip, alle Binaries gleichzeitig ON)
 - **Ungültige Daten**: end_date < start_date, leere Namen, extreme Zukunftsdaten
 - **Fallback-Werte**: Definierte Grenzen für Prozent/Tage bei Fehlern
+
+## ✅ T01 Testfall-Status
+
+| Anforderung | Implementierung | Status |
+|-------------|-----------------|---------|
+| **Countdown-Text bei exakt 14 Tagen** | `test_countdown_text_exact_two_weeks()` | ✅ **VOLLSTÄNDIG** |
+| Freeze-Time: 14 Tage vor Trip | `2026-06-28 10:00:00+00:00` → `2026-07-12` | ✅ **KORREKT** |
+| Setup wie bestehende Tests | `add_to_hass()`, `async_setup()`, `block_till_done()` | ✅ **STANDARD** |
+| Assertion: "2 Wochen" MUSS enthalten sein | `assert "2 Wochen" in text` | ✅ **STRIKT** |
+| Assertion: "14 Tage" DARF NICHT enthalten sein | `assert "14 Tage" not in text` | ✅ **STRIKT** |
+| Kommentierung: Warum/Wie/Erwartung | Vollständiger Docstring mit T01-Referenz | ✅ **DOKUMENTIERT** |
+| TESTING.md Ergänzung | Abgedeckte Testfälle + SOLL-vs-IST Tabelle | ✅ **AKTUALISIERT** |
 
 ## Nächste Schritte
 
