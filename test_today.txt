@@ -1,0 +1,28 @@
+Wir wollen einmal ALLE Tests ausführen – und zwar **nacheinander**, niemals parallel. 
+
+Regeln:
+- Grundlage für die Reihenfolge und Vollständigkeit ist die Datei `katalog.md`. 
+  → Sie enthält alle 90 Tests mit Nummer, Name, Datei und Beschreibung.
+- Jeder Test wird **einzeln und explizit** aufgerufen.
+- Nach Ende des Tests (egal ob bestanden oder nicht) → sofort der nächste Test.
+- **Timeout pro Test:** 60 Minuten.
+- **Kein Batch-Run** (kein `pytest tests/` oder `./tests/test_individual.sh 1 5 42` oder ähnliches etc.) → immer nur eine Funktion.
+- **Kein Code ändern!** Weder Integration noch Tests. Wenn etwas nicht funktioniert, zählt es als „nicht bestanden“.
+
+Protokollierung:
+- Datei: `testing_run_28_08.md`
+- Für jeden Test schreibe:
+  1. Start: `Führe Test <laufende Nummer> <testfunktion> aus`
+  2. Ergebnis: `test bestanden` oder `test nicht bestanden - <Fehler/Grund>`
+  3. Optional: Laufzeit
+  4. Danach eine Leerzeile
+- Orientiere dich an `testing_run_2708.md` für Stil.
+
+Zusatzregeln:
+- Wenn ein Test nicht auffindbar ist oder mit Fehler abbricht → „nicht bestanden“ dokumentieren, **keine Änderungen vornehmen**.
+- Wenn du nicht weiterkommst (z. B. unklarer Zustand, fehlender Import) → „nicht bestanden“ und zum nächsten Test.
+- **Spätestens nach jedem 3. Test**: Öffne `test_today.txt` und lies diese Instruktionen erneut, bevor du weitermachst.
+
+Wichtig:
+- Arbeite autark, keine Rückfragen an mich während der Ausführung.
+- Ziel ist eine vollständige, sequentielle Testrun-Dokumentation aller Tests mit klarer Pass/Fail-Dokumentation.
