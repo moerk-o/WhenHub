@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Any
+from typing import Any, Callable
 
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
@@ -138,7 +138,7 @@ class BaseBinarySensor(BinarySensorEntity):
         """
         return get_device_info(self._config_entry, self._event_data)
 
-    def _safe_calculate(self, calculation_func, fallback=False):
+    def _safe_calculate(self, calculation_func: Callable[[], bool], fallback: bool = False) -> bool:
         """Safely execute boolean calculation with error handling.
         
         Prevents integration failures from calculation errors in binary sensor logic.

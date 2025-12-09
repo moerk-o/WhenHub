@@ -56,11 +56,26 @@ class SpecialEventSensor(BaseCountdownSensor):
 
     @property
     def native_value(self) -> str | int | float | None:
-        """Return the current sensor value."""
+        """Return the current sensor value.
+
+        Delegates to _calculate_value() with error handling to prevent
+        integration failures from date calculation errors.
+
+        Returns:
+            Sensor value appropriate for the sensor type
+        """
         return self._safe_calculate(self._calculate_value)
 
     def _calculate_value(self) -> str | int | float | None:
-        """Calculate the current sensor value based on sensor type."""
+        """Calculate the current sensor value based on sensor type.
+
+        Returns:
+            - days_until: Integer days until next occurrence
+            - days_since_last: Integer days since last occurrence
+            - countdown_text: Formatted countdown string
+            - next_date: ISO date string of next occurrence
+            - last_date: ISO date string of last occurrence
+        """
         today = date.today()
         
         if self._sensor_type == "days_until":

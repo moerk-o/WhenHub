@@ -111,7 +111,7 @@ class BaseSensor(SensorEntity):
         """
         return get_device_info(self._config_entry, self._event_data)
 
-    def _safe_calculate(self, calculation_func: Callable, fallback=None):
+    def _safe_calculate(self, calculation_func: Callable, fallback: Any = None) -> Any:
         """Safely execute calculation with error handling and logging.
         
         Wraps sensor value calculations to prevent integration failures from
@@ -194,39 +194,42 @@ class BaseCountdownSensor(BaseSensor):
 
     def _format_countdown_text(self, target_date: date) -> str:
         """Format countdown from today to target date into human-readable German text.
-        
+
         Converts the time difference into a breakdown of years, months, weeks, and days
         using approximations (365 days/year, 30 days/month) for simplicity and reliability.
         Zero values are omitted from the output.
-        
+
+        Note: German output is intentional - see prompt.md for rationale (sensor state
+        values cannot be translated by Home Assistant's translation system).
+
         Args:
             target_date: The date to count down to
-            
+
         Returns:
             German countdown string like "2 Jahre, 3 Monate, 1 Woche, 4 Tage"
             or "0 Tage" if target date has passed
         """
         today = date.today()
-        
+
         # If target date has passed or is today, return zero
         if target_date <= today:
             self._countdown_breakdown = {"years": 0, "months": 0, "weeks": 0, "days": 0}
             return "0 Tage"
-        
+
         delta = target_date - today
         total_days = delta.days
-        
+
         # Use simple approximations for consistent behavior across edge cases
         # 365 days per year, 30 days per month, 7 days per week
         years = total_days // 365
         remaining_days = total_days - (years * 365)
-        
+
         months = remaining_days // 30
         remaining_days = remaining_days - (months * 30)
-        
+
         weeks = remaining_days // 7
         days = remaining_days % 7
-        
+
         # Store breakdown for use in entity attributes
         self._countdown_breakdown = {
             "years": years,
@@ -234,8 +237,8 @@ class BaseCountdownSensor(BaseSensor):
             "weeks": weeks,
             "days": days
         }
-        
-        # Build human-readable string, omitting zero values
+
+        # Build human-readable German string, omitting zero values
         parts = []
         if years > 0:
             parts.append(f"{years} Jahr{'e' if years > 1 else ''}")
@@ -245,7 +248,7 @@ class BaseCountdownSensor(BaseSensor):
             parts.append(f"{weeks} Woche{'n' if weeks > 1 else ''}")
         if days > 0:
             parts.append(f"{days} Tag{'e' if days > 1 else ''}")
-        
+
         return ", ".join(parts) if parts else "0 Tage"
 
     def _get_countdown_attributes(self) -> dict[str, int]:
