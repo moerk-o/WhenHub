@@ -79,7 +79,7 @@ def anniversary_config_entry():
 def special_config_entry():
     """Create a mock config entry for a special event."""
     from pytest_homeassistant_custom_component.common import MockConfigEntry
-    
+
     return MockConfigEntry(
         domain="whenhub",
         data={
@@ -92,5 +92,154 @@ def special_config_entry():
             "notes": ""
         },
         unique_id="whenhub_weihnachts_countdown",
+        version=1,
+    )
+
+
+# =============================================================================
+# Edge Case Fixtures
+# =============================================================================
+
+@pytest.fixture
+def single_day_trip_config_entry():
+    """Create a mock config entry for a single-day trip (start = end)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Tagesausflug",
+            "event_type": "trip",
+            "start_date": "2026-08-15",
+            "end_date": "2026-08-15",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_tagesausflug",
+        version=1,
+    )
+
+
+@pytest.fixture
+def past_trip_config_entry():
+    """Create a mock config entry for a trip in the past."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Vergangener Urlaub",
+            "event_type": "trip",
+            "start_date": "2024-06-01",
+            "end_date": "2024-06-14",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_vergangener_urlaub",
+        version=1,
+    )
+
+
+@pytest.fixture
+def past_milestone_config_entry():
+    """Create a mock config entry for a milestone in the past."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Vergangener Milestone",
+            "event_type": "milestone",
+            "target_date": "2024-01-15",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_vergangener_milestone",
+        version=1,
+    )
+
+
+@pytest.fixture
+def long_trip_config_entry():
+    """Create a mock config entry for a very long trip (> 365 days)."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Weltreise",
+            "event_type": "trip",
+            "start_date": "2026-01-01",
+            "end_date": "2027-06-30",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_weltreise",
+        version=1,
+    )
+
+
+@pytest.fixture
+def leap_year_anniversary_config_entry():
+    """Create a mock config entry for anniversary on Feb 29."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Schaltjahr Geburtstag",
+            "event_type": "anniversary",
+            "target_date": "2020-02-29",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_schaltjahr_geburtstag",
+        version=1,
+    )
+
+
+@pytest.fixture
+def easter_config_entry():
+    """Create a mock config entry for Easter."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Ostern",
+            "event_type": "special",
+            "special_type": "easter",
+            "special_category": "traditional",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_ostern",
+        version=1,
+    )
+
+
+@pytest.fixture
+def advent_config_entry():
+    """Create a mock config entry for 1st Advent."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "1. Advent",
+            "event_type": "special",
+            "special_type": "advent_1",
+            "special_category": "traditional",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_advent_1",
         version=1,
     )

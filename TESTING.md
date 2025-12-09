@@ -78,18 +78,21 @@ ruff check custom_components/whenhub
 - ✅ Anniversary: Am Jahrestag
 - ✅ Special: Am Feiertag (Heiligabend)
 
+### Edge Cases (test_edge_cases.py)
+- ✅ Eintägiger Trip (Start = Ende)
+- ✅ Vergangene Events (negative Tage)
+- ✅ Sehr lange Trips (> 365 Tage)
+- ✅ Schaltjahr-Handling (29. Februar in Schalt-/Nicht-Schaltjahr)
+- ✅ Ostern-Berechnung (2026, 2027)
+- ✅ Advent-Berechnung (2025, 2026)
+
 ## Bekannte Lücken (für spätere Tests)
 
 ### Spezialfälle
-- ⏳ Schaltjahr-Handling (29. Februar)
 - ⏳ DST-Übergänge (Sommer-/Winterzeit)
-- ⏳ Vergangene Events (negative Tage)
-- ⏳ Ostern-Berechnung (Gauss-Algorithmus)
-- ⏳ Advent-Berechnung
+- ⏳ Pfingsten-Berechnung
 
 ### Edge Cases
-- ⏳ Sehr lange Trips (> 365 Tage)
-- ⏳ Gleicher Start- und End-Tag
 - ⏳ Ungültige Datumsangaben
 - ⏳ Fehlende Pflichtfelder
 
@@ -108,16 +111,20 @@ ruff check custom_components/whenhub
 
 ```
 tests/
-├── conftest.py              # Fixtures für alle Tests
+├── conftest.py                 # Fixtures für alle Tests
+├── test_basic_logic.py         # Basis-Logik ohne HA
+├── test_binary_today.py        # Binary Sensor Tests
+├── test_debug_path.py          # Debug/Pfad-Tests
+├── test_edge_cases.py          # Edge Cases (Schaltjahr, lange Trips, etc.)
 ├── test_manifest_and_setup.py  # Setup & Entity-Erstellung
 ├── test_sensor_countdown.py    # Countdown-Berechnungen
-└── test_binary_today.py        # Binary Sensor Tests
+└── test_simple_setup.py        # Basis-Setup Tests
 ```
 
 ## Nächste Schritte
 
-1. Tests ausführen und Fehler beheben
+1. ~~Tests ausführen und Fehler beheben~~ ✅
 2. Coverage erhöhen (Ziel: 80%)
-3. Edge Cases abdecken
+3. ~~Edge Cases abdecken~~ ✅
 4. Integration Tests hinzufügen
 5. CI/CD Pipeline aufsetzen (GitHub Actions)
