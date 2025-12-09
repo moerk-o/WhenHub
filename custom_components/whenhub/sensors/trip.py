@@ -7,98 +7,73 @@ and remaining trip duration.
 from __future__ import annotations
 
 import logging
-from datetime import date
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
-    CONF_START_DATE,
-    CONF_END_DATE,
-    CONF_EVENT_NAME,
     TRIP_SENSOR_TYPES,
     TEXT_ZERO_DAYS,
 )
-from ..calculations import (
-    parse_date,
-    days_until,
-    trip_left_days,
-    trip_left_percent,
-    days_between,
-)
 from .base import BaseCountdownSensor
+
+if TYPE_CHECKING:
+    from ..coordinator import WhenHubCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class TripSensor(BaseCountdownSensor):
     """Sensor for multi-day trip events.
-    
+
     Provides various calculations for trip events that have both start and end dates:
     - days_until: Days until trip starts
     - days_until_end: Days until trip ends
     - countdown_text: Human-readable countdown to trip start
     - trip_left_days: Days remaining in an active trip
     - trip_left_percent: Percentage of trip remaining
-    
-    Inherits countdown text formatting from BaseCountdownSensor.
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
     """
 
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
         """Initialize the trip sensor.
-        
+
         Args:
+            coordinator: The data update coordinator for this event
             config_entry: Home Assistant config entry for this integration
             event_data: Dictionary containing trip configuration (name, start_date, end_date, etc.)
             sensor_type: Type of sensor to create (from TRIP_SENSOR_TYPES)
         """
-        super().__init__(config_entry, event_data, sensor_type, TRIP_SENSOR_TYPES)
-        
-        # Parse and store trip dates for calculations
-        self._start_date = parse_date(event_data[CONF_START_DATE])
-        self._end_date = parse_date(event_data[CONF_END_DATE])
+        super().__init__(coordinator, config_entry, event_data, sensor_type, TRIP_SENSOR_TYPES)
 
     @property
     def native_value(self) -> str | int | float | None:
-        """Return the current sensor value.
-        
-        Delegates to _calculate_value() with error handling to prevent
-        integration failures from date calculation errors.
-        
+        """Return the current sensor value from coordinator data.
+
         Returns:
             Sensor value appropriate for the sensor type (int for days, str for text, etc.)
         """
-        return self._safe_calculate(self._calculate_value)
-
-    def _calculate_value(self) -> str | int | float | None:
-        """Calculate the current sensor value based on sensor type.
-
-        Returns:
-            - days_until: Integer days until trip start (can be negative if started)
-            - days_until_end: Integer days until trip end (can be negative if ended)
-            - countdown_text: Formatted countdown string or "0 Tage" if trip started
-            - trip_left_days: Days remaining in active trip (0 if not active)
-            - trip_left_percent: Percentage of trip remaining (0-100)
-        """
-        today = date.today()
+        data = self.coordinator.data
+        if not data:
+            return None
 
         if self._sensor_type == "days_until":
-            return days_until(self._start_date, today)
-
+            return data.get("days_until")
         elif self._sensor_type == "days_until_end":
-            return days_until(self._end_date, today)
-
+            return data.get("days_until_end")
         elif self._sensor_type == "countdown_text":
-            if today <= self._start_date:
-                return self._format_countdown_text(self._start_date)
-            else:
-                return TEXT_ZERO_DAYS
-
+            return data.get("countdown_text", TEXT_ZERO_DAYS)
         elif self._sensor_type == "trip_left_days":
-            return trip_left_days(self._start_date, self._end_date, today)
-
+            return data.get("trip_left_days")
         elif self._sensor_type == "trip_left_percent":
-            return trip_left_percent(self._start_date, self._end_date, today)
+            return data.get("trip_left_percent")
 
         return None
 
@@ -112,19 +87,15 @@ class TripSensor(BaseCountdownSensor):
         Returns:
             Dictionary with event info and countdown breakdown (for countdown_text only)
         """
-        # Only countdown_text sensor gets detailed attributes
         if self._sensor_type == "countdown_text":
+            data = self.coordinator.data
             attributes = self._get_base_attributes()
             attributes.update({
-                "start_date": self._start_date.isoformat(),
-                "end_date": self._end_date.isoformat(),
-                "total_days": days_between(self._start_date, self._end_date),
+                "start_date": data.get("start_date"),
+                "end_date": data.get("end_date"),
+                "total_days": data.get("total_days"),
             })
-
-            # Add countdown breakdown (years, months, weeks, days)
             attributes.update(self._get_countdown_attributes())
-
             return attributes
 
-        # All other trip sensors have no attributes
         return {}
