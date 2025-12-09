@@ -14,13 +14,11 @@ from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     CONF_TARGET_DATE,
-    CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
-    EVENT_TYPE_MILESTONE,
     MILESTONE_SENSOR_TYPES,
     TEXT_ZERO_DAYS,
 )
-from .base import BaseCountdownSensor, parse_date
+from ..calculations import parse_date, days_until
+from .base import BaseCountdownSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -65,25 +63,22 @@ class MilestoneSensor(BaseCountdownSensor):
 
     def _calculate_value(self) -> str | int | float | None:
         """Calculate the current sensor value based on sensor type.
-        
+
         Returns:
             - days_until: Integer days until milestone (can be negative if date has passed)
             - countdown_text: Formatted countdown string or "0 Tage" if date has passed
         """
         today = date.today()
-        
+
         if self._sensor_type == "days_until":
-            # Days until milestone date (negative if date has passed)
-            return (self._target_date - today).days
-            
+            return days_until(self._target_date, today)
+
         elif self._sensor_type == "countdown_text":
-            # Human-readable countdown until milestone date
             if today < self._target_date:
                 return self._format_countdown_text(self._target_date)
             else:
-                # Milestone date has passed or is today
                 return TEXT_ZERO_DAYS
-                
+
         return None
 
     @property

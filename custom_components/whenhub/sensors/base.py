@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
@@ -21,26 +21,32 @@ from ..const import (
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
 )
+from ..calculations import (
+    parse_date,
+    format_countdown_text,
+    countdown_breakdown,
+    anniversary_for_year,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
     """Create standardized device info for all WhenHub entities.
-    
+
     This function ensures consistent device information across all platforms
     (sensors, binary sensors, images) for the same WhenHub event.
-    
+
     Args:
         config_entry: The Home Assistant config entry for this integration instance
         event_data: Dictionary containing event configuration data
-        
+
     Returns:
         DeviceInfo object with standardized identifiers, name, and metadata
     """
     event_type = event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_TRIP)
     event_info = EVENT_TYPES.get(event_type, EVENT_TYPES[EVENT_TYPE_TRIP])
-    
+
     return DeviceInfo(
         identifiers={(DOMAIN, config_entry.entry_id)},
         name=event_data[CONF_EVENT_NAME],
@@ -50,21 +56,8 @@ def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
     )
 
 
-def parse_date(date_str: str | date) -> date:
-    """Parse date string in ISO format or return existing date object.
-    
-    Args:
-        date_str: Either an ISO date string (YYYY-MM-DD) or a date object
-        
-    Returns:
-        A date object
-        
-    Raises:
-        ValueError: If date_str is a malformed string
-    """
-    if isinstance(date_str, str):
-        return date.fromisoformat(date_str)
-    return date_str
+# Re-export parse_date for backward compatibility
+__all__ = ["get_device_info", "parse_date", "BaseSensor", "BaseCountdownSensor"]
 
 
 class BaseSensor(SensorEntity):
@@ -165,23 +158,22 @@ class BaseSensor(SensorEntity):
 
 class BaseCountdownSensor(BaseSensor):
     """Base class for sensors with countdown text functionality.
-    
+
     Extends BaseSensor with countdown text formatting capabilities. This class
-    handles the complex logic of converting date differences into human-readable
-    countdown strings like "2 Jahre, 3 Monate, 1 Woche, 4 Tage".
-    
+    delegates to functions in calculations.py for the actual computation.
+
     Used by Trip, Milestone, and Anniversary sensors that need countdown_text sensors.
     """
 
     def __init__(
-        self, 
-        config_entry: ConfigEntry, 
-        event_data: dict, 
-        sensor_type: str, 
+        self,
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
         sensor_types: dict
     ) -> None:
         """Initialize the countdown sensor.
-        
+
         Args:
             config_entry: Home Assistant config entry
             event_data: Event configuration data
@@ -195,68 +187,24 @@ class BaseCountdownSensor(BaseSensor):
     def _format_countdown_text(self, target_date: date) -> str:
         """Format countdown from today to target date into human-readable German text.
 
-        Converts the time difference into a breakdown of years, months, weeks, and days
-        using approximations (365 days/year, 30 days/month) for simplicity and reliability.
-        Zero values are omitted from the output.
-
-        Note: German output is intentional - see prompt.md for rationale (sensor state
-        values cannot be translated by Home Assistant's translation system).
+        Delegates to calculations.format_countdown_text() and updates the
+        internal breakdown for use in attributes.
 
         Args:
             target_date: The date to count down to
 
         Returns:
             German countdown string like "2 Jahre, 3 Monate, 1 Woche, 4 Tage"
-            or "0 Tage" if target date has passed
         """
         today = date.today()
-
-        # If target date has passed or is today, return zero
-        if target_date <= today:
-            self._countdown_breakdown = {"years": 0, "months": 0, "weeks": 0, "days": 0}
-            return "0 Tage"
-
-        delta = target_date - today
-        total_days = delta.days
-
-        # Use simple approximations for consistent behavior across edge cases
-        # 365 days per year, 30 days per month, 7 days per week
-        years = total_days // 365
-        remaining_days = total_days - (years * 365)
-
-        months = remaining_days // 30
-        remaining_days = remaining_days - (months * 30)
-
-        weeks = remaining_days // 7
-        days = remaining_days % 7
-
-        # Store breakdown for use in entity attributes
-        self._countdown_breakdown = {
-            "years": years,
-            "months": months,
-            "weeks": weeks,
-            "days": days
-        }
-
-        # Build human-readable German string, omitting zero values
-        parts = []
-        if years > 0:
-            parts.append(f"{years} Jahr{'e' if years > 1 else ''}")
-        if months > 0:
-            parts.append(f"{months} Monat{'e' if months > 1 else ''}")
-        if weeks > 0:
-            parts.append(f"{weeks} Woche{'n' if weeks > 1 else ''}")
-        if days > 0:
-            parts.append(f"{days} Tag{'e' if days > 1 else ''}")
-
-        return ", ".join(parts) if parts else "0 Tage"
+        # Update breakdown for attributes
+        self._countdown_breakdown = countdown_breakdown(target_date, today)
+        # Return formatted text
+        return format_countdown_text(target_date, today)
 
     def _get_countdown_attributes(self) -> dict[str, int]:
         """Get countdown breakdown as individual attributes.
-        
-        Provides the numerical breakdown of the countdown for use in automations
-        and templates. These attributes are populated by _format_countdown_text().
-        
+
         Returns:
             Dictionary with text_years, text_months, text_weeks, text_days keys
         """
@@ -269,24 +217,14 @@ class BaseCountdownSensor(BaseSensor):
 
     def _get_anniversary_for_year(self, original_date: date, target_year: int) -> date:
         """Get anniversary date for a specific year, handling leap year edge cases.
-        
-        Calculates what date an anniversary falls on in a given year, with special
-        handling for February 29th birthdays in non-leap years (converts to Feb 28).
-        
+
+        Delegates to calculations.anniversary_for_year().
+
         Args:
             original_date: The original event date (e.g., birth date)
             target_year: Year to calculate anniversary for
-            
+
         Returns:
             Anniversary date for the target year
-            
-        Example:
-            original_date = 2020-02-29 (leap year)
-            target_year = 2021 (non-leap year)
-            returns = 2021-02-28
         """
-        try:
-            return original_date.replace(year=target_year)
-        except ValueError:
-            # Handle Feb 29 in non-leap year by using Feb 28
-            return date(target_year, 2, 28)
+        return anniversary_for_year(original_date, target_year)

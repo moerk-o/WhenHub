@@ -14,14 +14,19 @@ from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     CONF_TARGET_DATE,
-    CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
-    EVENT_TYPE_ANNIVERSARY,
     ANNIVERSARY_SENSOR_TYPES,
     TEXT_ZERO_DAYS,
     TEXT_CALCULATION_RUNNING,
 )
-from .base import BaseCountdownSensor, parse_date
+from ..calculations import (
+    parse_date,
+    days_until,
+    next_anniversary,
+    last_anniversary,
+    anniversary_count,
+)
+from .base import BaseCountdownSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -87,7 +92,7 @@ class AnniversarySensor(BaseCountdownSensor):
 
     def _calculate_value(self) -> str | int | float | None:
         """Calculate the current sensor value based on sensor type.
-        
+
         Returns:
             - days_until_next: Integer days until next anniversary
             - days_since_last: Integer days since last anniversary (or None if no past occurrence)
@@ -97,107 +102,34 @@ class AnniversarySensor(BaseCountdownSensor):
             - last_date: ISO date string of last anniversary (or None)
         """
         today = date.today()
-        
+
         if self._sensor_type == "days_until_next":
-            next_anniversary = self._get_next_anniversary()
-            return (next_anniversary - today).days
-        
+            next_ann = next_anniversary(self._original_date, today)
+            return days_until(next_ann, today)
+
         elif self._sensor_type == "days_since_last":
-            last_anniversary = self._get_last_anniversary()
-            return (today - last_anniversary).days if last_anniversary else None
-            
+            last_ann = last_anniversary(self._original_date, today)
+            return (today - last_ann).days if last_ann else None
+
         elif self._sensor_type == "countdown_text":
-            next_anniversary = self._get_next_anniversary()
-            days_until = (next_anniversary - today).days
-            if days_until == 0:
+            next_ann = next_anniversary(self._original_date, today)
+            if days_until(next_ann, today) == 0:
                 return TEXT_ZERO_DAYS
             else:
-                return self._format_countdown_text(next_anniversary)
-                
+                return self._format_countdown_text(next_ann)
+
         elif self._sensor_type == "occurrences_count":
-            return self._count_occurrences()
-                
+            return anniversary_count(self._original_date, today)
+
         elif self._sensor_type == "next_date":
-            next_anniversary = self._get_next_anniversary()
-            return next_anniversary.isoformat()
-            
+            next_ann = next_anniversary(self._original_date, today)
+            return next_ann.isoformat()
+
         elif self._sensor_type == "last_date":
-            last_anniversary = self._get_last_anniversary()
-            return last_anniversary.isoformat() if last_anniversary else None
-        
+            last_ann = last_anniversary(self._original_date, today)
+            return last_ann.isoformat() if last_ann else None
+
         return None
-
-    def _get_next_anniversary(self) -> date:
-        """Calculate the next anniversary date from today.
-        
-        Determines when the next occurrence of this anniversary will happen,
-        considering the current year and handling leap year edge cases.
-        
-        Returns:
-            Date of the next anniversary occurrence
-        """
-        today = date.today()
-        current_year = today.year
-        
-        # Try this year's anniversary first
-        this_year_anniversary = self._get_anniversary_for_year(self._original_date, current_year)
-        if this_year_anniversary >= today:
-            return this_year_anniversary
-        
-        # If this year's anniversary has already passed, get next year's
-        return self._get_anniversary_for_year(self._original_date, current_year + 1)
-
-    def _get_last_anniversary(self) -> Optional[date]:
-        """Calculate the most recent anniversary date before today.
-        
-        Determines when the last occurrence of this anniversary happened.
-        Returns None if the original date is in the future (no past occurrences).
-        
-        Returns:
-            Date of the last anniversary occurrence, or None if no past occurrence
-        """
-        today = date.today()
-        current_year = today.year
-        
-        # If original date is in the future, there's no "last" anniversary yet
-        if self._original_date > today:
-            return None
-        
-        # Try this year's anniversary
-        this_year_anniversary = self._get_anniversary_for_year(self._original_date, current_year)
-        if this_year_anniversary <= today:
-            return this_year_anniversary
-        
-        # If this year's anniversary hasn't happened yet, get last year's
-        return self._get_anniversary_for_year(self._original_date, current_year - 1)
-
-    def _count_occurrences(self) -> int:
-        """Count total number of anniversary occurrences including today if applicable.
-        
-        Calculates how many times this anniversary has occurred from the original
-        date up to and including today. Accounts for the original occurrence plus
-        all subsequent yearly repetitions.
-        
-        Returns:
-            Integer count of occurrences (minimum 1 if original date has passed, 0 if future)
-        """
-        today = date.today()
-        
-        # If original date is in the future, no occurrences yet
-        if self._original_date > today:
-            return 0
-        
-        # Calculate base occurrences (full years that have passed)
-        years_passed = today.year - self._original_date.year
-        
-        # Check if this year's anniversary has already happened
-        this_year_anniversary = self._get_anniversary_for_year(self._original_date, today.year)
-        if this_year_anniversary > today:
-            # This year's anniversary hasn't happened yet, so reduce count
-            years_passed -= 1
-        
-        # Add 1 because we count the original occurrence
-        return max(1, years_passed + 1)
 
     def _get_fallback_value(self) -> str | int | None:
         """Get a safe fallback value based on sensor type for error scenarios.
@@ -219,31 +151,32 @@ class AnniversarySensor(BaseCountdownSensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return state attributes for this sensor.
-        
+
         Only countdown_text sensors get attributes - other anniversary sensors return empty dict
         to keep the state clean and focused.
-        
+
         Returns:
             Dictionary with event info and countdown breakdown (for countdown_text only)
         """
         # Only countdown_text sensor gets detailed attributes
         if self._sensor_type == "countdown_text":
+            today = date.today()
             attributes = self._get_base_attributes()
             attributes.update({
                 "initial_date": self._original_date.isoformat(),
             })
-            
+
             # Add countdown breakdown (years, months, weeks, days)
             attributes.update(self._get_countdown_attributes())
-            
+
             # Add next anniversary metadata for automation use
-            next_anniversary = self._get_next_anniversary()
+            next_ann = next_anniversary(self._original_date, today)
             attributes.update({
-                "next_anniversary": next_anniversary.isoformat(),
-                "years_on_next": next_anniversary.year - self._original_date.year,
+                "next_anniversary": next_ann.isoformat(),
+                "years_on_next": next_ann.year - self._original_date.year,
             })
-            
+
             return attributes
-        
+
         # All other anniversary sensors have no attributes
         return {}

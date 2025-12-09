@@ -18,7 +18,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DOMAIN,
-    EVENT_TYPES,
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
@@ -41,7 +40,14 @@ from .const import (
     BINARY_UNIQUE_ID_PATTERN,
     SENSOR_NAME_PATTERN,
 )
-from .sensors.base import get_device_info, parse_date
+from .calculations import (
+    parse_date,
+    is_trip_active,
+    is_date_today,
+    next_anniversary,
+    next_special_event,
+)
+from .sensors.base import get_device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -210,21 +216,18 @@ class TripBinarySensor(BaseBinarySensor):
 
     def _calculate_value(self) -> bool:
         """Calculate the current boolean value for this trip condition.
-        
+
         Returns:
             Boolean indicating if the trip condition is currently true
         """
         today = date.today()
-        
+
         if self._sensor_type == "trip_starts_today":
-            # Trip starts today
-            return today == self._start_date
+            return is_date_today(self._start_date, today)
         elif self._sensor_type == "trip_active_today":
-            # Trip is currently active (today is between start and end dates, inclusive)
-            return self._start_date <= today <= self._end_date
+            return is_trip_active(self._start_date, self._end_date, today)
         elif self._sensor_type == "trip_ends_today":
-            # Trip ends today
-            return today == self._end_date
+            return is_date_today(self._end_date, today)
         return False
 
     @property
@@ -265,13 +268,12 @@ class MilestoneBinarySensor(BaseBinarySensor):
 
     def _calculate_value(self) -> bool:
         """Calculate the current boolean value for this milestone condition.
-        
+
         Returns:
             Boolean indicating if the milestone condition is currently true
         """
         if self._sensor_type == "is_today":
-            # Milestone date is today
-            return date.today() == self._target_date
+            return is_date_today(self._target_date, date.today())
         return False
 
     @property
@@ -334,48 +336,16 @@ class AnniversaryBinarySensor(BaseBinarySensor):
         
         self._original_date = parse_date(target_date)
 
-    def _get_next_anniversary(self) -> date:
-        """Calculate the next anniversary date from today.
-        
-        Determines when the next occurrence of this anniversary will happen,
-        handling leap year edge cases for February 29th dates.
-        
-        Returns:
-            Date of the next anniversary occurrence
-        """
-        today = date.today()
-        current_year = today.year
-        
-        # Try this year's anniversary first
-        try:
-            this_year_anniversary = self._original_date.replace(year=current_year)
-            if this_year_anniversary >= today:
-                return this_year_anniversary
-        except ValueError:
-            # Handle leap year edge case (Feb 29 -> Feb 28 in non-leap years)
-            this_year_anniversary = date(current_year, 2, 28)
-            if this_year_anniversary >= today:
-                return this_year_anniversary
-        
-        # If this year's anniversary has passed, get next year's
-        try:
-            next_year_anniversary = self._original_date.replace(year=current_year + 1)
-            return next_year_anniversary
-        except ValueError:
-            # Handle leap year edge case for next year
-            return date(current_year + 1, 2, 28)
-
     def _calculate_value(self) -> bool:
         """Calculate the current boolean value for this anniversary condition.
-        
+
         Returns:
             Boolean indicating if today is an anniversary occurrence
         """
         if self._sensor_type == "is_today":
-            # Anniversary is today
             today = date.today()
-            next_anniversary = self._get_next_anniversary()
-            return today == next_anniversary
+            next_ann = next_anniversary(self._original_date, today)
+            return is_date_today(next_ann, today)
         return False
 
     @property
@@ -405,14 +375,14 @@ class AnniversaryBinarySensor(BaseBinarySensor):
             
         if self._event_data.get(CONF_NOTES):
             attributes["notes"] = self._event_data[CONF_NOTES]
-        
+
         # Add anniversary progression metadata
-        next_anniversary = self._get_next_anniversary()
+        next_ann = next_anniversary(self._original_date, date.today())
         attributes.update({
-            "next_anniversary": next_anniversary.isoformat(),
-            "years_on_next": next_anniversary.year - self._original_date.year,
+            "next_anniversary": next_ann.isoformat(),
+            "years_on_next": next_ann.year - self._original_date.year,
         })
-        
+
         return attributes
 
 
@@ -441,33 +411,17 @@ class SpecialBinarySensor(BaseBinarySensor):
         # Get the special event type and info
         self._special_type = event_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
         self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas_eve"])
-        
-        # Use consistent star icon for all special events (matches other event types)
-
-    def _get_next_event_date(self):
-        """Calculate the next occurrence of this special event.
-        
-        Returns:
-            Date of the next event occurrence, or None if calculation fails
-        """
-        # Import from special sensor to reuse calculation logic
-        from .sensors.special import SpecialEventSensor
-        
-        # Create a temporary special sensor to use its calculation methods
-        temp_sensor = SpecialEventSensor(self._config_entry, self._event_data, "next_date")
-        return temp_sensor._get_next_event_date()
 
     def _calculate_value(self) -> bool:
         """Calculate the current boolean value for this special event condition.
-        
+
         Returns:
             Boolean indicating if today is the special event occurrence
         """
         if self._sensor_type == "is_today":
-            # Special event is today
             today = date.today()
-            next_event_date = self._get_next_event_date()
-            return today == next_event_date if next_event_date else False
+            next_event_date = next_special_event(self._special_info, today)
+            return is_date_today(next_event_date, today) if next_event_date else False
         return False
 
     @property
@@ -486,9 +440,9 @@ class SpecialBinarySensor(BaseBinarySensor):
             "special_type": self._special_type,
             "special_name": self._special_info.get("name", "Unknown"),
         }
-        
+
         # Add next event date
-        next_date = self._get_next_event_date()
+        next_date = next_special_event(self._special_info, date.today())
         if next_date:
             attributes["next_date"] = next_date.isoformat()
         
