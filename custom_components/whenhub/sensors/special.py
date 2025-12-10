@@ -7,7 +7,7 @@ for fixed holidays and compute dates for moveable feasts like Easter.
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import datetime
 from typing import Any, TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -54,11 +54,11 @@ class SpecialEventSensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, SPECIAL_SENSOR_TYPES)
 
     @property
-    def native_value(self) -> date | int | float | None:
+    def native_value(self) -> datetime | int | float | None:
         """Return the current sensor value from coordinator data.
 
         Returns:
-            Sensor value appropriate for the sensor type (date, or int for days)
+            Sensor value appropriate for the sensor type (datetime, or int for days)
         """
         data = self.coordinator.data
         if not data:
