@@ -92,7 +92,7 @@ TRIP_SENSOR_TYPES = {
         "name": "Event Date",
         "icon": "mdi:calendar",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
     "trip_left_days": {
         "name": "Trip Left Days",
@@ -119,7 +119,7 @@ MILESTONE_SENSOR_TYPES = {
         "name": "Event Date",
         "icon": "mdi:calendar",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
 }
 
@@ -141,7 +141,7 @@ ANNIVERSARY_SENSOR_TYPES = {
         "name": "Event Date",
         "icon": "mdi:calendar",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
     "occurrences_count": {
         "name": "Occurrences Count",
@@ -152,13 +152,13 @@ ANNIVERSARY_SENSOR_TYPES = {
         "name": "Next Date",
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
     "last_date": {
         "name": "Last Date",
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
 }
 
@@ -217,19 +217,19 @@ SPECIAL_SENSOR_TYPES = {
         "name": "Event Date",
         "icon": "mdi:calendar",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
     "next_date": {
         "name": "Next Date",
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
     "last_date": {
         "name": "Last Date",
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
-        "device_class": "date",
+        "device_class": "timestamp",
     },
 }
 

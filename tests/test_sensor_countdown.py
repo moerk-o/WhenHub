@@ -3,11 +3,13 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
+from conftest import get_date_from_state
+
 @pytest.mark.asyncio
 async def test_trip_countdown_future_18_days(hass: HomeAssistant, trip_config_entry):
     """Test trip countdown shows 18 days when 18 days before start."""
     trip_config_entry.add_to_hass(hass)
-    
+
     with freeze_time("2026-06-24 08:00:00+00:00"):  # 18 days before 2026-07-12
         assert await hass.config_entries.async_setup(trip_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -16,11 +18,11 @@ async def test_trip_countdown_future_18_days(hass: HomeAssistant, trip_config_en
         sensor = hass.states.get("sensor.danemark_2026_days_until")
         assert sensor is not None
         assert int(sensor.state) == 18
-        
+
         # Check event_date sensor shows start date
         event_date = hass.states.get("sensor.danemark_2026_event_date")
         assert event_date is not None
-        assert event_date.state == "2026-07-12"
+        assert get_date_from_state(event_date.state) == "2026-07-12"
 
 @pytest.mark.asyncio
 async def test_trip_active_during_trip(hass: HomeAssistant, trip_config_entry):
@@ -95,13 +97,13 @@ async def test_anniversary_next_occurrence(hass: HomeAssistant, anniversary_conf
         # Check next date
         next_date = hass.states.get("sensor.geburtstag_max_next_date")
         assert next_date is not None
-        assert next_date.state == "2026-05-20"
+        assert get_date_from_state(next_date.state) == "2026-05-20"
 
 @pytest.mark.asyncio
 async def test_special_christmas_countdown(hass: HomeAssistant, special_config_entry):
     """Test special event Christmas countdown."""
     special_config_entry.add_to_hass(hass)
-    
+
     with freeze_time("2026-12-01 08:00:00+00:00"):  # 23 days before Christmas Eve
         assert await hass.config_entries.async_setup(special_config_entry.entry_id)
         await hass.async_block_till_done()
@@ -110,8 +112,8 @@ async def test_special_christmas_countdown(hass: HomeAssistant, special_config_e
         sensor = hass.states.get("sensor.weihnachts_countdown_days_until")
         assert sensor is not None
         assert int(sensor.state) == 23
-        
+
         # Check next date
         next_date = hass.states.get("sensor.weihnachts_countdown_next_date")
         assert next_date is not None
-        assert next_date.state == "2026-12-24"
+        assert get_date_from_state(next_date.state) == "2026-12-24"

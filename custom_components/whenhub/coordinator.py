@@ -7,12 +7,13 @@ this coordinator to receive updates efficiently.
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
@@ -50,6 +51,20 @@ _LOGGER = logging.getLogger(__name__)
 # Update interval - once per hour is sufficient for date-based calculations
 # Sensors will still show correct values since calculations use date.today()
 UPDATE_INTERVAL = timedelta(hours=1)
+
+
+def _date_to_datetime(d: date | None) -> datetime | None:
+    """Convert a date to a timezone-aware datetime at start of day.
+
+    Args:
+        d: Date to convert, or None
+
+    Returns:
+        Timezone-aware datetime at midnight local time, or None if input is None
+    """
+    if d is None:
+        return None
+    return dt_util.start_of_local_day(d)
 
 
 class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -133,9 +148,9 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         countdown = countdown_breakdown(start_date, today) if today < start_date else {}
 
         return {
-            # Date objects for sensors with device_class: date
-            "start_date": start_date,
-            "end_date": end_date,
+            # Datetime objects for sensors with device_class: timestamp
+            "start_date": _date_to_datetime(start_date),
+            "end_date": _date_to_datetime(end_date),
             "days_until": days_to_start,
             "days_until_end": days_until(end_date, today),
             "countdown_text": format_countdown_text(start_date, today) if today <= start_date else "0 Tage",
@@ -163,8 +178,8 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         countdown = countdown_breakdown(target_date, today) if today < target_date else {}
 
         return {
-            # Date object for sensors with device_class: date
-            "target_date": target_date,
+            # Datetime object for sensors with device_class: timestamp
+            "target_date": _date_to_datetime(target_date),
             "days_until": days_until(target_date, today),
             "countdown_text": format_countdown_text(target_date, today) if today < target_date else "0 Tage",
             "countdown_breakdown": countdown,
@@ -189,10 +204,10 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         countdown = countdown_breakdown(next_ann, today) if days_to_next > 0 else {}
 
         return {
-            # Date objects for sensors with device_class: date
-            "original_date": original_date,
-            "next_anniversary": next_ann,
-            "last_anniversary": last_ann,
+            # Datetime objects for sensors with device_class: timestamp
+            "original_date": _date_to_datetime(original_date),
+            "next_anniversary": _date_to_datetime(next_ann),
+            "last_anniversary": _date_to_datetime(last_ann),
             "days_until_next": days_to_next,
             "days_since_last": (today - last_ann).days if last_ann else None,
             "countdown_text": format_countdown_text(next_ann, today) if days_to_next > 0 else "0 Tage",
@@ -224,9 +239,9 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return {
             "special_type": special_type,
             "special_name": special_info.get("name", "Unknown"),
-            # Date objects for sensors with device_class: date
-            "next_date": next_event if next_event else today,
-            "last_date": last_event,
+            # Datetime objects for sensors with device_class: timestamp
+            "next_date": _date_to_datetime(next_event if next_event else today),
+            "last_date": _date_to_datetime(last_event),
             "days_until": days_to_next,
             "days_since_last": (today - last_event).days if last_event else None,
             "countdown_text": format_countdown_text(next_event, today) if next_event and days_to_next > 0 else "0 Tage",
