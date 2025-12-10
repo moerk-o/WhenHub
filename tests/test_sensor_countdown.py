@@ -17,10 +17,10 @@ async def test_trip_countdown_future_18_days(hass: HomeAssistant, trip_config_en
         assert sensor is not None
         assert int(sensor.state) == 18
         
-        # Check countdown text
-        countdown = hass.states.get("sensor.danemark_2026_countdown_text")
-        assert countdown is not None
-        assert "18 Tage" in countdown.state or "2 Wochen" in countdown.state
+        # Check event_date sensor shows start date
+        event_date = hass.states.get("sensor.danemark_2026_event_date")
+        assert event_date is not None
+        assert event_date.state == "2026-07-12"
 
 @pytest.mark.asyncio
 async def test_trip_active_during_trip(hass: HomeAssistant, trip_config_entry):

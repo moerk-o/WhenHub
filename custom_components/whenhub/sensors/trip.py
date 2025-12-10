@@ -13,7 +13,6 @@ from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     TRIP_SENSOR_TYPES,
-    TEXT_ZERO_DAYS,
 )
 from .base import BaseCountdownSensor
 
@@ -29,7 +28,7 @@ class TripSensor(BaseCountdownSensor):
     Provides various calculations for trip events that have both start and end dates:
     - days_until: Days until trip starts
     - days_until_end: Days until trip ends
-    - countdown_text: Human-readable countdown to trip start
+    - event_date: Start date of the trip (ISO format)
     - trip_left_days: Days remaining in an active trip
     - trip_left_percent: Percentage of trip remaining
 
@@ -68,8 +67,8 @@ class TripSensor(BaseCountdownSensor):
             return data.get("days_until")
         elif self._sensor_type == "days_until_end":
             return data.get("days_until_end")
-        elif self._sensor_type == "countdown_text":
-            return data.get("countdown_text", TEXT_ZERO_DAYS)
+        elif self._sensor_type == "event_date":
+            return data.get("start_date")
         elif self._sensor_type == "trip_left_days":
             return data.get("trip_left_days")
         elif self._sensor_type == "trip_left_percent":
@@ -81,19 +80,18 @@ class TripSensor(BaseCountdownSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return state attributes for this sensor.
 
-        Only countdown_text sensors get attributes - other trip sensors return empty dict
+        Only event_date sensors get attributes - other trip sensors return empty dict
         to keep the state clean and focused.
 
         Returns:
-            Dictionary with event info and countdown breakdown (for countdown_text only)
+            Dictionary with event info and countdown breakdown (for event_date only)
         """
-        if self._sensor_type == "countdown_text":
+        if self._sensor_type == "event_date":
             data = self.coordinator.data
             attributes = self._get_base_attributes()
             attributes.update({
-                "start_date": data.get("start_date"),
                 "end_date": data.get("end_date"),
-                "total_days": data.get("total_days"),
+                "trip_duration_days": data.get("total_days"),
             })
             attributes.update(self._get_countdown_attributes())
             return attributes

@@ -176,14 +176,14 @@ class BaseCountdownSensor(BaseSensor):
         """Get countdown breakdown as individual attributes from coordinator data.
 
         Returns:
-            Dictionary with text_years, text_months, text_weeks, text_days keys
+            Dictionary with breakdown_years, breakdown_months, breakdown_weeks, breakdown_days keys
         """
         breakdown = self.coordinator.data.get("countdown_breakdown", {})
         return {
-            "text_years": breakdown.get("years", 0),
-            "text_months": breakdown.get("months", 0),
-            "text_weeks": breakdown.get("weeks", 0),
-            "text_days": breakdown.get("days", 0),
+            "breakdown_years": breakdown.get("years", 0),
+            "breakdown_months": breakdown.get("months", 0),
+            "breakdown_weeks": breakdown.get("weeks", 0),
+            "breakdown_days": breakdown.get("days", 0),
         }
 
     def _get_anniversary_for_year(self, original_date: date, target_year: int) -> date:

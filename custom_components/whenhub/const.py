@@ -86,9 +86,9 @@ TRIP_SENSOR_TYPES = {
         "icon": "mdi:calendar-clock",
         "unit": "days",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
     },
     "trip_left_days": {
@@ -110,9 +110,9 @@ MILESTONE_SENSOR_TYPES = {
         "icon": "mdi:calendar-clock",
         "unit": "days",
     },
-    "countdown_text": {
-        "name": "Countdown Text", 
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
     },
 }
@@ -129,9 +129,9 @@ ANNIVERSARY_SENSOR_TYPES = {
         "icon": "mdi:calendar-minus",
         "unit": "days",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text", 
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
     },
     "occurrences_count": {
@@ -200,9 +200,9 @@ SPECIAL_SENSOR_TYPES = {
         "icon": "mdi:calendar-minus",
         "unit": "days",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
     },
     "next_date": {

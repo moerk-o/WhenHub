@@ -13,7 +13,6 @@ from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     SPECIAL_SENSOR_TYPES,
-    TEXT_ZERO_DAYS,
 )
 from .base import BaseCountdownSensor
 
@@ -29,7 +28,7 @@ class SpecialEventSensor(BaseCountdownSensor):
     Provides countdown calculations for fixed and calculated special events:
     - days_until: Integer days until the next occurrence
     - days_since_last: Integer days since the last occurrence
-    - countdown_text: Human-readable countdown text
+    - event_date: Date of next occurrence (ISO format)
     - next_date: ISO date string of next occurrence
     - last_date: ISO date string of last occurrence
 
@@ -68,8 +67,8 @@ class SpecialEventSensor(BaseCountdownSensor):
             return data.get("days_until", 0)
         elif self._sensor_type == "days_since_last":
             return data.get("days_since_last")
-        elif self._sensor_type == "countdown_text":
-            return data.get("countdown_text", TEXT_ZERO_DAYS)
+        elif self._sensor_type == "event_date":
+            return data.get("next_date")
         elif self._sensor_type == "next_date":
             return data.get("next_date")
         elif self._sensor_type == "last_date":
@@ -80,13 +79,12 @@ class SpecialEventSensor(BaseCountdownSensor):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return state attributes for this sensor."""
-        if self._sensor_type == "countdown_text":
+        if self._sensor_type == "event_date":
             data = self.coordinator.data
             attributes = self._get_base_attributes()
             attributes.update({
                 "special_type": data.get("special_type"),
                 "special_name": data.get("special_name"),
-                "next_date": data.get("next_date"),
             })
             attributes.update(self._get_countdown_attributes())
             return attributes
