@@ -1,9 +1,16 @@
 # WhenHub
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-green.svg)
 
 WhenHub is a Home Assistant integration for tracking various events and important dates. The integration provides countdown sensors, status information, and visual representations for your events.
+
+## What's New in 2.0.0
+
+- **Internationalization**: Full German and English support - UI adapts to your HA language setting
+- **Localized Date Display**: Date sensors now show relative time ("In 18 days", "Tomorrow") in the frontend
+- **Improved Sensor Classes**: Proper `device_class` for duration and timestamp sensors
+- **Lovelace Format Options**: Use `format: relative`, `format: date`, etc. in your cards
 
 ## Overview
 
@@ -47,7 +54,7 @@ When setting up a Trip event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Start date of the trip (ISO format)
+- **Event Date** - Start date of the trip (ISO 8601 timestamp, displays as relative time)
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (trip)
@@ -93,7 +100,7 @@ When setting up a Milestone event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Target date of the milestone (ISO format)
+- **Event Date** - Target date of the milestone (ISO 8601 timestamp, displays as relative time)
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (milestone)
@@ -132,7 +139,7 @@ When setting up an Anniversary event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Date of the next anniversary (ISO format)
+- **Event Date** - Date of the next anniversary (ISO 8601 timestamp, displays as relative time)
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (anniversary)
@@ -145,8 +152,8 @@ When setting up an Anniversary event, you configure:
 - **Days Until Next** - Days until next anniversary
 - **Days Since Last** - Days since last anniversary
 - **Occurrences Count** - Number of past occurrences
-- **Next Date** - Date of next anniversary (ISO format)
-- **Last Date** - Date of last anniversary (ISO format)
+- **Next Date** - Date of next anniversary (ISO 8601 timestamp)
+- **Last Date** - Date of last anniversary (ISO 8601 timestamp)
 
 #### Binary Sensors
 - **Is Today** - `true` when today is an anniversary day
@@ -183,7 +190,7 @@ When setting up a Special Event, you configure:
 #### Sensors
 - **Days Until** - Days until next occurrence
 - **Days Since Last** - Days since last occurrence
-- **Event Date** - Date of the next occurrence (ISO format)
+- **Event Date** - Date of the next occurrence (ISO 8601 timestamp, displays as relative time)
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (special)
@@ -193,8 +200,8 @@ When setting up a Special Event, you configure:
     - `breakdown_months` - Months component of countdown until next
     - `breakdown_weeks` - Weeks component of countdown until next
     - `breakdown_days` - Days component of countdown until next
-- **Next Date** - ISO date of next occurrence
-- **Last Date** - ISO date of last occurrence
+- **Next Date** - Date of next occurrence (ISO 8601 timestamp)
+- **Last Date** - Date of last occurrence (ISO 8601 timestamp)
 
 #### Binary Sensors
 - **Is Today** - `true` when today is the special event day
