@@ -7,13 +7,13 @@ single target date.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any, TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     MILESTONE_SENSOR_TYPES,
-    TEXT_ZERO_DAYS,
 )
 from .base import BaseCountdownSensor
 
@@ -28,7 +28,7 @@ class MilestoneSensor(BaseCountdownSensor):
 
     Provides countdown calculations for single-date events that don't repeat:
     - days_until: Integer days until the milestone date
-    - countdown_text: Human-readable countdown text with years/months/weeks/days breakdown
+    - event_date: Target date of the milestone (ISO format)
 
     Unlike Trip sensors (which have start/end dates) or Anniversary sensors (which repeat),
     Milestone sensors focus on a single target date that occurs once.
@@ -54,11 +54,11 @@ class MilestoneSensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, MILESTONE_SENSOR_TYPES)
 
     @property
-    def native_value(self) -> str | int | float | None:
+    def native_value(self) -> datetime | int | float | None:
         """Return the current sensor value from coordinator data.
 
         Returns:
-            Sensor value appropriate for the sensor type (int for days, str for countdown text)
+            Sensor value appropriate for the sensor type (datetime, or int for days)
         """
         data = self.coordinator.data
         if not data:
@@ -66,8 +66,8 @@ class MilestoneSensor(BaseCountdownSensor):
 
         if self._sensor_type == "days_until":
             return data.get("days_until")
-        elif self._sensor_type == "countdown_text":
-            return data.get("countdown_text", TEXT_ZERO_DAYS)
+        elif self._sensor_type == "event_date":
+            return data.get("target_date")
 
         return None
 
@@ -75,18 +75,15 @@ class MilestoneSensor(BaseCountdownSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return state attributes for this sensor.
 
-        Only countdown_text sensors get attributes - other milestone sensors return empty dict
+        Only event_date sensors get attributes - other milestone sensors return empty dict
         to keep the state clean and focused.
 
         Returns:
-            Dictionary with event info and countdown breakdown (for countdown_text only)
+            Dictionary with event info and countdown breakdown (for event_date only)
         """
-        if self._sensor_type == "countdown_text":
+        if self._sensor_type == "event_date":
             data = self.coordinator.data
             attributes = self._get_base_attributes()
-            attributes.update({
-                "date": data.get("target_date"),
-            })
             attributes.update(self._get_countdown_attributes())
             return attributes
 

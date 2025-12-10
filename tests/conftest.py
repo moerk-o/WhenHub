@@ -8,6 +8,23 @@ project_root = os.path.dirname(os.path.dirname(__file__))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+
+def get_date_from_state(state_value: str) -> str:
+    """Extract date portion from a timestamp state value.
+
+    Timestamp sensors return ISO 8601 format like '2026-07-12T00:00:00+00:00'.
+    This helper extracts just the date part '2026-07-12' for test assertions.
+
+    Args:
+        state_value: The sensor state string (ISO timestamp or date)
+
+    Returns:
+        Date string in YYYY-MM-DD format
+    """
+    if "T" in state_value:
+        return state_value.split("T")[0]
+    return state_value
+
 # Use pytest-homeassistant-custom-component plugin
 pytest_plugins = "pytest_homeassistant_custom_component"
 

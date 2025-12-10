@@ -10,9 +10,9 @@ async def test_trip_setup_creates_entities(hass: HomeAssistant, trip_config_entr
     await hass.async_block_till_done()
 
     # Check sensor entities
-    assert hass.states.get("sensor.danemark_2026_days_until_start") is not None
+    assert hass.states.get("sensor.danemark_2026_days_until") is not None
     assert hass.states.get("sensor.danemark_2026_days_until_end") is not None
-    assert hass.states.get("sensor.danemark_2026_countdown_text") is not None
+    assert hass.states.get("sensor.danemark_2026_event_date") is not None
     assert hass.states.get("sensor.danemark_2026_trip_left_days") is not None
     assert hass.states.get("sensor.danemark_2026_trip_left_percent") is not None
     
@@ -33,7 +33,7 @@ async def test_milestone_setup_creates_entities(hass: HomeAssistant, milestone_c
 
     # Check sensor entities
     assert hass.states.get("sensor.projektabgabe_days_until") is not None
-    assert hass.states.get("sensor.projektabgabe_countdown_text") is not None
+    assert hass.states.get("sensor.projektabgabe_event_date") is not None
     
     # Check binary sensor entity
     assert hass.states.get("binary_sensor.projektabgabe_is_today") is not None
@@ -51,7 +51,7 @@ async def test_anniversary_setup_creates_entities(hass: HomeAssistant, anniversa
     # Check sensor entities
     assert hass.states.get("sensor.geburtstag_max_days_until_next") is not None
     assert hass.states.get("sensor.geburtstag_max_days_since_last") is not None
-    assert hass.states.get("sensor.geburtstag_max_countdown_text") is not None
+    assert hass.states.get("sensor.geburtstag_max_event_date") is not None
     assert hass.states.get("sensor.geburtstag_max_occurrences_count") is not None
     assert hass.states.get("sensor.geburtstag_max_next_date") is not None
     assert hass.states.get("sensor.geburtstag_max_last_date") is not None
@@ -72,7 +72,7 @@ async def test_special_setup_creates_entities(hass: HomeAssistant, special_confi
     # Check sensor entities
     assert hass.states.get("sensor.weihnachts_countdown_days_until") is not None
     assert hass.states.get("sensor.weihnachts_countdown_days_since_last") is not None
-    assert hass.states.get("sensor.weihnachts_countdown_countdown_text") is not None
+    assert hass.states.get("sensor.weihnachts_countdown_event_date") is not None
     assert hass.states.get("sensor.weihnachts_countdown_next_date") is not None
     assert hass.states.get("sensor.weihnachts_countdown_last_date") is not None
     

@@ -3,6 +3,8 @@ import pytest
 from freezegun import freeze_time
 from homeassistant.core import HomeAssistant
 
+from conftest import get_date_from_state
+
 
 # =============================================================================
 # Single Day Trip Tests
@@ -18,7 +20,7 @@ async def test_single_day_trip_countdown(hass: HomeAssistant, single_day_trip_co
         await hass.async_block_till_done()
 
         # Days until start
-        sensor = hass.states.get("sensor.tagesausflug_days_until_start")
+        sensor = hass.states.get("sensor.tagesausflug_days_until")
         assert sensor is not None
         assert int(sensor.state) == 5
 
@@ -70,7 +72,7 @@ async def test_past_trip_negative_days(hass: HomeAssistant, past_trip_config_ent
         await hass.async_block_till_done()
 
         # Days until start should be negative
-        sensor = hass.states.get("sensor.vergangener_urlaub_days_until_start")
+        sensor = hass.states.get("sensor.vergangener_urlaub_days_until")
         assert sensor is not None
         days = int(sensor.state)
         assert days < 0  # Should be negative (trip was in 2024)
@@ -122,7 +124,7 @@ async def test_long_trip_countdown(hass: HomeAssistant, long_trip_config_entry):
         await hass.async_block_till_done()
 
         # Days until start
-        sensor = hass.states.get("sensor.weltreise_days_until_start")
+        sensor = hass.states.get("sensor.weltreise_days_until")
         assert sensor is not None
         assert int(sensor.state) == 31
 
@@ -148,7 +150,7 @@ async def test_long_trip_during_trip(hass: HomeAssistant, long_trip_config_entry
         assert active.state == "on"
 
         # Days until start should be negative (already started)
-        sensor = hass.states.get("sensor.weltreise_days_until_start")
+        sensor = hass.states.get("sensor.weltreise_days_until")
         assert sensor is not None
         assert int(sensor.state) < 0
 
@@ -174,7 +176,7 @@ async def test_leap_year_anniversary_in_non_leap_year(hass: HomeAssistant, leap_
         # Next date should be Feb 28 (not Feb 29)
         next_date = hass.states.get("sensor.schaltjahr_geburtstag_next_date")
         assert next_date is not None
-        assert next_date.state == "2025-02-28"  # Falls back to Feb 28
+        assert get_date_from_state(next_date.state) == "2025-02-28"  # Falls back to Feb 28
 
         # Days until should be 8 (Feb 20 -> Feb 28)
         days = hass.states.get("sensor.schaltjahr_geburtstag_days_until_next")
@@ -194,7 +196,7 @@ async def test_leap_year_anniversary_in_leap_year(hass: HomeAssistant, leap_year
         # Next date should be Feb 29 (leap year!)
         next_date = hass.states.get("sensor.schaltjahr_geburtstag_next_date")
         assert next_date is not None
-        assert next_date.state == "2028-02-29"
+        assert get_date_from_state(next_date.state) == "2028-02-29"
 
         # Days until should be 9 (Feb 20 -> Feb 29)
         days = hass.states.get("sensor.schaltjahr_geburtstag_days_until_next")
@@ -218,7 +220,7 @@ async def test_easter_2026(hass: HomeAssistant, easter_config_entry):
         # Easter 2026 is April 5
         next_date = hass.states.get("sensor.ostern_next_date")
         assert next_date is not None
-        assert next_date.state == "2026-04-05"
+        assert get_date_from_state(next_date.state) == "2026-04-05"
 
         # Days until (March 1 -> April 5 = 35 days)
         days = hass.states.get("sensor.ostern_days_until")
@@ -238,7 +240,7 @@ async def test_easter_2027(hass: HomeAssistant, easter_config_entry):
         # Easter 2027 is March 28
         next_date = hass.states.get("sensor.ostern_next_date")
         assert next_date is not None
-        assert next_date.state == "2027-03-28"
+        assert get_date_from_state(next_date.state) == "2027-03-28"
 
 
 # =============================================================================
@@ -257,7 +259,7 @@ async def test_advent_2026(hass: HomeAssistant, advent_config_entry):
         # 1st Advent 2026 is November 29
         next_date = hass.states.get("sensor.1_advent_next_date")
         assert next_date is not None
-        assert next_date.state == "2026-11-29"
+        assert get_date_from_state(next_date.state) == "2026-11-29"
 
         # Days until (Nov 1 -> Nov 29 = 28 days)
         days = hass.states.get("sensor.1_advent_days_until")
@@ -277,4 +279,4 @@ async def test_advent_2025(hass: HomeAssistant, advent_config_entry):
         # 1st Advent 2025 is November 30
         next_date = hass.states.get("sensor.1_advent_next_date")
         assert next_date is not None
-        assert next_date.state == "2025-11-30"
+        assert get_date_from_state(next_date.state) == "2025-11-30"

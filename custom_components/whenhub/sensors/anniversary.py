@@ -7,14 +7,15 @@ track both upcoming and past occurrences of yearly repeating events.
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import datetime
 from typing import Any, TYPE_CHECKING
+
+from homeassistant.util import dt as dt_util
 
 from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     ANNIVERSARY_SENSOR_TYPES,
-    TEXT_ZERO_DAYS,
     TEXT_CALCULATION_RUNNING,
 )
 from .base import BaseCountdownSensor
@@ -31,7 +32,7 @@ class AnniversarySensor(BaseCountdownSensor):
     Provides comprehensive tracking for events that repeat annually:
     - days_until_next: Days until the next anniversary occurrence
     - days_since_last: Days since the last anniversary occurrence
-    - countdown_text: Human-readable countdown to next anniversary
+    - event_date: Date of the next anniversary (ISO format)
     - occurrences_count: Total number of times the anniversary has occurred
     - next_date: ISO date of the next anniversary
     - last_date: ISO date of the last anniversary (if any)
@@ -57,7 +58,7 @@ class AnniversarySensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, ANNIVERSARY_SENSOR_TYPES)
 
     @property
-    def native_value(self) -> str | int | float | None:
+    def native_value(self) -> datetime | int | float | None:
         """Return the current sensor value from coordinator data.
 
         Returns:
@@ -71,8 +72,8 @@ class AnniversarySensor(BaseCountdownSensor):
             return data.get("days_until_next", 0)
         elif self._sensor_type == "days_since_last":
             return data.get("days_since_last")
-        elif self._sensor_type == "countdown_text":
-            return data.get("countdown_text", TEXT_ZERO_DAYS)
+        elif self._sensor_type == "event_date":
+            return data.get("next_anniversary")
         elif self._sensor_type == "occurrences_count":
             return data.get("occurrences_count", 0)
         elif self._sensor_type == "next_date":
@@ -82,7 +83,7 @@ class AnniversarySensor(BaseCountdownSensor):
 
         return None
 
-    def _get_fallback_value(self) -> str | int | None:
+    def _get_fallback_value(self) -> datetime | int | None:
         """Get a safe fallback value based on sensor type for error scenarios.
 
         Provides reasonable default values when calculation errors occur,
@@ -93,33 +94,29 @@ class AnniversarySensor(BaseCountdownSensor):
         """
         if self._sensor_type in ["days_until_next", "days_since_last", "occurrences_count"]:
             return 0
-        elif self._sensor_type == "countdown_text":
-            return TEXT_CALCULATION_RUNNING
-        elif self._sensor_type in ["next_date", "last_date"]:
-            return date.today().isoformat()
+        elif self._sensor_type in ["event_date", "next_date", "last_date"]:
+            return dt_util.start_of_local_day()
         return None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return state attributes for this sensor.
 
-        Only countdown_text sensors get attributes - other anniversary sensors return empty dict
+        Only event_date sensors get attributes - other anniversary sensors return empty dict
         to keep the state clean and focused.
 
         Returns:
-            Dictionary with event info and countdown breakdown (for countdown_text only)
+            Dictionary with event info and countdown breakdown (for event_date only)
         """
-        if self._sensor_type == "countdown_text":
+        if self._sensor_type == "event_date":
             data = self.coordinator.data
+            original_datetime = data.get("original_date")
             attributes = self._get_base_attributes()
             attributes.update({
-                "initial_date": data.get("original_date"),
-            })
-            attributes.update(self._get_countdown_attributes())
-            attributes.update({
-                "next_anniversary": data.get("next_anniversary"),
+                "initial_date": original_datetime.date().isoformat() if original_datetime else None,
                 "years_on_next": data.get("years_on_next", 0),
             })
+            attributes.update(self._get_countdown_attributes())
             return attributes
 
         return {}

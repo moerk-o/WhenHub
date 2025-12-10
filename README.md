@@ -1,9 +1,16 @@
 # WhenHub
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-green.svg)
 
 WhenHub is a Home Assistant integration for tracking various events and important dates. The integration provides countdown sensors, status information, and visual representations for your events.
+
+## What's New in 2.0.0
+
+- **Internationalization**: Full German and English support - UI adapts to your HA language setting
+- **Localized Date Display**: Date sensors now show relative time ("In 18 days", "Tomorrow") in the frontend
+- **Improved Sensor Classes**: Proper `device_class` for duration and timestamp sensors
+- **Lovelace Format Options**: Use `format: relative`, `format: date`, etc. in your cards
 
 ## Overview
 
@@ -47,19 +54,18 @@ When setting up a Trip event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Countdown Text** - Formatted countdown text, will stay at 0 once the date has passed
-  - **Attributes**: 
+- **Event Date** - Start date of the trip (ISO 8601 timestamp, displays as relative time)
+  - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (trip)
-    - `start_date` - Start date (ISO format)
     - `end_date` - End date (ISO format)
-    - `total_days` - Total trip duration in days
-    - `text_years` - Years from countdown text until start
-    - `text_months` - Months from countdown text until start
-    - `text_weeks` - Weeks from countdown text until start
-    - `text_days` - Days from countdown text until start
+    - `trip_duration_days` - Total trip duration in days
+    - `breakdown_years` - Years component of countdown until start
+    - `breakdown_months` - Months component of countdown until start
+    - `breakdown_weeks` - Weeks component of countdown until start
+    - `breakdown_days` - Days component of countdown until start
 - **Days Until Start** -  Days until trip begins (can become negative if date has passed)
-- **Days Until End** - Days until trip ends (can become negative if date has passed) 
+- **Days Until End** - Days until trip ends (can become negative if date has passed)
 - **Trip Left Days** - Remaining days during the trip
 - **Trip Left Percent** - Remaining trip percentage (100% before start, decreases during trip, 0% after end)
 
@@ -94,15 +100,14 @@ When setting up a Milestone event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Countdown Text** - Formatted countdown text, will stay at 0 once the date has passed
-  - **Attributes**: 
+- **Event Date** - Target date of the milestone (ISO 8601 timestamp, displays as relative time)
+  - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (milestone)
-    - `date` - Target date (ISO format)
-    - `text_years` - Years from countdown text until target
-    - `text_months` - Months from countdown text until target
-    - `text_weeks` - Weeks from countdown text until target
-    - `text_days` - Days from countdown text until target
+    - `breakdown_years` - Years component of countdown until target
+    - `breakdown_months` - Months component of countdown until target
+    - `breakdown_weeks` - Weeks component of countdown until target
+    - `breakdown_days` - Days component of countdown until target
 - **Days Until** - Days until milestone (can become negative if date has passed)
 
 #### Binary Sensors
@@ -134,22 +139,21 @@ When setting up an Anniversary event, you configure:
 ### Available Entities
 
 #### Sensors
-- **Countdown Text** - Formatted countdown text to next anniversary, will show 0 only on anniversary day
-  - **Attributes**: 
+- **Event Date** - Date of the next anniversary (ISO 8601 timestamp, displays as relative time)
+  - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (anniversary)
     - `initial_date` - Original date (ISO format)
-    - `next_anniversary` - Date of next anniversary (ISO format)
     - `years_on_next` - Number of years at next anniversary
-    - `text_years` - Years from countdown text until next anniversary
-    - `text_months` - Months from countdown text until next anniversary
-    - `text_weeks` - Weeks from countdown text until next anniversary
-    - `text_days` - Days from countdown text until next anniversary
+    - `breakdown_years` - Years component of countdown until next anniversary
+    - `breakdown_months` - Months component of countdown until next anniversary
+    - `breakdown_weeks` - Weeks component of countdown until next anniversary
+    - `breakdown_days` - Days component of countdown until next anniversary
 - **Days Until Next** - Days until next anniversary
 - **Days Since Last** - Days since last anniversary
 - **Occurrences Count** - Number of past occurrences
-- **Next Date** - Date of next anniversary (ISO format)
-- **Last Date** - Date of last anniversary (ISO format)
+- **Next Date** - Date of next anniversary (ISO 8601 timestamp)
+- **Last Date** - Date of last anniversary (ISO 8601 timestamp)
 
 #### Binary Sensors
 - **Is Today** - `true` when today is an anniversary day
@@ -186,19 +190,18 @@ When setting up a Special Event, you configure:
 #### Sensors
 - **Days Until** - Days until next occurrence
 - **Days Since Last** - Days since last occurrence
-- **Countdown Text** - Formatted countdown text to next occurrence
-  - **Attributes**: 
+- **Event Date** - Date of the next occurrence (ISO 8601 timestamp, displays as relative time)
+  - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (special)
     - `special_type` - Specific holiday type (e.g., "christmas", "easter")
     - `special_name` - Display name of the holiday
-    - `next_date` - Date of next occurrence
-    - `text_years` - Years from countdown text until next
-    - `text_months` - Months from countdown text until next
-    - `text_weeks` - Weeks from countdown text until next
-    - `text_days` - Days from countdown text until next
-- **Next Date** - ISO date of next occurrence
-- **Last Date** - ISO date of last occurrence
+    - `breakdown_years` - Years component of countdown until next
+    - `breakdown_months` - Months component of countdown until next
+    - `breakdown_weeks` - Weeks component of countdown until next
+    - `breakdown_days` - Days component of countdown until next
+- **Next Date** - Date of next occurrence (ISO 8601 timestamp)
+- **Last Date** - Date of last occurrence (ISO 8601 timestamp)
 
 #### Binary Sensors
 - **Is Today** - `true` when today is the special event day
@@ -288,15 +291,15 @@ WhenHub supports various types of images for your events:
 
 Images are stored in Home Assistant's `www/` directory and referenced via `/local/` paths.
 
-### Countdown Text Formatting
+### Countdown Breakdown Attributes
 
-The countdown text uses intelligent German formatting
-*(multilingual support coming soon):*
-- **Complete**: "2 Jahre, 3 Monate, 1 Woche, 4 Tage"
-- **Shortened**: "5 Tage" (zero values are omitted)
-- **Reached**: "0 Tage" when the date is reached or passed
+The `event_date` sensor provides breakdown attributes for building localized countdown text:
+- `breakdown_years` - Years component (integer)
+- `breakdown_months` - Months component (integer)
+- `breakdown_weeks` - Weeks component (integer)
+- `breakdown_days` - Days component (integer)
 
-The calculation uses approximations (365 days/year, 30 days/month) for consistent results.
+These values are calculated using approximations (365 days/year, 30 days/month) for consistent results. Use these attributes in Lovelace cards or templates to create formatted countdown text in your preferred language.
 
 ### Options Flow
 

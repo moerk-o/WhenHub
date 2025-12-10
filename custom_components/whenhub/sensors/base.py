@@ -99,10 +99,30 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._sensor_types = sensor_types
 
         # Set entity attributes based on sensor type configuration
-        self._attr_name = f"{event_data[CONF_EVENT_NAME]} {sensor_types[sensor_type]['name']}"
+        # Use translation_key for entity name translation (HA i18n system)
+        # Note: Do NOT set _attr_name when using translation_key - it would override translations
+        self._attr_has_entity_name = True
+        self._attr_translation_key = sensor_type
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
         self._attr_icon = sensor_types[sensor_type]["icon"]
-        self._attr_native_unit_of_measurement = sensor_types[sensor_type]["unit"]
+        self._attr_native_unit_of_measurement = sensor_types[sensor_type].get("unit")
+
+        # Set device_class if specified in sensor type configuration
+        device_class = sensor_types[sensor_type].get("device_class")
+        if device_class:
+            self._attr_device_class = device_class
+
+        # Store sensor_type for stable entity_id generation (via suggested_object_id)
+        self._object_id_key = sensor_type
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Return a stable object_id based on sensor_type key.
+
+        This ensures entity IDs remain stable regardless of translation language.
+        The displayed name uses translation_key for localization.
+        """
+        return self._object_id_key
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -176,14 +196,14 @@ class BaseCountdownSensor(BaseSensor):
         """Get countdown breakdown as individual attributes from coordinator data.
 
         Returns:
-            Dictionary with text_years, text_months, text_weeks, text_days keys
+            Dictionary with breakdown_years, breakdown_months, breakdown_weeks, breakdown_days keys
         """
         breakdown = self.coordinator.data.get("countdown_breakdown", {})
         return {
-            "text_years": breakdown.get("years", 0),
-            "text_months": breakdown.get("months", 0),
-            "text_weeks": breakdown.get("weeks", 0),
-            "text_days": breakdown.get("days", 0),
+            "breakdown_years": breakdown.get("years", 0),
+            "breakdown_months": breakdown.get("months", 0),
+            "breakdown_weeks": breakdown.get("weeks", 0),
+            "breakdown_days": breakdown.get("days", 0),
         }
 
     def _get_anniversary_for_year(self, original_date: date, target_year: int) -> date:

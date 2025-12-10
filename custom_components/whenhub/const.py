@@ -72,29 +72,33 @@ TEXT_CALCULATION_RUNNING = "Berechnung läuft..."
 
 # Device constants
 MANUFACTURER = "WhenHub"
-SW_VERSION = "1.0.0"
+SW_VERSION = "2.0.0"
 
 # Sensor types for Trip (multi-day events)
 TRIP_SENSOR_TYPES = {
     "days_until": {
         "name": "Days Until Start",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "days_until_end": {
         "name": "Days Until End",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
     "trip_left_days": {
         "name": "Trip Left Days",
         "icon": "mdi:calendar-minus",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "trip_left_percent": {
         "name": "Trip Left Percent",
@@ -108,12 +112,14 @@ MILESTONE_SENSOR_TYPES = {
     "days_until": {
         "name": "Days Until",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text", 
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
 }
 
@@ -122,32 +128,37 @@ ANNIVERSARY_SENSOR_TYPES = {
     "days_until_next": {
         "name": "Days Until Next",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "days_since_last": {
         "name": "Days Since Last",
         "icon": "mdi:calendar-minus",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text", 
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
     "occurrences_count": {
         "name": "Occurrences Count",
         "icon": "mdi:counter",
-        "unit": "times",
+        "unit": None,
     },
     "next_date": {
         "name": "Next Date",
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
+        "device_class": "timestamp",
     },
     "last_date": {
         "name": "Last Date",
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
+        "device_class": "timestamp",
     },
 }
 
@@ -193,27 +204,32 @@ SPECIAL_SENSOR_TYPES = {
     "days_until": {
         "name": "Days Until",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "days_since_last": {
         "name": "Days Since Last",
         "icon": "mdi:calendar-minus",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
     "next_date": {
         "name": "Next Date",
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
+        "device_class": "timestamp",
     },
     "last_date": {
         "name": "Last Date",
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
+        "device_class": "timestamp",
     },
 }
 

@@ -10,6 +10,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import (
     DOMAIN,
@@ -67,23 +68,22 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_event_type_form(self) -> FlowResult:
         """Show event type selection form."""
-        event_type_options = {
-            event_type: f"{info['name']} - {info['description']}" 
-            for event_type, info in EVENT_TYPES.items()
-        }
-        
+        # Use simple string list for options - labels come from translation_key
+        # See: https://developers.home-assistant.io/docs/internationalization/core/#selector
+        event_type_options = list(EVENT_TYPES.keys())
+
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_TYPE): vol.In(event_type_options)
+            vol.Required(CONF_EVENT_TYPE): SelectSelector(
+                SelectSelectorConfig(
+                    options=event_type_options,
+                    translation_key="event_type",
+                )
+            )
         })
 
         return self.async_show_form(
             step_id="user",
             data_schema=data_schema,
-            description_placeholders={
-                "trip_desc": "Mehrtägige Events wie Urlaub oder Geschäftsreisen",
-                "milestone_desc": "Einmalige wichtige Termine wie Geburtstage oder Deadlines", 
-                "anniversary_desc": "Jährlich wiederkehrende Events wie Hochzeitstage",
-            },
         )
 
     async def async_step_trip(
@@ -281,21 +281,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_special_category_form(self) -> FlowResult:
         """Show special event category selection form."""
-        category_options = {
-            key: f"{info['name']} - {info['description']}" 
-            for key, info in SPECIAL_EVENT_CATEGORIES.items()
-        }
-        
+        # Use simple string list for options - labels come from translation_key
+        category_options = list(SPECIAL_EVENT_CATEGORIES.keys())
+
         data_schema = vol.Schema({
-            vol.Required(CONF_SPECIAL_CATEGORY): vol.In(category_options)
+            vol.Required(CONF_SPECIAL_CATEGORY): SelectSelector(
+                SelectSelectorConfig(
+                    options=category_options,
+                    translation_key="special_category",
+                )
+            )
         })
 
         return self.async_show_form(
             step_id="special_category",
             data_schema=data_schema,
-            description_placeholders={
-                "category_info": "Wähle eine Kategorie von Special Events",
-            },
         )
 
     async def async_step_special_event(
@@ -328,19 +328,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             key: info for key, info in SPECIAL_EVENTS.items()
             if info.get("category") == self._special_category
         }
-        
-        # Create options for filtered special events
-        special_options = {
-            key: f"{info['name']}" 
-            for key, info in filtered_events.items()
-        }
-        
-        # Get category name for display
-        category_name = SPECIAL_EVENT_CATEGORIES.get(self._special_category, {}).get("name", "Special Events")
-        
+
+        # Use simple string list for options - labels come from translation_key
+        special_options = list(filtered_events.keys())
+
+        # Get default value
+        default_special_type = special_options[0] if special_options else ""
+        if user_input is not None:
+            default_special_type = user_input.get(CONF_SPECIAL_TYPE, default_special_type)
+
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_SPECIAL_TYPE, default=list(special_options.keys())[0] if special_options and user_input is None else user_input.get(CONF_SPECIAL_TYPE, list(special_options.keys())[0] if special_options else "")): vol.In(special_options),
+            vol.Required(CONF_SPECIAL_TYPE, default=default_special_type): SelectSelector(
+                SelectSelectorConfig(
+                    options=special_options,
+                    translation_key="special_type",
+                )
+            ),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
             vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
             vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
@@ -350,14 +354,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="special_event",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "category_name": category_name,
-                "event_name": "z.B. Weihnachts-Countdown",
-                "special_type": f"Wähle aus {category_name}",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )
 
     @staticmethod
@@ -548,25 +544,25 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Handle special event options."""
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
-            
+
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            
+
             self.hass.config_entries.async_update_entry(
-                self.config_entry, 
+                self.config_entry,
                 data=new_data,
                 title=user_input[CONF_EVENT_NAME]
             )
-            
+
             self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
             return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
-        
+
         # Get current category or determine from existing special_type
         current_category = current_data.get(CONF_SPECIAL_CATEGORY)
-        current_special_type = current_data.get(CONF_SPECIAL_TYPE, "christmas")
-        
+        current_special_type = current_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
+
         # If no category is saved, try to determine it from the special_type
         if not current_category:
             for event_key, event_info in SPECIAL_EVENTS.items():
@@ -575,25 +571,24 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     break
             if not current_category:
                 current_category = "traditional"
-        
+
         # Filter events by current category
         filtered_events = {
             key: info for key, info in SPECIAL_EVENTS.items()
             if info.get("category") == current_category
         }
-        
-        # Create options for filtered special events
-        special_options = {
-            key: f"{info['name']}" 
-            for key, info in filtered_events.items()
-        }
-        
-        # Get category name for display
-        category_name = SPECIAL_EVENT_CATEGORIES.get(current_category, {}).get("name", "Special Events")
-        
+
+        # Use simple string list for options - labels come from translation_key
+        special_options = list(filtered_events.keys())
+
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_SPECIAL_TYPE, default=current_special_type): vol.In(special_options),
+            vol.Required(CONF_SPECIAL_TYPE, default=current_special_type): SelectSelector(
+                SelectSelectorConfig(
+                    options=special_options,
+                    translation_key="special_type",
+                )
+            ),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
             vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
             vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
@@ -602,12 +597,4 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="special_options",
             data_schema=data_schema,
-            description_placeholders={
-                "category_name": category_name,
-                "event_name": "Name des Events",
-                "special_type": f"Wähle aus {category_name}",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
-            },
         )
