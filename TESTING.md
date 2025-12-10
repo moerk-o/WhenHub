@@ -86,11 +86,26 @@ ruff check custom_components/whenhub
 - ✅ Ostern-Berechnung (2026, 2027)
 - ✅ Advent-Berechnung (2025, 2026)
 
+### Pure Calculation Functions (test_calculations.py)
+- ✅ Date Parsing (ISO string, date objects, invalid input)
+- ✅ days_until (future, past, same date)
+- ✅ days_between (multi-day, single day)
+- ✅ Trip calculations (left days, percent, is_active)
+- ✅ is_date_today
+- ✅ Countdown breakdown (years, months, weeks, days)
+- ✅ format_countdown_text (German output, singular/plural)
+- ✅ Anniversary calculations (for_year, next, last, count)
+- ✅ Leap year handling (Feb 29 in leap/non-leap years)
+- ✅ Easter calculation (Gauss algorithm)
+- ✅ Pentecost calculation (49 days after Easter)
+- ✅ Advent calculation (1st-4th Advent)
+- ✅ Special event date calculation (fixed, calculated)
+- ✅ next_special_event / last_special_event
+
 ## Bekannte Lücken (für spätere Tests)
 
 ### Spezialfälle
 - ⏳ DST-Übergänge (Sommer-/Winterzeit)
-- ⏳ Pfingsten-Berechnung
 
 ### Edge Cases
 - ⏳ Ungültige Datumsangaben
@@ -114,6 +129,7 @@ tests/
 ├── conftest.py                 # Fixtures für alle Tests
 ├── test_basic_logic.py         # Basis-Logik ohne HA
 ├── test_binary_today.py        # Binary Sensor Tests
+├── test_calculations.py        # Pure calculation functions (66 tests)
 ├── test_debug_path.py          # Debug/Pfad-Tests
 ├── test_edge_cases.py          # Edge Cases (Schaltjahr, lange Trips, etc.)
 ├── test_manifest_and_setup.py  # Setup & Entity-Erstellung
