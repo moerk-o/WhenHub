@@ -13,7 +13,7 @@ async def test_trip_countdown_future_18_days(hass: HomeAssistant, trip_config_en
         await hass.async_block_till_done()
 
         # Check days until start sensor
-        sensor = hass.states.get("sensor.danemark_2026_days_until_start")
+        sensor = hass.states.get("sensor.danemark_2026_days_until")
         assert sensor is not None
         assert int(sensor.state) == 18
         

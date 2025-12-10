@@ -99,10 +99,25 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._sensor_types = sensor_types
 
         # Set entity attributes based on sensor type configuration
-        self._attr_name = f"{event_data[CONF_EVENT_NAME]} {sensor_types[sensor_type]['name']}"
+        # Use translation_key for entity name translation (HA i18n system)
+        # Note: Do NOT set _attr_name when using translation_key - it would override translations
+        self._attr_has_entity_name = True
+        self._attr_translation_key = sensor_type
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
         self._attr_icon = sensor_types[sensor_type]["icon"]
         self._attr_native_unit_of_measurement = sensor_types[sensor_type]["unit"]
+
+        # Store sensor_type for stable entity_id generation (via suggested_object_id)
+        self._object_id_key = sensor_type
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Return a stable object_id based on sensor_type key.
+
+        This ensures entity IDs remain stable regardless of translation language.
+        The displayed name uses translation_key for localization.
+        """
+        return self._object_id_key
 
     @property
     def device_info(self) -> DeviceInfo:
