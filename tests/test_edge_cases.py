@@ -18,7 +18,7 @@ async def test_single_day_trip_countdown(hass: HomeAssistant, single_day_trip_co
         await hass.async_block_till_done()
 
         # Days until start
-        sensor = hass.states.get("sensor.tagesausflug_days_until_start")
+        sensor = hass.states.get("sensor.tagesausflug_days_until")
         assert sensor is not None
         assert int(sensor.state) == 5
 
@@ -70,7 +70,7 @@ async def test_past_trip_negative_days(hass: HomeAssistant, past_trip_config_ent
         await hass.async_block_till_done()
 
         # Days until start should be negative
-        sensor = hass.states.get("sensor.vergangener_urlaub_days_until_start")
+        sensor = hass.states.get("sensor.vergangener_urlaub_days_until")
         assert sensor is not None
         days = int(sensor.state)
         assert days < 0  # Should be negative (trip was in 2024)
@@ -122,7 +122,7 @@ async def test_long_trip_countdown(hass: HomeAssistant, long_trip_config_entry):
         await hass.async_block_till_done()
 
         # Days until start
-        sensor = hass.states.get("sensor.weltreise_days_until_start")
+        sensor = hass.states.get("sensor.weltreise_days_until")
         assert sensor is not None
         assert int(sensor.state) == 31
 
@@ -148,7 +148,7 @@ async def test_long_trip_during_trip(hass: HomeAssistant, long_trip_config_entry
         assert active.state == "on"
 
         # Days until start should be negative (already started)
-        sensor = hass.states.get("sensor.weltreise_days_until_start")
+        sensor = hass.states.get("sensor.weltreise_days_until")
         assert sensor is not None
         assert int(sensor.state) < 0
 

@@ -10,7 +10,7 @@ async def test_trip_setup_creates_entities(hass: HomeAssistant, trip_config_entr
     await hass.async_block_till_done()
 
     # Check sensor entities
-    assert hass.states.get("sensor.danemark_2026_days_until_start") is not None
+    assert hass.states.get("sensor.danemark_2026_days_until") is not None
     assert hass.states.get("sensor.danemark_2026_days_until_end") is not None
     assert hass.states.get("sensor.danemark_2026_event_date") is not None
     assert hass.states.get("sensor.danemark_2026_trip_left_days") is not None

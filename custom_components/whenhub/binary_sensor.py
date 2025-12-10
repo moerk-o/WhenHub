@@ -34,7 +34,6 @@ from .const import (
     SPECIAL_BINARY_SENSOR_TYPES,
     DEFAULT_IMAGE,
     BINARY_UNIQUE_ID_PATTERN,
-    SENSOR_NAME_PATTERN,
 )
 from .sensors.base import get_device_info
 
@@ -130,21 +129,32 @@ class BaseBinarySensor(CoordinatorEntity["WhenHubCoordinator"], BinarySensorEnti
         self._sensor_type = sensor_type
         self._sensor_types = sensor_types
 
-        # Set entity attributes using standardized patterns
-        self._attr_name = SENSOR_NAME_PATTERN.format(
-            event_name=event_data[CONF_EVENT_NAME],
-            sensor_name=sensor_types[sensor_type]['name']
-        )
+        # Set entity attributes using translation system for i18n support
+        # Note: Do NOT set _attr_name when using translation_key - it would override translations
+        self._attr_has_entity_name = True
+        self._attr_translation_key = sensor_type
         self._attr_unique_id = BINARY_UNIQUE_ID_PATTERN.format(
             entry_id=config_entry.entry_id,
             sensor_type=sensor_type
         )
         self._attr_icon = sensor_types[sensor_type]["icon"]
 
+        # Store sensor_type for stable entity_id generation (via suggested_object_id)
+        self._object_id_key = sensor_type
+
         # Set Home Assistant device class if specified (e.g., 'occurrence')
         device_class = sensor_types[sensor_type].get("device_class")
         if device_class:
             self._attr_device_class = getattr(BinarySensorDeviceClass, device_class.upper(), None)
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Return a stable object_id based on sensor_type key.
+
+        This ensures entity IDs remain stable regardless of translation language.
+        The displayed name uses translation_key for localization.
+        """
+        return self._object_id_key
 
     @property
     def device_info(self) -> DeviceInfo:
