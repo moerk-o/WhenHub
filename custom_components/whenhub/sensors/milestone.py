@@ -7,6 +7,7 @@ single target date.
 from __future__ import annotations
 
 import logging
+from datetime import date
 from typing import Any, TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -53,11 +54,11 @@ class MilestoneSensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, MILESTONE_SENSOR_TYPES)
 
     @property
-    def native_value(self) -> str | int | float | None:
+    def native_value(self) -> date | int | float | None:
         """Return the current sensor value from coordinator data.
 
         Returns:
-            Sensor value appropriate for the sensor type (int for days, str for countdown text)
+            Sensor value appropriate for the sensor type (date, or int for days)
         """
         data = self.coordinator.data
         if not data:

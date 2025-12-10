@@ -133,8 +133,9 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         countdown = countdown_breakdown(start_date, today) if today < start_date else {}
 
         return {
-            "start_date": start_date.isoformat(),
-            "end_date": end_date.isoformat(),
+            # Date objects for sensors with device_class: date
+            "start_date": start_date,
+            "end_date": end_date,
             "days_until": days_to_start,
             "days_until_end": days_until(end_date, today),
             "countdown_text": format_countdown_text(start_date, today) if today <= start_date else "0 Tage",
@@ -162,7 +163,8 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         countdown = countdown_breakdown(target_date, today) if today < target_date else {}
 
         return {
-            "target_date": target_date.isoformat(),
+            # Date object for sensors with device_class: date
+            "target_date": target_date,
             "days_until": days_until(target_date, today),
             "countdown_text": format_countdown_text(target_date, today) if today < target_date else "0 Tage",
             "countdown_breakdown": countdown,
@@ -187,9 +189,10 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         countdown = countdown_breakdown(next_ann, today) if days_to_next > 0 else {}
 
         return {
-            "original_date": original_date.isoformat(),
-            "next_anniversary": next_ann.isoformat(),
-            "last_anniversary": last_ann.isoformat() if last_ann else None,
+            # Date objects for sensors with device_class: date
+            "original_date": original_date,
+            "next_anniversary": next_ann,
+            "last_anniversary": last_ann,
             "days_until_next": days_to_next,
             "days_since_last": (today - last_ann).days if last_ann else None,
             "countdown_text": format_countdown_text(next_ann, today) if days_to_next > 0 else "0 Tage",
@@ -221,8 +224,9 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return {
             "special_type": special_type,
             "special_name": special_info.get("name", "Unknown"),
-            "next_date": next_event.isoformat() if next_event else today.isoformat(),
-            "last_date": last_event.isoformat() if last_event else None,
+            # Date objects for sensors with device_class: date
+            "next_date": next_event if next_event else today,
+            "last_date": last_event,
             "days_until": days_to_next,
             "days_since_last": (today - last_event).days if last_event else None,
             "countdown_text": format_countdown_text(next_event, today) if next_event and days_to_next > 0 else "0 Tage",
