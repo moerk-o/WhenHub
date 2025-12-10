@@ -56,7 +56,7 @@ class AnniversarySensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, ANNIVERSARY_SENSOR_TYPES)
 
     @property
-    def native_value(self) -> str | int | float | None:
+    def native_value(self) -> date | int | float | None:
         """Return the current sensor value from coordinator data.
 
         Returns:
@@ -81,7 +81,7 @@ class AnniversarySensor(BaseCountdownSensor):
 
         return None
 
-    def _get_fallback_value(self) -> str | int | None:
+    def _get_fallback_value(self) -> date | int | None:
         """Get a safe fallback value based on sensor type for error scenarios.
 
         Provides reasonable default values when calculation errors occur,
@@ -92,10 +92,8 @@ class AnniversarySensor(BaseCountdownSensor):
         """
         if self._sensor_type in ["days_until_next", "days_since_last", "occurrences_count"]:
             return 0
-        elif self._sensor_type == "event_date":
-            return date.today().isoformat()
-        elif self._sensor_type in ["next_date", "last_date"]:
-            return date.today().isoformat()
+        elif self._sensor_type in ["event_date", "next_date", "last_date"]:
+            return date.today()
         return None
 
     @property
@@ -110,9 +108,10 @@ class AnniversarySensor(BaseCountdownSensor):
         """
         if self._sensor_type == "event_date":
             data = self.coordinator.data
+            original_date = data.get("original_date")
             attributes = self._get_base_attributes()
             attributes.update({
-                "initial_date": data.get("original_date"),
+                "initial_date": original_date.isoformat() if original_date else None,
                 "years_on_next": data.get("years_on_next", 0),
             })
             attributes.update(self._get_countdown_attributes())

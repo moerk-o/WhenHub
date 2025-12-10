@@ -105,7 +105,12 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._attr_translation_key = sensor_type
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
         self._attr_icon = sensor_types[sensor_type]["icon"]
-        self._attr_native_unit_of_measurement = sensor_types[sensor_type]["unit"]
+        self._attr_native_unit_of_measurement = sensor_types[sensor_type].get("unit")
+
+        # Set device_class if specified in sensor type configuration
+        device_class = sensor_types[sensor_type].get("device_class")
+        if device_class:
+            self._attr_device_class = device_class
 
         # Store sensor_type for stable entity_id generation (via suggested_object_id)
         self._object_id_key = sensor_type

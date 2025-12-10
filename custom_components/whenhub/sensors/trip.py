@@ -7,6 +7,7 @@ and remaining trip duration.
 from __future__ import annotations
 
 import logging
+from datetime import date
 from typing import Any, TYPE_CHECKING
 
 from homeassistant.config_entries import ConfigEntry
@@ -53,11 +54,11 @@ class TripSensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, TRIP_SENSOR_TYPES)
 
     @property
-    def native_value(self) -> str | int | float | None:
+    def native_value(self) -> date | int | float | None:
         """Return the current sensor value from coordinator data.
 
         Returns:
-            Sensor value appropriate for the sensor type (int for days, str for text, etc.)
+            Sensor value appropriate for the sensor type (date, int for days, float for percent)
         """
         data = self.coordinator.data
         if not data:
@@ -88,9 +89,10 @@ class TripSensor(BaseCountdownSensor):
         """
         if self._sensor_type == "event_date":
             data = self.coordinator.data
+            end_date = data.get("end_date")
             attributes = self._get_base_attributes()
             attributes.update({
-                "end_date": data.get("end_date"),
+                "end_date": end_date.isoformat() if end_date else None,
                 "trip_duration_days": data.get("total_days"),
             })
             attributes.update(self._get_countdown_attributes())
