@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import logging
-import os
-import uuid
 from typing import Any
 import voluptuous as vol
 from datetime import date
@@ -57,7 +55,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._event_type = user_input[CONF_EVENT_TYPE]
         
-        # Weiter zum entsprechenden Event-spezifischen Schritt
+        # Route to the appropriate event-specific step
         if self._event_type == EVENT_TYPE_TRIP:
             return await self.async_step_trip()
         elif self._event_type == EVENT_TYPE_MILESTONE:

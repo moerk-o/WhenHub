@@ -18,7 +18,7 @@ def test_special_events_structure():
     assert SPECIAL_EVENTS["christmas_eve"]["name"] == "Heilig Abend"
     assert SPECIAL_EVENTS["christmas_eve"]["month"] == 12
     assert SPECIAL_EVENTS["christmas_eve"]["day"] == 24
-    
+
     # Test Easter is calculated type
     assert SPECIAL_EVENTS["easter"]["type"] == "calculated"
     assert SPECIAL_EVENTS["easter"]["calculation"] == "easter"
@@ -51,7 +51,7 @@ def test_countdown_text_formatting():
             return "1 Tag"
         else:
             return f"{days} Tage"
-    
+
     assert format_countdown(0) == "0 Tage"
     assert format_countdown(1) == "1 Tag"
     assert format_countdown(5) == "5 Tage"
