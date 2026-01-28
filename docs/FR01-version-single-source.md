@@ -77,6 +77,8 @@ Nach dieser Änderung:
 
 ## Status
 
-- [ ] Implementierung
-- [ ] Tests anpassen
-- [ ] Alte Datei `docs/version-single-source.md` löschen
+- [x] Implementierung
+- [x] Tests anpassen
+- [x] Alte Datei `docs/version-single-source.md` löschen
+
+**Erledigt:** 2026-01-28 (Commit a322ce9)

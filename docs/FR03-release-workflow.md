@@ -169,9 +169,13 @@ Diese Workflows sind 1:1 aus solstice_season übernommen und dort erfolgreich im
 
 ## Status
 
-- [ ] `.github/workflows/` Ordner erstellen
-- [ ] `validate.yaml` erstellen
-- [ ] `release.yml` erstellen
-- [ ] `hacs.json` prüfen/erstellen
-- [ ] Push und Workflow-Ausführung testen
+- [x] `.github/workflows/` Ordner erstellen
+- [x] `validate.yaml` erstellen
+- [x] `release.yml` erstellen
+- [x] `hacs.json` prüfen/erstellen
+- [x] Push und Workflow-Ausführung testen
 - [ ] Test-Release erstellen
+
+**Erledigt:** 2026-01-28 (Commit a322ce9)
+
+**Hinweis:** Test-Release steht noch aus - wird beim nächsten echten Release getestet.
