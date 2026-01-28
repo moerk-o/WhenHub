@@ -10,7 +10,12 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.helpers.selector import (
+    DateSelector,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import (
     DOMAIN,
@@ -97,20 +102,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
 
-        # Validate dates for trip
-        try:
-            start_date = user_input[CONF_START_DATE]
-            end_date = user_input[CONF_END_DATE]
-            
-            if isinstance(start_date, str):
-                start_date = date.fromisoformat(start_date)
-            if isinstance(end_date, str):
-                end_date = date.fromisoformat(end_date)
-                
-            if start_date >= end_date:
-                errors["base"] = "invalid_dates"
-        except ValueError:
-            errors["base"] = "invalid_date_format"
+        # Validate dates for trip (DateSelector returns date objects directly)
+        start_date = user_input[CONF_START_DATE]
+        end_date = user_input[CONF_END_DATE]
+
+        if start_date >= end_date:
+            errors["base"] = "invalid_dates"
 
         if not errors:
             # Add event type to data
@@ -134,8 +131,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Show trip configuration form."""
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): str,
-            vol.Required(CONF_END_DATE, default="" if user_input is None else user_input.get(CONF_END_DATE, "")): str,
+            vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
+            vol.Required(CONF_END_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
         })
 
@@ -143,12 +140,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="trip",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Dänemarkurlaub 2025",
-                "start_date": "Format: YYYY-MM-DD",
-                "end_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-            },
         )
 
     async def async_step_milestone(
@@ -158,31 +149,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return await self._show_milestone_form()
 
-        errors = {}
+        # DateSelector validates date format automatically
+        # Add event type to data
+        user_input[CONF_EVENT_TYPE] = self._event_type
 
-        # Validate date for milestone
-        try:
-            target_date = user_input[CONF_TARGET_DATE]
-            if isinstance(target_date, str):
-                target_date = date.fromisoformat(target_date)
-        except ValueError:
-            errors["base"] = "invalid_date_format"
+        # Create unique ID
+        event_name = user_input[CONF_EVENT_NAME]
+        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
+        self._abort_if_unique_id_configured()
 
-        if not errors:
-            # Add event type to data
-            user_input[CONF_EVENT_TYPE] = self._event_type
-            
-            # Create unique ID
-            event_name = user_input[CONF_EVENT_NAME]
-            await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title=event_name,
-                data=user_input,
-            )
-
-        return await self._show_milestone_form(user_input, errors)
+        return self.async_create_entry(
+            title=event_name,
+            data=user_input,
+        )
 
     async def _show_milestone_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -190,7 +169,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Show milestone configuration form."""
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
+            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
         })
 
@@ -198,45 +177,28 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="milestone",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Geburtstag Max oder Projektabgabe",
-                "target_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-            },
         )
 
     async def async_step_anniversary(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle anniversary configuration.""" 
+        """Handle anniversary configuration."""
         if user_input is None:
             return await self._show_anniversary_form()
 
-        errors = {}
+        # DateSelector validates date format automatically
+        # Add event type to data
+        user_input[CONF_EVENT_TYPE] = self._event_type
 
-        # Validate date for anniversary
-        try:
-            target_date = user_input[CONF_TARGET_DATE]
-            if isinstance(target_date, str):
-                target_date = date.fromisoformat(target_date)
-        except ValueError:
-            errors["base"] = "invalid_date_format"
+        # Create unique ID
+        event_name = user_input[CONF_EVENT_NAME]
+        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
+        self._abort_if_unique_id_configured()
 
-        if not errors:
-            # Add event type to data
-            user_input[CONF_EVENT_TYPE] = self._event_type
-            
-            # Create unique ID
-            event_name = user_input[CONF_EVENT_NAME]
-            await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title=event_name,
-                data=user_input,
-            )
-
-        return await self._show_anniversary_form(user_input, errors)
+        return self.async_create_entry(
+            title=event_name,
+            data=user_input,
+        )
 
     async def _show_anniversary_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -244,7 +206,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Show anniversary configuration form."""
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
+            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
         })
 
@@ -252,11 +214,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="anniversary",
             data_schema=data_schema,
             errors=errors or {},
-            description_placeholders={
-                "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
-                "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-            },
         )
 
     async def async_step_special_category(
@@ -473,19 +430,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Handle trip options."""
         if user_input is not None:
             errors = {}
-            try:
-                start_date = user_input[CONF_START_DATE]
-                end_date = user_input[CONF_END_DATE]
-                
-                if isinstance(start_date, str):
-                    start_date = date.fromisoformat(start_date)
-                if isinstance(end_date, str):
-                    end_date = date.fromisoformat(end_date)
-                    
-                if start_date >= end_date:
-                    errors["base"] = "invalid_dates"
-            except ValueError:
-                errors["base"] = "invalid_date_format"
+            # DateSelector returns date objects directly
+            start_date = user_input[CONF_START_DATE]
+            end_date = user_input[CONF_END_DATE]
+
+            if start_date >= end_date:
+                errors["base"] = "invalid_dates"
 
             if not errors:
                 # Keep original event type
@@ -508,8 +458,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current_data = self.config_entry.data
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): str,
-            vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, "")): str,
+            vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
+            vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
         })
 
@@ -523,44 +473,31 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Handle milestone options."""
         if user_input is not None:
-            errors = {}
-            try:
-                target_date = user_input[CONF_TARGET_DATE]
-                if isinstance(target_date, str):
-                    date.fromisoformat(target_date)
-            except ValueError:
-                errors["base"] = "invalid_date_format"
+            # DateSelector validates date format automatically
+            user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
-            if not errors:
-                user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
-                
-                new_data = dict(self.config_entry.data)
-                new_data.update(user_input)
-                
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry, 
-                    data=new_data,
-                    title=user_input[CONF_EVENT_NAME]
-                )
-                
-                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-                return self.async_create_entry(title="", data={})
+            new_data = dict(self.config_entry.data)
+            new_data.update(user_input)
+
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data=new_data,
+                title=user_input[CONF_EVENT_NAME]
+            )
+
+            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+            return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): str,
+            vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
         })
 
         return self.async_show_form(
             step_id="milestone_options",
             data_schema=data_schema,
-            description_placeholders={
-                "event_name": "z.B. Geburtstag Max oder Projektabgabe",
-                "target_date": "Format: YYYY-MM-DD",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-            },
         )
 
     async def async_step_anniversary_options(
@@ -568,44 +505,31 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Handle anniversary options."""
         if user_input is not None:
-            errors = {}
-            try:
-                target_date = user_input[CONF_TARGET_DATE]
-                if isinstance(target_date, str):
-                    date.fromisoformat(target_date)
-            except ValueError:
-                errors["base"] = "invalid_date_format"
+            # DateSelector validates date format automatically
+            user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
-            if not errors:
-                user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
-                
-                new_data = dict(self.config_entry.data)
-                new_data.update(user_input)
-                
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry, 
-                    data=new_data,
-                    title=user_input[CONF_EVENT_NAME]
-                )
-                
-                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-                return self.async_create_entry(title="", data={})
+            new_data = dict(self.config_entry.data)
+            new_data.update(user_input)
+
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data=new_data,
+                title=user_input[CONF_EVENT_NAME]
+            )
+
+            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+            return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
-            vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): str,
+            vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
         })
 
         return self.async_show_form(
             step_id="anniversary_options",
             data_schema=data_schema,
-            description_placeholders={
-                "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
-                "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-                "image_path": "z.B. /local/images/event.jpg (optional)",
-            },
         )
 
     async def async_step_special_options(
