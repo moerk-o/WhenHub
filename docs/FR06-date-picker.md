@@ -169,14 +169,16 @@ async def async_step_trip(
 
 ## Status
 
-- [ ] DateSelector Import hinzufügen
-- [ ] Trip-Schema ändern (Config + Options)
-- [ ] Milestone-Schema ändern (Config + Options)
-- [ ] Anniversary-Schema ändern (Config + Options)
-- [ ] String-Parsing-Code entfernen
-- [ ] Übersetzungen anpassen
-- [ ] Testen mit verschiedenen Datumsformaten
-- [ ] Testen: Anniversary mit Datum vor 1970
+- [x] DateSelector Import hinzufügen
+- [x] Trip-Schema ändern (Config + Options)
+- [x] Milestone-Schema ändern (Config + Options)
+- [x] Anniversary-Schema ändern (Config + Options)
+- [x] String-Parsing-Code entfernen
+- [x] Übersetzungen anpassen
+- [ ] Testen mit verschiedenen Datumsformaten (manuell in HA)
+- [ ] Testen: Anniversary mit Datum vor 1970 (manuell in HA)
+
+**Erledigt:** 2026-01-28
 
 ## Referenz: StreakHub
 

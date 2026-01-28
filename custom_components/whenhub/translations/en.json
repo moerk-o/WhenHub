@@ -16,8 +16,8 @@
         "description": "Set up a new trip in WhenHub",
         "data": {
           "event_name": "Trip name",
-          "start_date": "Start date (YYYY-MM-DD)",
-          "end_date": "End date (YYYY-MM-DD)",
+          "start_date": "Start date",
+          "end_date": "End date",
           "image_path": "Image path (optional)"
         },
         "data_description": {
@@ -32,7 +32,7 @@
         "description": "Set up a new milestone in WhenHub",
         "data": {
           "event_name": "Milestone name",
-          "target_date": "Target date (YYYY-MM-DD)",
+          "target_date": "Target date",
           "image_path": "Image path (optional)"
         },
         "data_description": {
@@ -46,7 +46,7 @@
         "description": "Set up a new anniversary in WhenHub",
         "data": {
           "event_name": "Anniversary name",
-          "target_date": "Original date (YYYY-MM-DD)",
+          "target_date": "Original date",
           "image_path": "Image path (optional)"
         },
         "data_description": {
