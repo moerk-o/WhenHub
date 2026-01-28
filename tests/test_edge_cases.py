@@ -20,7 +20,7 @@ async def test_single_day_trip_countdown(hass: HomeAssistant, single_day_trip_co
         await hass.async_block_till_done()
 
         # Days until start
-        sensor = hass.states.get("sensor.tagesausflug_days_until")
+        sensor = hass.states.get("sensor.tagesausflug_days_until_start")
         assert sensor is not None
         assert int(sensor.state) == 5
 
@@ -53,7 +53,7 @@ async def test_single_day_trip_on_the_day(hass: HomeAssistant, single_day_trip_c
         assert ends.state == "on"
 
         # Trip left days should be 1 (today counts)
-        left = hass.states.get("sensor.tagesausflug_trip_left_days")
+        left = hass.states.get("sensor.tagesausflug_trip_days_remaining")
         assert left is not None
         assert int(left.state) == 1
 
@@ -72,7 +72,7 @@ async def test_past_trip_negative_days(hass: HomeAssistant, past_trip_config_ent
         await hass.async_block_till_done()
 
         # Days until start should be negative
-        sensor = hass.states.get("sensor.vergangener_urlaub_days_until")
+        sensor = hass.states.get("sensor.vergangener_urlaub_days_until_start")
         assert sensor is not None
         days = int(sensor.state)
         assert days < 0  # Should be negative (trip was in 2024)
@@ -84,12 +84,12 @@ async def test_past_trip_negative_days(hass: HomeAssistant, past_trip_config_ent
         assert days_end < 0
 
         # Trip left days should be 0
-        left = hass.states.get("sensor.vergangener_urlaub_trip_left_days")
+        left = hass.states.get("sensor.vergangener_urlaub_trip_days_remaining")
         assert left is not None
         assert int(left.state) == 0
 
         # Trip left percent should be 0
-        percent = hass.states.get("sensor.vergangener_urlaub_trip_left_percent")
+        percent = hass.states.get("sensor.vergangener_urlaub_trip_percent_remaining")
         assert percent is not None
         assert float(percent.state) == 0.0
 
@@ -104,7 +104,7 @@ async def test_past_milestone_days(hass: HomeAssistant, past_milestone_config_en
         await hass.async_block_till_done()
 
         # Days until should be negative or 0
-        sensor = hass.states.get("sensor.vergangener_milestone_days_until")
+        sensor = hass.states.get("sensor.vergangener_milestone_days_until_start")
         assert sensor is not None
         days = int(sensor.state)
         assert days <= 0  # Past milestone
@@ -124,7 +124,7 @@ async def test_long_trip_countdown(hass: HomeAssistant, long_trip_config_entry):
         await hass.async_block_till_done()
 
         # Days until start
-        sensor = hass.states.get("sensor.weltreise_days_until")
+        sensor = hass.states.get("sensor.weltreise_days_until_start")
         assert sensor is not None
         assert int(sensor.state) == 31
 
@@ -150,7 +150,7 @@ async def test_long_trip_during_trip(hass: HomeAssistant, long_trip_config_entry
         assert active.state == "on"
 
         # Days until start should be negative (already started)
-        sensor = hass.states.get("sensor.weltreise_days_until")
+        sensor = hass.states.get("sensor.weltreise_days_until_start")
         assert sensor is not None
         assert int(sensor.state) < 0
 
@@ -223,7 +223,7 @@ async def test_easter_2026(hass: HomeAssistant, easter_config_entry):
         assert get_date_from_state(next_date.state) == "2026-04-05"
 
         # Days until (March 1 -> April 5 = 35 days)
-        days = hass.states.get("sensor.ostern_days_until")
+        days = hass.states.get("sensor.ostern_days_until_start")
         assert days is not None
         assert int(days.state) == 35
 
@@ -262,7 +262,7 @@ async def test_advent_2026(hass: HomeAssistant, advent_config_entry):
         assert get_date_from_state(next_date.state) == "2026-11-29"
 
         # Days until (Nov 1 -> Nov 29 = 28 days)
-        days = hass.states.get("sensor.1_advent_days_until")
+        days = hass.states.get("sensor.1_advent_days_until_start")
         assert days is not None
         assert int(days.state) == 28
 

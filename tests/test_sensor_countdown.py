@@ -15,7 +15,7 @@ async def test_trip_countdown_future_18_days(hass: HomeAssistant, trip_config_en
         await hass.async_block_till_done()
 
         # Check days until start sensor
-        sensor = hass.states.get("sensor.danemark_2026_days_until")
+        sensor = hass.states.get("sensor.danemark_2026_days_until_start")
         assert sensor is not None
         assert int(sensor.state) == 18
 
@@ -39,7 +39,7 @@ async def test_trip_active_during_trip(hass: HomeAssistant, trip_config_entry):
         assert binary.state == "on"
         
         # Check remaining days (12 days left from 15th to 26th, inclusive)
-        remaining = hass.states.get("sensor.danemark_2026_trip_left_days")
+        remaining = hass.states.get("sensor.danemark_2026_trip_days_remaining")
         assert remaining is not None
         assert int(remaining.state) == 12
 
@@ -52,7 +52,7 @@ async def test_milestone_countdown_future(hass: HomeAssistant, milestone_config_
         assert await hass.config_entries.async_setup(milestone_config_entry.entry_id)
         await hass.async_block_till_done()
 
-        sensor = hass.states.get("sensor.projektabgabe_days_until")
+        sensor = hass.states.get("sensor.projektabgabe_days_until_start")
         assert sensor is not None
         assert int(sensor.state) == 14
 
@@ -71,7 +71,7 @@ async def test_milestone_is_today(hass: HomeAssistant, milestone_config_entry):
         assert binary.state == "on"
         
         # Days until should be 0
-        sensor = hass.states.get("sensor.projektabgabe_days_until")
+        sensor = hass.states.get("sensor.projektabgabe_days_until_start")
         assert sensor is not None
         assert int(sensor.state) == 0
 
@@ -109,7 +109,7 @@ async def test_special_christmas_countdown(hass: HomeAssistant, special_config_e
         await hass.async_block_till_done()
 
         # Check days until
-        sensor = hass.states.get("sensor.weihnachts_countdown_days_until")
+        sensor = hass.states.get("sensor.weihnachts_countdown_days_until_start")
         assert sensor is not None
         assert int(sensor.state) == 23
 

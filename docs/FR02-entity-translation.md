@@ -162,8 +162,8 @@ Falls `strings.json` beibehalten wird:
 - [x] validate.yaml Workflow erstellen (bereits in FR03 erledigt)
 - [x] Sensor-Klassen auf SensorEntityDescription umgestellt
 - [x] BinarySensor-Klassen auf BinarySensorEntityDescription umgestellt
-- [x] suggested_object_id für stabile Entity-IDs beibehalten
-- [x] Alle 173 Tests bestanden
+- [x] suggested_object_id ENTFERNT (für sprachabhängige Entity-IDs bei Erstellung)
+- [x] Alle 173 Tests angepasst und bestanden
 - [ ] Lokaler hassfest Test (manuell)
 - [ ] Test mit deutscher Sprache (manuell)
 
@@ -171,6 +171,26 @@ Falls `strings.json` beibehalten wird:
 
 ### Technische Änderung
 
-Umstellung von `_attr_translation_key` auf `SensorEntityDescription` / `BinarySensorEntityDescription`
-mit `translation_key` Parameter (wie in solstice_season). Dies ist der offiziell empfohlene Weg für
-Entity-Name-Übersetzungen in Home Assistant.
+1. **strings.json gelöscht** - Für Custom Integrations reicht `translations/en.json` als Fallback
+
+2. **EntityDescription statt _attr_translation_key**:
+   - `SensorEntityDescription` mit `translation_key` Parameter für Sensoren
+   - `BinarySensorEntityDescription` mit `translation_key` Parameter für Binary Sensoren
+   - `_attr_translation_key` für Image Entities (ImageEntityDescription existiert nicht)
+
+3. **suggested_object_id ENTFERNT** (wie in solstice_season):
+   - Ohne `suggested_object_id` nutzt Home Assistant den übersetzten Namen für die Entity-ID
+   - Deutsches System erstellt: `sensor.gerät_tage_bis_start`
+   - Englisches System erstellt: `sensor.gerät_days_until_start`
+   - Entity-IDs sind stabil NACH Erstellung, aber sprachabhängig BEI Erstellung
+
+### Wichtiger Unterschied zu vorheriger Implementierung
+
+**Vorher (mit suggested_object_id):**
+- Entity-ID immer englisch: `sensor.gerät_days_until`
+- Unabhängig von Systemsprache
+
+**Jetzt (ohne suggested_object_id, wie solstice_season):**
+- Entity-ID abhängig von Systemsprache bei Erstellung
+- Deutsches System: `sensor.gerät_tage_bis_start` (aus "Tage bis Start")
+- Englisches System: `sensor.gerät_days_until_start` (aus "Days until start")

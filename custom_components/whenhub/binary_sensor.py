@@ -187,18 +187,6 @@ class BaseBinarySensor(CoordinatorEntity["WhenHubCoordinator"], BinarySensorEnti
             sensor_type=sensor_type
         )
 
-        # Store sensor_type for stable entity_id generation (via suggested_object_id)
-        self._object_id_key = sensor_type
-
-    @property
-    def suggested_object_id(self) -> str:
-        """Return a stable object_id based on sensor_type key.
-
-        This ensures entity IDs remain stable regardless of translation language.
-        The displayed name uses translation_key for localization.
-        """
-        return self._object_id_key
-
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information about this entity.
