@@ -159,7 +159,7 @@
         "trip": "Trip - Mehrtägige Events wie Urlaub oder Reisen",
         "milestone": "Milestone - Einmalige wichtige Termine",
         "anniversary": "Anniversary - Jährlich wiederkehrende Events",
-        "special": "Special Event - Feiertage und astronomische Events"
+        "special": "Special Event - Feiertage und kalendarische Events"
       }
     },
     "special_type": {
@@ -176,18 +176,13 @@
         "advent_3": "3. Advent",
         "advent_4": "4. Advent",
         "new_year": "Neujahr",
-        "new_years_eve": "Silvester",
-        "spring_start": "Frühlingsanfang",
-        "summer_start": "Sommeranfang",
-        "autumn_start": "Herbstanfang",
-        "winter_start": "Winteranfang"
+        "new_years_eve": "Silvester"
       }
     },
     "special_category": {
       "options": {
         "traditional": "Traditionelle Feiertage",
         "calendar": "Kalendarische Feiertage",
-        "astronomical": "Astronomische Events",
         "dst": "Zeitumstellung"
       }
     },

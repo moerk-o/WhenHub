@@ -15,7 +15,7 @@ A Home Assistant integration for tracking various events and important dates. Wh
 **Trip** - Multi-day events like vacations or visiting grandma  
 **Milestone** - One-time important dates like school events or 'when is the new pet coming'  
 **Anniversary** - Yearly recurring events like birthdays or holidays  
-**Special Event** - Predefined holidays and astronomical events like Christmas, Easter, or Solstices  
+**Special Event** - Predefined holidays like Christmas, Easter, or DST changes  
 
 ## Installation
 
@@ -163,15 +163,15 @@ Anniversary events handle leap years intelligently: When the original date is Fe
 
 ## Special Events
 
-Special events track holidays and astronomical events that repeat annually. These include both fixed-date holidays and calculated events with complex date algorithms.
+Special events track holidays that repeat annually. These include both fixed-date holidays and calculated events with complex date algorithms.
 
 ### Configuration
 
 When setting up a Special Event, you configure:
 
-- **Event Category**: Choose from 4 categories (Traditional Holidays, Calendar Holidays, Astronomical Events, Daylight Saving Time)
+- **Event Category**: Choose from 3 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time)
 - **Event Name**: e.g., "Christmas Countdown" or "Easter Countdown"
-- **Special Event Type**: Choose from 17 predefined holidays and astronomical events
+- **Special Event Type**: Choose from 13 predefined holidays
 - **Image Path** *(optional)*: 
   - Leave empty = Automatically generated default image (purple star icon)
   - File path = e.g., `/local/images/christmas.jpg` for custom images
@@ -209,7 +209,7 @@ When setting up a Special Event, you configure:
 
 ### Available Special Events
 
-Special Events are organized into 4 categories:
+Special Events are organized into 3 categories:
 
 #### Traditional Holidays (11 Events)
 Fixed and calculated events celebrating traditional holidays:
@@ -235,15 +235,6 @@ Fixed and calculated events celebrating traditional holidays:
 Fixed calendar events marking year transitions:
 - **New Year's Day** - January 1st
 - **New Year's Eve** - December 31st
-
-#### Astronomical Events (4 Events)
-Fixed dates for seasonal transitions:
-- **Spring Equinox** - March 20th
-- **Summer Solstice** - June 21st
-- **Autumn Equinox** - September 23rd
-- **Winter Solstice** - December 21st
-
-*Note: Astronomical events use simplified approximations. Actual dates may vary by ±1 day due to Earth's orbital mechanics.*
 
 #### Daylight Saving Time (DST)
 Track when clocks change for summer and winter time. Supports multiple regions with their specific DST rules.
@@ -277,15 +268,6 @@ Advent Sundays are calculated by:
 2. Determining the day of the week
 3. Calculating backwards to find the 4th, 3rd, 2nd, and 1st Sundays before
 4. Special handling when Christmas Eve itself falls on a Sunday
-
-#### Astronomical Events
-Astronomical events use fixed dates for consistent scheduling:
-- Spring Equinox: March 20th
-- Summer Solstice: June 21st  
-- Autumn Equinox: September 23rd
-- Winter Solstice: December 21st
-
-These are simplified approximations for seasonal planning. For precise astronomical calculations, consider using specialized astronomy integrations.
 
 ## Advanced Features
 

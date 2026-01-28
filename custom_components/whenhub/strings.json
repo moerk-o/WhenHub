@@ -135,7 +135,7 @@
         "trip": "Trip - Multi-day trip or event",
         "milestone": "Milestone - One-time important date",
         "anniversary": "Anniversary - Recurring yearly event",
-        "special": "Special Event - Special holidays and astronomical events"
+        "special": "Special Event - Special holidays and calendar events"
       }
     },
     "special_type": {
@@ -152,18 +152,13 @@
         "advent_3": "3rd Advent",
         "advent_4": "4th Advent",
         "new_year": "New Year's Day",
-        "new_years_eve": "New Year's Eve",
-        "spring_start": "Spring Equinox",
-        "summer_start": "Summer Solstice",
-        "autumn_start": "Autumn Equinox",
-        "winter_start": "Winter Solstice"
+        "new_years_eve": "New Year's Eve"
       }
     },
     "special_category": {
       "options": {
         "traditional": "Traditional Holidays",
-        "calendar": "Calendar Holidays",
-        "astronomical": "Astronomical Events"
+        "calendar": "Calendar Holidays"
       }
     }
   },

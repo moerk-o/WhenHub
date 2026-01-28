@@ -39,7 +39,7 @@ EVENT_TYPES = {
     },
     EVENT_TYPE_SPECIAL: {
         "name": "Special Event",
-        "description": "Special holidays and astronomical events",
+        "description": "Special holidays and calendar events",
         "icon": "mdi:star",
         "model": "Special Event Tracker",
     }
@@ -270,11 +270,6 @@ SPECIAL_EVENT_CATEGORIES = {
         "description": "Neujahr und Silvester",
         "icon": "mdi:calendar"
     },
-    "astronomical": {
-        "name": "Astronomische Events",
-        "description": "Jahreszeitenanfänge",
-        "icon": "mdi:weather-sunny"
-    },
     "dst": {
         "name": "Zeitumstellung",
         "description": "Sommer- und Winterzeitwechsel",
@@ -371,36 +366,6 @@ SPECIAL_EVENTS = {
         "type": "fixed",
         "month": 12,
         "day": 31,
-    },
-
-    # Astronomical Events (4 Events)
-    "spring_start": {
-        "name": "Frühlingsanfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 3,
-        "day": 20,
-    },
-    "summer_start": {
-        "name": "Sommeranfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 6,
-        "day": 21,
-    },
-    "autumn_start": {
-        "name": "Herbstanfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 9,
-        "day": 23,
-    },
-    "winter_start": {
-        "name": "Winteranfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 12,
-        "day": 21,
     },
 }
 
