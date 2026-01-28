@@ -157,9 +157,11 @@ Falls `strings.json` beibehalten wird:
 
 ## Status
 
-- [ ] Entscheidung: Option A oder B
-- [ ] strings.json anpassen/löschen
-- [ ] validate.yaml Workflow erstellen
-- [ ] Alle Entity-Klassen auf translation_key prüfen
-- [ ] Lokaler hassfest Test
-- [ ] Test mit deutscher Sprache
+- [x] Entscheidung: Option A (strings.json entfernen)
+- [x] strings.json gelöscht
+- [x] validate.yaml Workflow erstellen (bereits in FR03 erledigt)
+- [x] Alle Entity-Klassen auf translation_key prüfen (bereits korrekt in base.py)
+- [ ] Lokaler hassfest Test (manuell)
+- [ ] Test mit deutscher Sprache (manuell)
+
+**Erledigt:** 2026-01-28
