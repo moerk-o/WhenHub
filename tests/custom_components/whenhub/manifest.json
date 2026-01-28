@@ -1,14 +1,13 @@
 {
   "domain": "whenhub",
   "name": "WhenHub",
-  "version": "1.3.0",
+  "version": "2.1.0",
   "documentation": "https://github.com/moerk-o/WhenHub",
   "issue_tracker": "https://github.com/moerk-o/WhenHub/issues",
   "dependencies": [],
-  "codeowners": ["@yourusername"],
+  "codeowners": ["@moerk-o"],
   "requirements": [],
   "config_flow": true,
   "iot_class": "calculated",
-  "integration_type": "device",
-  "brand": "whenhub"
+  "integration_type": "device"
 }

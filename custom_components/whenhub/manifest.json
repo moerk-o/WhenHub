@@ -9,6 +9,5 @@
   "requirements": [],
   "config_flow": true,
   "iot_class": "calculated",
-  "integration_type": "device",
-  "brand": "whenhub"
+  "integration_type": "device"
 }
