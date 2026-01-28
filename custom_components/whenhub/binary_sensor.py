@@ -27,8 +27,6 @@ from .const import (
     CONF_EVENT_NAME,
     CONF_SPECIAL_CATEGORY,
     CONF_IMAGE_PATH,
-    CONF_WEBSITE_URL,
-    CONF_NOTES,
     TRIP_BINARY_SENSOR_TYPES,
     MILESTONE_BINARY_SENSOR_TYPES,
     ANNIVERSARY_BINARY_SENSOR_TYPES,
@@ -290,12 +288,6 @@ class MilestoneBinarySensor(BaseBinarySensor):
         else:
             attributes["image_path"] = DEFAULT_IMAGE
 
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
-
         return attributes
 
 
@@ -345,12 +337,6 @@ class AnniversaryBinarySensor(BaseBinarySensor):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
         else:
             attributes["image_path"] = DEFAULT_IMAGE
-
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
 
         if data:
             attributes.update({
@@ -411,12 +397,6 @@ class SpecialBinarySensor(BaseBinarySensor):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
         else:
             attributes["image_path"] = DEFAULT_IMAGE
-
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
 
         return attributes
 
@@ -489,11 +469,5 @@ class DSTBinarySensor(BaseBinarySensor):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
         else:
             attributes["image_path"] = DEFAULT_IMAGE
-
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
 
         return attributes

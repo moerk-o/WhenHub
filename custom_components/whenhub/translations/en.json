@@ -18,17 +18,13 @@
           "event_name": "Trip name",
           "start_date": "Start date (YYYY-MM-DD)",
           "end_date": "End date (YYYY-MM-DD)",
-          "image_path": "Image path (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notes (optional)"
+          "image_path": "Image path (optional)"
         },
         "data_description": {
           "event_name": "e.g. 'Denmark Vacation 2025' or 'Business Trip Berlin'",
           "start_date": "The date when the trip begins",
           "end_date": "The date when the trip ends",
-          "image_path": "Path to an image, e.g. /local/images/trip.jpg",
-          "website_url": "Link to accommodation or other relevant information",
-          "notes": "Additional information about the trip"
+          "image_path": "Path to an image, e.g. /local/images/trip.jpg"
         }
       },
       "milestone": {
@@ -37,16 +33,12 @@
         "data": {
           "event_name": "Milestone name",
           "target_date": "Target date (YYYY-MM-DD)",
-          "image_path": "Image path (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notes (optional)"
+          "image_path": "Image path (optional)"
         },
         "data_description": {
           "event_name": "e.g. 'Max's Birthday' or 'Project Deadline'",
           "target_date": "The date of the important event",
-          "image_path": "Path to an image, e.g. /local/images/milestone.jpg",
-          "website_url": "Relevant URL for the event",
-          "notes": "Additional information about the milestone"
+          "image_path": "Path to an image, e.g. /local/images/milestone.jpg"
         }
       },
       "anniversary": {
@@ -55,16 +47,12 @@
         "data": {
           "event_name": "Anniversary name",
           "target_date": "Original date (YYYY-MM-DD)",
-          "image_path": "Image path (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notes (optional)"
+          "image_path": "Image path (optional)"
         },
         "data_description": {
           "event_name": "e.g. 'Wedding Anniversary' or 'Company Anniversary'",
           "target_date": "The original date (will repeat yearly)",
-          "image_path": "Path to an image, e.g. /local/images/anniversary.jpg",
-          "website_url": "Relevant URL for the event",
-          "notes": "Additional information about the anniversary"
+          "image_path": "Path to an image, e.g. /local/images/anniversary.jpg"
         }
       },
       "special_category": {
@@ -83,16 +71,12 @@
         "data": {
           "event_name": "Special event name",
           "special_type": "Special event",
-          "image_path": "Image path (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notes (optional)"
+          "image_path": "Image path (optional)"
         },
         "data_description": {
           "event_name": "e.g. 'Christmas Countdown' or 'Easter Countdown'",
           "special_type": "Select the specific event from the category",
-          "image_path": "Path to an image, e.g. /local/images/special.jpg",
-          "website_url": "Relevant URL for the event",
-          "notes": "Additional information about the special event"
+          "image_path": "Path to an image, e.g. /local/images/special.jpg"
         }
       },
       "dst_event": {
@@ -102,17 +86,13 @@
           "dst_region": "Region",
           "dst_type": "Event type",
           "event_name": "Event name",
-          "image_path": "Image path (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notes (optional)"
+          "image_path": "Image path (optional)"
         },
         "data_description": {
           "dst_region": "For which region should DST be calculated?",
           "dst_type": "Which DST event do you want to track?",
           "event_name": "e.g. 'DST Change' or 'Summer Time'",
-          "image_path": "Path to an image, e.g. /local/images/dst.jpg",
-          "website_url": "Relevant URL for the event",
-          "notes": "Additional information"
+          "image_path": "Path to an image, e.g. /local/images/dst.jpg"
         }
       }
     },

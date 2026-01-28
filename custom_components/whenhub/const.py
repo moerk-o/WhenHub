@@ -57,8 +57,6 @@ CONF_DST_TYPE = "dst_type"  # For DST Events
 CONF_DST_REGION = "dst_region"  # For DST Events
 CONF_IMAGE_PATH = "image_path"
 CONF_IMAGE_UPLOAD = "image_upload"
-CONF_WEBSITE_URL = "website_url"
-CONF_NOTES = "notes"
 
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"
