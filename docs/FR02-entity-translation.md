@@ -160,8 +160,17 @@ Falls `strings.json` beibehalten wird:
 - [x] Entscheidung: Option A (strings.json entfernen)
 - [x] strings.json gelöscht
 - [x] validate.yaml Workflow erstellen (bereits in FR03 erledigt)
-- [x] Alle Entity-Klassen auf translation_key prüfen (bereits korrekt in base.py)
+- [x] Sensor-Klassen auf SensorEntityDescription umgestellt
+- [x] BinarySensor-Klassen auf BinarySensorEntityDescription umgestellt
+- [x] suggested_object_id für stabile Entity-IDs beibehalten
+- [x] Alle 173 Tests bestanden
 - [ ] Lokaler hassfest Test (manuell)
 - [ ] Test mit deutscher Sprache (manuell)
 
 **Erledigt:** 2026-01-28
+
+### Technische Änderung
+
+Umstellung von `_attr_translation_key` auf `SensorEntityDescription` / `BinarySensorEntityDescription`
+mit `translation_key` Parameter (wie in solstice_season). Dies ist der offiziell empfohlene Weg für
+Entity-Name-Übersetzungen in Home Assistant.
