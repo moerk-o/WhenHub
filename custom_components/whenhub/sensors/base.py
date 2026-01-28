@@ -6,8 +6,10 @@ text formatting that is shared across Trip, Milestone, and Anniversary sensors.
 """
 from __future__ import annotations
 
+import json
 import logging
 from datetime import date
+from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorEntity
@@ -34,6 +36,10 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Load version from manifest.json (single source of truth)
+MANIFEST = json.loads((Path(__file__).parent.parent / "manifest.json").read_text())
+VERSION = MANIFEST["version"]
+
 
 def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
     """Create standardized device info for all WhenHub entities.
@@ -56,7 +62,7 @@ def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
         name=event_data[CONF_EVENT_NAME],
         manufacturer="WhenHub",
         model=event_info["model"],
-        sw_version="1.0.0",
+        sw_version=VERSION,
     )
 
 
