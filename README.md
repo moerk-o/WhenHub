@@ -1,16 +1,10 @@
 # WhenHub
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
-![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-green.svg)
+[![GitHub Release](https://img.shields.io/github/v/release/moerk-o/WhenHub?style=flat-square)](https://github.com/moerk-o/WhenHub/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2024.1+-41bdf5?style=flat-square&logo=homeassistant)](https://www.home-assistant.io/)
 
-WhenHub is a Home Assistant integration for tracking various events and important dates. The integration provides countdown sensors, status information, and visual representations for your events.
-
-## What's New in 2.0.0
-
-- **Internationalization**: Full German and English support - UI adapts to your HA language setting
-- **Localized Date Display**: Date sensors now show relative time ("In 18 days", "Tomorrow") in the frontend
-- **Improved Sensor Classes**: Proper `device_class` for duration and timestamp sensors
-- **Lovelace Format Options**: Use `format: relative`, `format: date`, etc. in your cards
+A Home Assistant integration for tracking various events and important dates. WhenHub provides countdown sensors, status information, and visual representations for your events.
 
 ## Overview
 
@@ -27,7 +21,7 @@ WhenHub is a Home Assistant integration for tracking various events and importan
 
 ### Manual Installation
 
-1. Download the latest version from the [Releases page](https://github.com/yourusername/whenhub/releases)
+1. Download the latest version from the [Releases page](https://github.com/moerk-o/WhenHub/releases)
 2. Extract the files to the `custom_components/whenhub` directory of your Home Assistant installation
 3. Restart Home Assistant
 4. Go to **Settings** → **Devices & Services** → **Add Integration**
@@ -175,8 +169,8 @@ Special events track holidays and astronomical events that repeat annually. Thes
 
 When setting up a Special Event, you configure:
 
-- **Event Category**: Choose from 3 categories (Traditional Holidays, Calendar Holidays, Astronomical Events)
-- **Event Name**: e.g., "Weihnachts-Countdown" or "Oster-Countdown"
+- **Event Category**: Choose from 4 categories (Traditional Holidays, Calendar Holidays, Astronomical Events, Daylight Saving Time)
+- **Event Name**: e.g., "Christmas Countdown" or "Easter Countdown"
 - **Special Event Type**: Choose from 17 predefined holidays and astronomical events
 - **Image Path** *(optional)*: 
   - Leave empty = Automatically generated default image (purple star icon)
@@ -205,6 +199,7 @@ When setting up a Special Event, you configure:
 
 #### Binary Sensors
 - **Is Today** - `true` when today is the special event day
+- **DST Active** - `true` when summer time (DST) is currently active (only for DST events)
 
 #### Image
 - **Event Image** - Shows the configured image or default purple star icon
@@ -214,41 +209,58 @@ When setting up a Special Event, you configure:
 
 ### Available Special Events
 
-Special Events are organized into 3 categories with a total of 17 events:
+Special Events are organized into 4 categories:
 
 #### Traditional Holidays (11 Events)
 Fixed and calculated events celebrating traditional holidays:
 
 **Fixed Date Events:**
-- **Heilig Abend** - December 24th (Christmas Eve)
-- **1. Weihnachtstag** - December 25th (Christmas Day)
-- **2. Weihnachtstag** - December 26th (Boxing Day)
+- **Christmas Eve** - December 24th
+- **Christmas Day** - December 25th
+- **Boxing Day** - December 26th
 - **Halloween** - October 31st
-- **Nikolaus** - December 6th (St. Nicholas Day)
+- **St. Nicholas Day** - December 6th
 
 **Calculated Events using the Gauss Easter Algorithm:**
-- **Ostersonntag** - Easter Sunday (base calculation)
-- **Pfingstsonntag** - 49 days after Easter (Pentecost Sunday)
+- **Easter Sunday** - Base calculation for moveable feasts
+- **Pentecost Sunday** - 49 days after Easter
 
 **Advent Sundays (calculated from Christmas Eve):**
-- **1. Advent** - 4th Sunday before Christmas Eve
-- **2. Advent** - 3rd Sunday before Christmas Eve  
-- **3. Advent** - 2nd Sunday before Christmas Eve
-- **4. Advent** - Sunday before Christmas Eve
+- **1st Advent** - 4th Sunday before Christmas Eve
+- **2nd Advent** - 3rd Sunday before Christmas Eve
+- **3rd Advent** - 2nd Sunday before Christmas Eve
+- **4th Advent** - Sunday before Christmas Eve
 
 #### Calendar Holidays (2 Events)
 Fixed calendar events marking year transitions:
-- **Neujahr** - January 1st (New Year's Day)
-- **Silvester** - December 31st (New Year's Eve)
+- **New Year's Day** - January 1st
+- **New Year's Eve** - December 31st
 
 #### Astronomical Events (4 Events)
 Fixed dates for seasonal transitions:
-- **Frühlingsanfang** - March 20th (Spring Equinox)
-- **Sommeranfang** - June 21st (Summer Solstice)
-- **Herbstanfang** - September 23rd (Autumn Equinox)  
-- **Winteranfang** - December 21st (Winter Solstice)
+- **Spring Equinox** - March 20th
+- **Summer Solstice** - June 21st
+- **Autumn Equinox** - September 23rd
+- **Winter Solstice** - December 21st
 
 *Note: Astronomical events use simplified approximations. Actual dates may vary by ±1 day due to Earth's orbital mechanics.*
+
+#### Daylight Saving Time (DST)
+Track when clocks change for summer and winter time. Supports multiple regions with their specific DST rules.
+
+**Supported Regions** (auto-detected from your timezone, but can be changed):
+- **EU** - Last Sunday of March (summer) / Last Sunday of October (winter)
+- **USA** - 2nd Sunday of March / 1st Sunday of November
+- **Australia** - 1st Sunday of October / 1st Sunday of April
+- **New Zealand** - Last Sunday of September / 1st Sunday of April
+
+**Event Types:**
+- **Next Change** - Countdown to the next DST transition (summer or winter)
+- **Summer Time** - Countdown to the next start of summer time
+- **Winter Time** - Countdown to the next start of winter time
+
+**Additional Sensors for DST:**
+- **DST Active** - Binary sensor showing if summer time is currently active (dynamic icon changes with state)
 
 ### Date Calculation Details
 
@@ -313,9 +325,35 @@ All event configurations can be edited after initial setup via the **Options Flo
 
 All sensors are automatically updated with the new data.
 
-## Contributors Welcome
+## Technical Details
+
+| Property | Value |
+|----------|-------|
+| Update Interval | Once per day (at midnight) |
+| IoT Class | `calculated` |
+| Platforms | Sensor, Binary Sensor, Image |
+| Config Flow | Full UI configuration |
+
+## Localization
+
+The integration supports multiple languages through Home Assistant's translation system. All sensor names, configuration labels, and event names are translated.
+
+**Currently supported languages:**
+
+- English (fallback)
+- German (Deutsch)
+
+## Contributing
 
 This project is open source and contributions are warmly welcomed! Issues for bugs or feature requests are just as appreciated as pull requests for code improvements.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Development assisted by [Claude](https://claude.ai/) (Anthropic)
 
 ---
 
