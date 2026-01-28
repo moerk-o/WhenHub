@@ -95,29 +95,21 @@
           "notes": "Additional information about the special event"
         }
       },
-      "dst_type": {
-        "title": "Daylight Saving Time - Choose type",
-        "description": "Which DST event do you want to track?",
-        "data": {
-          "dst_type": "Event type"
-        },
-        "data_description": {
-          "dst_type": "Choose whether to track the next change, summer time, or winter time"
-        }
-      },
-      "dst_region": {
-        "title": "Daylight Saving Time - Region & Details",
-        "description": "Select the region and name your event",
+      "dst_event": {
+        "title": "Set up Daylight Saving Time",
+        "description": "Set up your DST event",
         "data": {
           "dst_region": "Region",
+          "dst_type": "Event type",
           "event_name": "Event name",
           "image_path": "Image path (optional)",
           "website_url": "Website URL (optional)",
           "notes": "Notes (optional)"
         },
         "data_description": {
-          "dst_region": "Which region's DST rules apply?",
-          "event_name": "e.g. 'Summer Time EU' or 'DST Change'",
+          "dst_region": "For which region should DST be calculated?",
+          "dst_type": "Which DST event do you want to track?",
+          "event_name": "e.g. 'DST Change' or 'Summer Time'",
           "image_path": "Path to an image, e.g. /local/images/dst.jpg",
           "website_url": "Relevant URL for the event",
           "notes": "Additional information"
@@ -201,17 +193,17 @@
     },
     "dst_type": {
       "options": {
-        "next_change": "Next change - Next DST transition (summer or winter)",
-        "next_summer": "Summer time - Next start of daylight saving time",
-        "next_winter": "Winter time - Next start of standard time"
+        "next_change": "Next change",
+        "next_summer": "Summer time",
+        "next_winter": "Winter time"
       }
     },
     "dst_region": {
       "options": {
-        "eu": "EU - Last Sunday March/October",
-        "usa": "USA - 2nd Sunday March / 1st Sunday November",
-        "australia": "Australia - 1st Sunday October/April",
-        "new_zealand": "New Zealand - Last Sunday September / 1st Sunday April"
+        "eu": "EU",
+        "usa": "USA",
+        "australia": "Australia",
+        "new_zealand": "New Zealand"
       }
     }
   },

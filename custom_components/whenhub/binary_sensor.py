@@ -457,6 +457,17 @@ class DSTBinarySensor(BaseBinarySensor):
         return False
 
     @property
+    def icon(self) -> str:
+        """Return dynamic icon based on DST state for is_dst_active sensor."""
+        if self._sensor_type == "is_dst_active":
+            # Dynamic icon: sun-clock when DST active, sun-clock-outline when not
+            if self.is_on:
+                return "mdi:sun-clock"
+            return "mdi:sun-clock-outline"
+        # For other sensor types, use the default icon from const
+        return self._attr_icon
+
+    @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return state attributes for this sensor."""
         data = self.coordinator.data

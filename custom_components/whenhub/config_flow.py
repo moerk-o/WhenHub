@@ -10,7 +10,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
 from .const import (
     DOMAIN,
@@ -51,7 +51,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._event_type: str | None = None
         self._special_category: str | None = None
-        self._dst_type: str | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -286,7 +285,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Route to DST-specific flow if DST category selected
         if self._special_category == "dst":
-            return await self.async_step_dst_type()
+            return await self.async_step_dst_event()
 
         return await self.async_step_special_event()
 
@@ -367,45 +366,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors or {},
         )
 
-    async def async_step_dst_type(
+    async def async_step_dst_event(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle DST type selection."""
+        """Handle DST event configuration (combined type, region, and details)."""
         if user_input is None:
-            return await self._show_dst_type_form()
+            return await self._show_dst_event_form()
 
-        self._dst_type = user_input[CONF_DST_TYPE]
-        return await self.async_step_dst_region()
-
-    async def _show_dst_type_form(self) -> FlowResult:
-        """Show DST type selection form."""
-        dst_type_options = list(DST_EVENT_TYPES.keys())
-
-        data_schema = vol.Schema({
-            vol.Required(CONF_DST_TYPE): SelectSelector(
-                SelectSelectorConfig(
-                    options=dst_type_options,
-                    translation_key="dst_type",
-                )
-            )
-        })
-
-        return self.async_show_form(
-            step_id="dst_type",
-            data_schema=data_schema,
-        )
-
-    async def async_step_dst_region(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle DST region selection and event configuration."""
-        if user_input is None:
-            return await self._show_dst_region_form()
-
-        # Add event type, category and DST type to data
+        # Add event type and category to data
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        user_input[CONF_DST_TYPE] = self._dst_type
 
         # Create unique ID
         event_name = user_input[CONF_EVENT_NAME]
@@ -417,11 +387,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data=user_input,
         )
 
-    async def _show_dst_region_form(
+    async def _show_dst_event_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
-        """Show DST region selection and configuration form."""
+        """Show DST event configuration form."""
         region_options = list(DST_REGIONS.keys())
+        dst_type_options = list(DST_EVENT_TYPES.keys())
 
         # Auto-detect region based on Home Assistant timezone
         default_region = None
@@ -436,13 +407,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if default_region is None:
             default_region = "eu"
 
-        # Generate default event name based on DST type and region
-        dst_type_info = DST_EVENT_TYPES.get(self._dst_type, {})
-        region_info = DST_REGIONS.get(default_region, {})
-        default_name = f"{dst_type_info.get('name', 'Zeitumstellung')} {region_info.get('name', 'EU')}"
+        # Default DST type is "next_change"
+        default_dst_type = "next_change"
+
+        # Generate default event name based on DST type (without region for simplicity)
+        # Maps: next_change -> "Zeitumstellung", next_summer -> "Sommerzeit", next_winter -> "Winterzeit"
+        dst_default_names = {
+            "next_change": "Zeitumstellung",
+            "next_summer": "Sommerzeit",
+            "next_winter": "Winterzeit",
+        }
+        default_name = dst_default_names.get(default_dst_type, "Zeitumstellung")
 
         if user_input is not None:
             default_region = user_input.get(CONF_DST_REGION, default_region)
+            default_dst_type = user_input.get(CONF_DST_TYPE, default_dst_type)
             default_name = user_input.get(CONF_EVENT_NAME, default_name)
 
         data_schema = vol.Schema({
@@ -450,6 +429,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 SelectSelectorConfig(
                     options=region_options,
                     translation_key="dst_region",
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Required(CONF_DST_TYPE, default=default_dst_type): SelectSelector(
+                SelectSelectorConfig(
+                    options=dst_type_options,
+                    translation_key="dst_type",
+                    mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
             vol.Required(CONF_EVENT_NAME, default=default_name): str,
@@ -459,7 +446,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         })
 
         return self.async_show_form(
-            step_id="dst_region",
+            step_id="dst_event",
             data_schema=data_schema,
             errors=errors or {},
         )
@@ -719,7 +706,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             # Keep original event type and category
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
             user_input[CONF_SPECIAL_CATEGORY] = self.config_entry.data.get(CONF_SPECIAL_CATEGORY, "dst")
-            user_input[CONF_DST_TYPE] = self.config_entry.data.get(CONF_DST_TYPE)
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
@@ -735,12 +721,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         current_data = self.config_entry.data
         region_options = list(DST_REGIONS.keys())
+        dst_type_options = list(DST_EVENT_TYPES.keys())
 
         data_schema = vol.Schema({
             vol.Required(CONF_DST_REGION, default=current_data.get(CONF_DST_REGION, "eu")): SelectSelector(
                 SelectSelectorConfig(
                     options=region_options,
                     translation_key="dst_region",
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
+            vol.Required(CONF_DST_TYPE, default=current_data.get(CONF_DST_TYPE, "next_change")): SelectSelector(
+                SelectSelectorConfig(
+                    options=dst_type_options,
+                    translation_key="dst_type",
+                    mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
