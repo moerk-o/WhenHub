@@ -23,11 +23,15 @@ from .const import (
     CONF_END_DATE,
     CONF_TARGET_DATE,
     CONF_SPECIAL_TYPE,
+    CONF_SPECIAL_CATEGORY,
+    CONF_DST_TYPE,
+    CONF_DST_REGION,
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
     EVENT_TYPE_SPECIAL,
     SPECIAL_EVENTS,
+    DST_REGIONS,
 )
 from .calculations import (
     parse_date,
@@ -44,6 +48,9 @@ from .calculations import (
     anniversary_count,
     next_special_event,
     last_special_event,
+    next_dst_event,
+    last_dst_event,
+    is_dst_active,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -227,6 +234,11 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             Dictionary with special event sensor values
         """
+        # Check if this is a DST event
+        special_category = self.event_data.get(CONF_SPECIAL_CATEGORY)
+        if special_category == "dst":
+            return self._calculate_dst_data(today)
+
         special_type = self.event_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
         special_info = SPECIAL_EVENTS.get(special_type, SPECIAL_EVENTS["christmas_eve"])
 
@@ -248,4 +260,39 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "countdown_breakdown": countdown,
             # Binary sensor values
             "is_today": is_date_today(next_event, today) if next_event else False,
+        }
+
+    def _calculate_dst_data(self, today: date) -> dict[str, Any]:
+        """Calculate all DST event-related values.
+
+        Args:
+            today: Current date for calculations
+
+        Returns:
+            Dictionary with DST event sensor values
+        """
+        dst_type = self.event_data.get(CONF_DST_TYPE, "next_change")
+        dst_region = self.event_data.get(CONF_DST_REGION, "eu")
+        region_info = DST_REGIONS.get(dst_region, DST_REGIONS["eu"])
+
+        next_event = next_dst_event(region_info, dst_type, today)
+        last_event = last_dst_event(region_info, dst_type, today)
+
+        days_to_next = days_until(next_event, today) if next_event else 0
+        countdown = countdown_breakdown(next_event, today) if next_event and days_to_next > 0 else {}
+
+        return {
+            "dst_type": dst_type,
+            "dst_region": dst_region,
+            "region_name": region_info.get("name", "Unknown"),
+            # Datetime objects for sensors with device_class: timestamp
+            "next_date": _date_to_datetime(next_event),
+            "last_date": _date_to_datetime(last_event),
+            "days_until": days_to_next,
+            "days_since_last": (today - last_event).days if last_event else None,
+            "countdown_text": format_countdown_text(next_event, today) if next_event and days_to_next > 0 else "0 Tage",
+            "countdown_breakdown": countdown,
+            # Binary sensor values
+            "is_today": is_date_today(next_event, today) if next_event else False,
+            "is_dst_active": is_dst_active(region_info, today),
         }

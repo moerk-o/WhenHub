@@ -447,3 +447,241 @@ def last_special_event(special_info: dict, today: date) -> Optional[date]:
         return this_year
 
     return calculate_special_event_date(special_info, today.year - 1)
+
+
+# =============================================================================
+# DST (Daylight Saving Time) Calculations
+# =============================================================================
+
+def nth_weekday_of_month(year: int, month: int, weekday: int, n: int) -> Optional[date]:
+    """Calculate the nth occurrence of a weekday in a month.
+
+    Args:
+        year: Year to calculate for
+        month: Month (1-12)
+        weekday: Weekday (0=Monday, 6=Sunday)
+        n: Which occurrence (1=first, 2=second, etc.)
+
+    Returns:
+        Date of the nth weekday, or None if n is too large for the month
+
+    Example:
+        nth_weekday_of_month(2026, 3, 6, 2)  # 2nd Sunday in March 2026
+        -> date(2026, 3, 8)
+    """
+    # First day of the month
+    first_day = date(year, month, 1)
+
+    # Weekday of the first day (0=Monday, 6=Sunday)
+    first_weekday = first_day.weekday()
+
+    # Days until the first desired weekday
+    days_until_first = (weekday - first_weekday) % 7
+
+    # Date of the first desired weekday
+    first_occurrence = first_day + timedelta(days=days_until_first)
+
+    # nth occurrence (n-1 weeks after the first)
+    result = first_occurrence + timedelta(weeks=n - 1)
+
+    # Check if still in the same month
+    if result.month != month:
+        return None
+
+    return result
+
+
+def last_weekday_of_month(year: int, month: int, weekday: int) -> date:
+    """Calculate the last occurrence of a weekday in a month.
+
+    Args:
+        year: Year to calculate for
+        month: Month (1-12)
+        weekday: Weekday (0=Monday, 6=Sunday)
+
+    Returns:
+        Date of the last weekday in the month
+
+    Example:
+        last_weekday_of_month(2026, 10, 6)  # Last Sunday in October 2026
+        -> date(2026, 10, 25)
+    """
+    # Last day of the month
+    if month == 12:
+        last_day = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        last_day = date(year, month + 1, 1) - timedelta(days=1)
+
+    # Weekday of the last day
+    last_weekday = last_day.weekday()
+
+    # Days back to the desired weekday
+    days_back = (last_weekday - weekday) % 7
+
+    return last_day - timedelta(days=days_back)
+
+
+def calculate_dst_date(region_info: dict, dst_type: str, year: int) -> Optional[date]:
+    """Calculate DST transition date for a region and type.
+
+    Args:
+        region_info: Region definition dict with summer/winter rules
+        dst_type: "summer" or "winter"
+        year: Year to calculate for
+
+    Returns:
+        Date of the DST transition, or None on error
+
+    Example:
+        calculate_dst_date(DST_REGIONS["eu"], "summer", 2026)
+        -> date(2026, 3, 29)  # Last Sunday in March 2026
+    """
+    if dst_type not in ("summer", "winter"):
+        return None
+
+    rule_info = region_info.get(dst_type)
+    if not rule_info:
+        return None
+
+    rule = rule_info.get("rule")
+    weekday = rule_info.get("weekday", 6)  # Default: Sunday
+    month = rule_info.get("month")
+
+    if not month:
+        return None
+
+    if rule == "last":
+        return last_weekday_of_month(year, month, weekday)
+    elif rule == "nth":
+        n = rule_info.get("n", 1)
+        return nth_weekday_of_month(year, month, weekday, n)
+
+    return None
+
+
+def next_dst_event(
+    region_info: dict,
+    dst_type: str,
+    today: date
+) -> Optional[date]:
+    """Calculate next DST event date.
+
+    Args:
+        region_info: Region definition dict
+        dst_type: "next_change", "next_summer", or "next_winter"
+        today: Current date
+
+    Returns:
+        Date of the next DST event
+    """
+    if dst_type == "next_summer":
+        # Next summer time
+        this_year = calculate_dst_date(region_info, "summer", today.year)
+        if this_year and this_year >= today:
+            return this_year
+        return calculate_dst_date(region_info, "summer", today.year + 1)
+
+    elif dst_type == "next_winter":
+        # Next winter time
+        this_year = calculate_dst_date(region_info, "winter", today.year)
+        if this_year and this_year >= today:
+            return this_year
+        return calculate_dst_date(region_info, "winter", today.year + 1)
+
+    elif dst_type == "next_change":
+        # Next change (either summer or winter)
+        next_summer = next_dst_event(region_info, "next_summer", today)
+        next_winter = next_dst_event(region_info, "next_winter", today)
+
+        if next_summer and next_winter:
+            return min(next_summer, next_winter)
+        return next_summer or next_winter
+
+    return None
+
+
+def last_dst_event(
+    region_info: dict,
+    dst_type: str,
+    today: date
+) -> Optional[date]:
+    """Calculate last DST event date.
+
+    On the transition day itself, the new time is already active,
+    so the transition day counts as "already happened".
+
+    Args:
+        region_info: Region definition dict
+        dst_type: "next_change", "next_summer", or "next_winter"
+        today: Current date
+
+    Returns:
+        Date of the last DST event
+    """
+    if dst_type == "next_summer":
+        # Last summer time (includes today if transition day)
+        this_year = calculate_dst_date(region_info, "summer", today.year)
+        if this_year and this_year <= today:
+            return this_year
+        return calculate_dst_date(region_info, "summer", today.year - 1)
+
+    elif dst_type == "next_winter":
+        # Last winter time (includes today if transition day)
+        this_year = calculate_dst_date(region_info, "winter", today.year)
+        if this_year and this_year <= today:
+            return this_year
+        return calculate_dst_date(region_info, "winter", today.year - 1)
+
+    elif dst_type == "next_change":
+        # Last change (either summer or winter)
+        last_summer = last_dst_event(region_info, "next_summer", today)
+        last_winter = last_dst_event(region_info, "next_winter", today)
+
+        if last_summer and last_winter:
+            return max(last_summer, last_winter)
+        return last_summer or last_winter
+
+    return None
+
+
+def is_dst_active(region_info: dict, today: date) -> bool:
+    """Check if daylight saving time is currently active.
+
+    Determines whether we are currently in summer time (DST) or
+    winter time (standard time) by comparing the most recent
+    summer and winter transitions.
+
+    Args:
+        region_info: Region definition dict
+        today: Current date
+
+    Returns:
+        True if summer time (DST) is currently active,
+        False if winter time (standard time) is active
+
+    Example:
+        # EU, June 1st 2026 (between March and October)
+        is_dst_active(DST_REGIONS["eu"], date(2026, 6, 1))
+        -> True  # Summer time active
+
+        # EU, December 1st 2026 (after October)
+        is_dst_active(DST_REGIONS["eu"], date(2026, 12, 1))
+        -> False  # Winter time active
+    """
+    # Last summer time transition
+    last_summer = last_dst_event(region_info, "next_summer", today)
+    # Last winter time transition
+    last_winter = last_dst_event(region_info, "next_winter", today)
+
+    # If no events found
+    if last_summer is None and last_winter is None:
+        return False
+    if last_summer is None:
+        return False  # Only winter time known -> winter time active
+    if last_winter is None:
+        return True   # Only summer time known -> summer time active
+
+    # The more recent event determines the current state
+    # If summer time was last -> summer time active
+    # If winter time was last -> winter time active
+    return last_summer > last_winter

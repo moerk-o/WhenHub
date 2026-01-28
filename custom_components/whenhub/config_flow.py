@@ -26,12 +26,17 @@ from .const import (
     CONF_TARGET_DATE,
     CONF_SPECIAL_TYPE,
     CONF_SPECIAL_CATEGORY,
+    CONF_DST_TYPE,
+    CONF_DST_REGION,
     CONF_IMAGE_PATH,
     CONF_IMAGE_UPLOAD,
     CONF_WEBSITE_URL,
     CONF_NOTES,
     SPECIAL_EVENTS,
     SPECIAL_EVENT_CATEGORIES,
+    DST_EVENT_TYPES,
+    DST_REGIONS,
+    TIMEZONE_TO_DST_REGION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +51,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._event_type: str | None = None
         self._special_category: str | None = None
+        self._dst_type: str | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -277,6 +283,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_special_category_form()
 
         self._special_category = user_input[CONF_SPECIAL_CATEGORY]
+
+        # Route to DST-specific flow if DST category selected
+        if self._special_category == "dst":
+            return await self.async_step_dst_type()
+
         return await self.async_step_special_event()
 
     async def _show_special_category_form(self) -> FlowResult:
@@ -356,6 +367,103 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors or {},
         )
 
+    async def async_step_dst_type(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle DST type selection."""
+        if user_input is None:
+            return await self._show_dst_type_form()
+
+        self._dst_type = user_input[CONF_DST_TYPE]
+        return await self.async_step_dst_region()
+
+    async def _show_dst_type_form(self) -> FlowResult:
+        """Show DST type selection form."""
+        dst_type_options = list(DST_EVENT_TYPES.keys())
+
+        data_schema = vol.Schema({
+            vol.Required(CONF_DST_TYPE): SelectSelector(
+                SelectSelectorConfig(
+                    options=dst_type_options,
+                    translation_key="dst_type",
+                )
+            )
+        })
+
+        return self.async_show_form(
+            step_id="dst_type",
+            data_schema=data_schema,
+        )
+
+    async def async_step_dst_region(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle DST region selection and event configuration."""
+        if user_input is None:
+            return await self._show_dst_region_form()
+
+        # Add event type, category and DST type to data
+        user_input[CONF_EVENT_TYPE] = self._event_type
+        user_input[CONF_SPECIAL_CATEGORY] = self._special_category
+        user_input[CONF_DST_TYPE] = self._dst_type
+
+        # Create unique ID
+        event_name = user_input[CONF_EVENT_NAME]
+        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
+        self._abort_if_unique_id_configured()
+
+        return self.async_create_entry(
+            title=event_name,
+            data=user_input,
+        )
+
+    async def _show_dst_region_form(
+        self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
+    ) -> FlowResult:
+        """Show DST region selection and configuration form."""
+        region_options = list(DST_REGIONS.keys())
+
+        # Auto-detect region based on Home Assistant timezone
+        default_region = None
+        tz_name = self.hass.config.time_zone
+        if tz_name:
+            for tz_prefix, region in TIMEZONE_TO_DST_REGION.items():
+                if tz_name.startswith(tz_prefix) or tz_name == tz_prefix:
+                    default_region = region
+                    break
+
+        # Fall back to EU if no match
+        if default_region is None:
+            default_region = "eu"
+
+        # Generate default event name based on DST type and region
+        dst_type_info = DST_EVENT_TYPES.get(self._dst_type, {})
+        region_info = DST_REGIONS.get(default_region, {})
+        default_name = f"{dst_type_info.get('name', 'Zeitumstellung')} {region_info.get('name', 'EU')}"
+
+        if user_input is not None:
+            default_region = user_input.get(CONF_DST_REGION, default_region)
+            default_name = user_input.get(CONF_EVENT_NAME, default_name)
+
+        data_schema = vol.Schema({
+            vol.Required(CONF_DST_REGION, default=default_region): SelectSelector(
+                SelectSelectorConfig(
+                    options=region_options,
+                    translation_key="dst_region",
+                )
+            ),
+            vol.Required(CONF_EVENT_NAME, default=default_name): str,
+            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
+            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
+        })
+
+        return self.async_show_form(
+            step_id="dst_region",
+            data_schema=data_schema,
+            errors=errors or {},
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
@@ -376,7 +484,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Manage the options."""
         # Get the event type from existing config
         event_type = self.config_entry.data.get(CONF_EVENT_TYPE, EVENT_TYPE_TRIP)
-        
+
         # Route to appropriate options step based on event type
         if event_type == EVENT_TYPE_TRIP:
             return await self.async_step_trip_options(user_input)
@@ -385,6 +493,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             return await self.async_step_anniversary_options(user_input)
         elif event_type == EVENT_TYPE_SPECIAL:
+            # Check if it's a DST event
+            special_category = self.config_entry.data.get(CONF_SPECIAL_CATEGORY)
+            if special_category == "dst":
+                return await self.async_step_dst_options(user_input)
             return await self.async_step_special_options(user_input)
 
     async def async_step_trip_options(
@@ -596,5 +708,48 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="special_options",
+            data_schema=data_schema,
+        )
+
+    async def async_step_dst_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle DST event options."""
+        if user_input is not None:
+            # Keep original event type and category
+            user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
+            user_input[CONF_SPECIAL_CATEGORY] = self.config_entry.data.get(CONF_SPECIAL_CATEGORY, "dst")
+            user_input[CONF_DST_TYPE] = self.config_entry.data.get(CONF_DST_TYPE)
+
+            new_data = dict(self.config_entry.data)
+            new_data.update(user_input)
+
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                data=new_data,
+                title=user_input[CONF_EVENT_NAME]
+            )
+
+            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+            return self.async_create_entry(title="", data={})
+
+        current_data = self.config_entry.data
+        region_options = list(DST_REGIONS.keys())
+
+        data_schema = vol.Schema({
+            vol.Required(CONF_DST_REGION, default=current_data.get(CONF_DST_REGION, "eu")): SelectSelector(
+                SelectSelectorConfig(
+                    options=region_options,
+                    translation_key="dst_region",
+                )
+            ),
+            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
+            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
+            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
+        })
+
+        return self.async_show_form(
+            step_id="dst_options",
             data_schema=data_schema,
         )

@@ -53,6 +53,8 @@ CONF_END_DATE = "end_date"
 CONF_TARGET_DATE = "target_date"  # For Milestone and Anniversary
 CONF_SPECIAL_TYPE = "special_type"  # For Special Events
 CONF_SPECIAL_CATEGORY = "special_category"  # For Special Event Categories
+CONF_DST_TYPE = "dst_type"  # For DST Events
+CONF_DST_REGION = "dst_region"  # For DST Events
 CONF_IMAGE_PATH = "image_path"
 CONF_IMAGE_UPLOAD = "image_upload"
 CONF_WEBSITE_URL = "website_url"
@@ -72,7 +74,7 @@ TEXT_CALCULATION_RUNNING = "Berechnung läuft..."
 
 # Device constants
 MANUFACTURER = "WhenHub"
-SW_VERSION = "2.0.0"
+SW_VERSION = "2.1.0"
 
 # Sensor types for Trip (multi-day events)
 TRIP_SENSOR_TYPES = {
@@ -242,6 +244,20 @@ SPECIAL_BINARY_SENSOR_TYPES = {
     },
 }
 
+# Binary sensor types for DST Events (extends SPECIAL_BINARY_SENSOR_TYPES)
+DST_BINARY_SENSOR_TYPES = {
+    "is_today": {
+        "name": "Is Today",
+        "icon": "mdi:calendar-today",
+        "device_class": "occurrence",
+    },
+    "is_dst_active": {
+        "name": "DST Active",
+        "icon": "mdi:weather-sunny",
+        "device_class": None,  # No standard device_class fits
+    },
+}
+
 # Special Event Categories (German - see prompt.md for rationale)
 SPECIAL_EVENT_CATEGORIES = {
     "traditional": {
@@ -258,6 +274,11 @@ SPECIAL_EVENT_CATEGORIES = {
         "name": "Astronomische Events",
         "description": "Jahreszeitenanfänge",
         "icon": "mdi:weather-sunny"
+    },
+    "dst": {
+        "name": "Zeitumstellung",
+        "description": "Sommer- und Winterzeitwechsel",
+        "icon": "mdi:clock-time-four"
     }
 }
 
@@ -381,6 +402,98 @@ SPECIAL_EVENTS = {
         "month": 12,
         "day": 21,
     },
+}
+
+# DST Event Types
+DST_EVENT_TYPES = {
+    "next_change": {
+        "name": "Nächster Wechsel",
+        "description": "Nächste Zeitumstellung (Sommer oder Winter)",
+        "icon": "mdi:clock-time-four",
+    },
+    "next_summer": {
+        "name": "Nächste Sommerzeit",
+        "description": "Nächster Beginn der Sommerzeit (Uhr vor)",
+        "icon": "mdi:weather-sunny",
+    },
+    "next_winter": {
+        "name": "Nächste Winterzeit",
+        "description": "Nächster Beginn der Winterzeit (Uhr zurück)",
+        "icon": "mdi:weather-snowy",
+    },
+}
+
+# DST Regions with transition rules
+DST_REGIONS = {
+    "eu": {
+        "name": "EU",
+        "summer": {
+            "rule": "last",      # "last" or "nth"
+            "weekday": 6,        # 0=Monday, 6=Sunday
+            "month": 3,          # March
+        },
+        "winter": {
+            "rule": "last",
+            "weekday": 6,
+            "month": 10,         # October
+        },
+    },
+    "usa": {
+        "name": "USA",
+        "summer": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 3,          # March
+            "n": 2,              # 2nd Sunday
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 11,         # November
+            "n": 1,              # 1st Sunday
+        },
+    },
+    "australia": {
+        "name": "Australien",
+        "summer": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 10,         # October
+            "n": 1,              # 1st Sunday
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 4,          # April
+            "n": 1,              # 1st Sunday
+        },
+    },
+    "new_zealand": {
+        "name": "Neuseeland",
+        "summer": {
+            "rule": "last",
+            "weekday": 6,
+            "month": 9,          # September
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 4,          # April
+            "n": 1,              # 1st Sunday
+        },
+    },
+}
+
+# Timezone to DST region mapping for auto-detection
+TIMEZONE_TO_DST_REGION = {
+    "Europe/": "eu",
+    "America/New_York": "usa",
+    "America/Chicago": "usa",
+    "America/Denver": "usa",
+    "America/Los_Angeles": "usa",
+    "America/Toronto": "usa",
+    "Australia/": "australia",
+    "Pacific/Auckland": "new_zealand",
 }
 
 # Legacy compatibility - replaced by TRIP_SENSOR_TYPES

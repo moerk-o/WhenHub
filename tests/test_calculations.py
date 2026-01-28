@@ -31,6 +31,13 @@ from custom_components.whenhub.calculations import (
     calculate_special_event_date,
     next_special_event,
     last_special_event,
+    # DST functions
+    nth_weekday_of_month,
+    last_weekday_of_month,
+    calculate_dst_date,
+    next_dst_event,
+    last_dst_event,
+    is_dst_active,
 )
 
 
@@ -522,3 +529,506 @@ class TestLastSpecialEvent:
         today = date(2025, 6, 15)
         result = last_special_event(info, today)
         assert result == date(2024, 12, 24)
+
+
+# =============================================================================
+# DST (Daylight Saving Time) Calculation Tests
+# =============================================================================
+
+# DST region definitions for testing (same as will be in const.py)
+DST_REGIONS_TEST = {
+    "eu": {
+        "name": "EU",
+        "summer": {
+            "rule": "last",
+            "weekday": 6,  # Sunday
+            "month": 3,    # March
+        },
+        "winter": {
+            "rule": "last",
+            "weekday": 6,
+            "month": 10,   # October
+        },
+    },
+    "usa": {
+        "name": "USA",
+        "summer": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 3,    # March
+            "n": 2,        # 2nd Sunday
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 11,   # November
+            "n": 1,        # 1st Sunday
+        },
+    },
+    "australia": {
+        "name": "Australien",
+        "summer": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 10,   # October
+            "n": 1,        # 1st Sunday
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 4,    # April
+            "n": 1,        # 1st Sunday
+        },
+    },
+    "new_zealand": {
+        "name": "Neuseeland",
+        "summer": {
+            "rule": "last",
+            "weekday": 6,
+            "month": 9,    # September
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 4,    # April
+            "n": 1,        # 1st Sunday
+        },
+    },
+}
+
+
+class TestNthWeekdayOfMonth:
+    """Tests for nth_weekday_of_month function."""
+
+    def test_first_sunday_march_2026(self):
+        """1st Sunday in March 2026 = March 1st."""
+        result = nth_weekday_of_month(2026, 3, 6, 1)
+        assert result == date(2026, 3, 1)
+
+    def test_second_sunday_march_2026(self):
+        """2nd Sunday in March 2026 = March 8th (USA DST)."""
+        result = nth_weekday_of_month(2026, 3, 6, 2)
+        assert result == date(2026, 3, 8)
+
+    def test_first_sunday_november_2026(self):
+        """1st Sunday in November 2026 = November 1st (USA winter)."""
+        result = nth_weekday_of_month(2026, 11, 6, 1)
+        assert result == date(2026, 11, 1)
+
+    def test_first_sunday_october_2026(self):
+        """1st Sunday in October 2026 = October 4th (Australia DST)."""
+        result = nth_weekday_of_month(2026, 10, 6, 1)
+        assert result == date(2026, 10, 4)
+
+    def test_first_sunday_april_2026(self):
+        """1st Sunday in April 2026 = April 5th."""
+        result = nth_weekday_of_month(2026, 4, 6, 1)
+        assert result == date(2026, 4, 5)
+
+    def test_fifth_sunday_returns_none(self):
+        """5th Sunday doesn't always exist."""
+        result = nth_weekday_of_month(2026, 2, 6, 5)
+        assert result is None
+
+    def test_first_monday(self):
+        """Test first Monday calculation."""
+        result = nth_weekday_of_month(2026, 3, 0, 1)  # Monday = 0
+        assert result == date(2026, 3, 2)
+
+
+class TestLastWeekdayOfMonth:
+    """Tests for last_weekday_of_month function."""
+
+    def test_last_sunday_march_2026(self):
+        """Last Sunday in March 2026 = March 29th (EU DST)."""
+        result = last_weekday_of_month(2026, 3, 6)
+        assert result == date(2026, 3, 29)
+
+    def test_last_sunday_october_2026(self):
+        """Last Sunday in October 2026 = October 25th (EU winter)."""
+        result = last_weekday_of_month(2026, 10, 6)
+        assert result == date(2026, 10, 25)
+
+    def test_last_sunday_september_2026(self):
+        """Last Sunday in September 2026 = September 27th (NZ DST)."""
+        result = last_weekday_of_month(2026, 9, 6)
+        assert result == date(2026, 9, 27)
+
+    def test_last_sunday_december(self):
+        """Last Sunday in December 2026 = December 27th."""
+        result = last_weekday_of_month(2026, 12, 6)
+        assert result == date(2026, 12, 27)
+
+    def test_last_friday_march_2026(self):
+        """Last Friday in March 2026 = March 27th."""
+        result = last_weekday_of_month(2026, 3, 4)  # Friday = 4
+        assert result == date(2026, 3, 27)
+
+
+class TestCalculateDstDate:
+    """Tests for calculate_dst_date function."""
+
+    def test_eu_summer_2026(self):
+        """EU summer time 2026 = March 29th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "summer", 2026)
+        assert result == date(2026, 3, 29)
+
+    def test_eu_winter_2026(self):
+        """EU winter time 2026 = October 25th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "winter", 2026)
+        assert result == date(2026, 10, 25)
+
+    def test_usa_summer_2026(self):
+        """USA summer time 2026 = March 8th."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "summer", 2026)
+        assert result == date(2026, 3, 8)
+
+    def test_usa_winter_2026(self):
+        """USA winter time 2026 = November 1st."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "winter", 2026)
+        assert result == date(2026, 11, 1)
+
+    def test_australia_summer_2026(self):
+        """Australia summer time 2026 = October 4th."""
+        region = DST_REGIONS_TEST["australia"]
+        result = calculate_dst_date(region, "summer", 2026)
+        assert result == date(2026, 10, 4)
+
+    def test_australia_winter_2026(self):
+        """Australia winter time 2026 = April 5th."""
+        region = DST_REGIONS_TEST["australia"]
+        result = calculate_dst_date(region, "winter", 2026)
+        assert result == date(2026, 4, 5)
+
+    def test_new_zealand_summer_2026(self):
+        """New Zealand summer time 2026 = September 27th."""
+        region = DST_REGIONS_TEST["new_zealand"]
+        result = calculate_dst_date(region, "summer", 2026)
+        assert result == date(2026, 9, 27)
+
+    def test_new_zealand_winter_2026(self):
+        """New Zealand winter time 2026 = April 5th."""
+        region = DST_REGIONS_TEST["new_zealand"]
+        result = calculate_dst_date(region, "winter", 2026)
+        assert result == date(2026, 4, 5)
+
+    def test_invalid_dst_type(self):
+        """Invalid DST type returns None."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "invalid", 2026)
+        assert result is None
+
+
+class TestNextDstEvent:
+    """Tests for next_dst_event function."""
+
+    # === EU Tests ===
+
+    def test_eu_next_summer_before_march(self):
+        """EU: Before March -> summer time this year."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_summer", date(2026, 1, 15))
+        assert result == date(2026, 3, 29)
+
+    def test_eu_next_summer_after_march(self):
+        """EU: After March -> summer time next year."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_summer", date(2026, 4, 1))
+        assert result == date(2027, 3, 28)
+
+    def test_eu_summer_is_today(self):
+        """EU: On summer time transition day."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_summer", date(2026, 3, 29))
+        assert result == date(2026, 3, 29)  # Today is still valid
+
+    def test_eu_next_winter_before_october(self):
+        """EU: Before October -> winter time this year."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_winter", date(2026, 6, 1))
+        assert result == date(2026, 10, 25)
+
+    def test_eu_next_winter_after_october(self):
+        """EU: After October -> winter time next year."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_winter", date(2026, 11, 1))
+        assert result == date(2027, 10, 31)
+
+    def test_eu_next_change_after_summer(self):
+        """EU: After summer time -> winter time is closer."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_change", date(2026, 6, 1))
+        assert result == date(2026, 10, 25)  # Winter time
+
+    def test_eu_next_change_after_winter(self):
+        """EU: After winter time -> summer time next year is closer."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_change", date(2026, 11, 1))
+        assert result == date(2027, 3, 28)  # Summer time next year
+
+    def test_eu_next_change_before_summer(self):
+        """EU: Before both -> summer time is closer."""
+        region = DST_REGIONS_TEST["eu"]
+        result = next_dst_event(region, "next_change", date(2026, 1, 15))
+        assert result == date(2026, 3, 29)  # Summer time
+
+    # === USA Tests ===
+
+    def test_usa_next_summer_before_march(self):
+        """USA: 2nd Sunday in March 2026."""
+        region = DST_REGIONS_TEST["usa"]
+        result = next_dst_event(region, "next_summer", date(2026, 1, 15))
+        assert result == date(2026, 3, 8)
+
+    def test_usa_next_winter(self):
+        """USA: 1st Sunday in November 2026."""
+        region = DST_REGIONS_TEST["usa"]
+        result = next_dst_event(region, "next_winter", date(2026, 10, 1))
+        assert result == date(2026, 11, 1)
+
+    # === Australia Tests ===
+
+    def test_australia_next_summer(self):
+        """Australia: 1st Sunday in October 2026."""
+        region = DST_REGIONS_TEST["australia"]
+        result = next_dst_event(region, "next_summer", date(2026, 9, 1))
+        assert result == date(2026, 10, 4)
+
+    def test_australia_next_winter(self):
+        """Australia: 1st Sunday in April 2026."""
+        region = DST_REGIONS_TEST["australia"]
+        result = next_dst_event(region, "next_winter", date(2026, 1, 1))
+        assert result == date(2026, 4, 5)
+
+    # === New Zealand Tests ===
+
+    def test_new_zealand_next_summer(self):
+        """New Zealand: Last Sunday in September 2026."""
+        region = DST_REGIONS_TEST["new_zealand"]
+        result = next_dst_event(region, "next_summer", date(2026, 9, 1))
+        assert result == date(2026, 9, 27)
+
+    def test_new_zealand_next_winter(self):
+        """New Zealand: 1st Sunday in April 2026."""
+        region = DST_REGIONS_TEST["new_zealand"]
+        result = next_dst_event(region, "next_winter", date(2026, 1, 1))
+        assert result == date(2026, 4, 5)
+
+
+class TestLastDstEvent:
+    """Tests for last_dst_event function."""
+
+    def test_eu_last_summer(self):
+        """EU: Last summer time transition was March 2026."""
+        region = DST_REGIONS_TEST["eu"]
+        result = last_dst_event(region, "next_summer", date(2026, 6, 1))
+        assert result == date(2026, 3, 29)
+
+    def test_eu_last_winter(self):
+        """EU: Last winter time transition was October 2025."""
+        region = DST_REGIONS_TEST["eu"]
+        result = last_dst_event(region, "next_winter", date(2026, 2, 1))
+        assert result == date(2025, 10, 26)
+
+    def test_eu_last_change_in_summer(self):
+        """EU: In summer -> last change was summer transition."""
+        region = DST_REGIONS_TEST["eu"]
+        result = last_dst_event(region, "next_change", date(2026, 6, 1))
+        assert result == date(2026, 3, 29)
+
+    def test_eu_last_change_in_winter(self):
+        """EU: In winter -> last change was winter transition."""
+        region = DST_REGIONS_TEST["eu"]
+        result = last_dst_event(region, "next_change", date(2026, 12, 1))
+        assert result == date(2026, 10, 25)
+
+    def test_usa_last_summer(self):
+        """USA: Last summer time transition."""
+        region = DST_REGIONS_TEST["usa"]
+        result = last_dst_event(region, "next_summer", date(2026, 6, 1))
+        assert result == date(2026, 3, 8)
+
+    def test_usa_last_winter(self):
+        """USA: Last winter time transition was November 2025."""
+        region = DST_REGIONS_TEST["usa"]
+        result = last_dst_event(region, "next_winter", date(2026, 2, 1))
+        assert result == date(2025, 11, 2)
+
+
+class TestIsDstActive:
+    """Tests for is_dst_active function."""
+
+    # === EU Tests ===
+
+    def test_eu_winter_january(self):
+        """EU: January -> winter time active."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 1, 15)) is False
+
+    def test_eu_day_before_summer(self):
+        """EU: Day before summer time -> still winter time."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 3, 28)) is False
+
+    def test_eu_summer_transition_day(self):
+        """EU: Summer time transition day -> summer time active."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 3, 29)) is True
+
+    def test_eu_summer_june(self):
+        """EU: June -> summer time active."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 6, 15)) is True
+
+    def test_eu_day_before_winter(self):
+        """EU: Day before winter time -> still summer time."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 10, 24)) is True
+
+    def test_eu_winter_transition_day(self):
+        """EU: Winter time transition day -> winter time active."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 10, 25)) is False
+
+    def test_eu_winter_december(self):
+        """EU: December -> winter time active."""
+        region = DST_REGIONS_TEST["eu"]
+        assert is_dst_active(region, date(2026, 12, 15)) is False
+
+    # === USA Tests ===
+
+    def test_usa_day_before_summer(self):
+        """USA: Day before summer time (March 7th) -> still winter time."""
+        region = DST_REGIONS_TEST["usa"]
+        assert is_dst_active(region, date(2026, 3, 7)) is False
+
+    def test_usa_summer_transition_day(self):
+        """USA: 2nd Sunday March (March 8th 2026) -> summer time active."""
+        region = DST_REGIONS_TEST["usa"]
+        assert is_dst_active(region, date(2026, 3, 8)) is True
+
+    def test_usa_winter_transition_day(self):
+        """USA: 1st Sunday November (Nov 1st 2026) -> winter time active."""
+        region = DST_REGIONS_TEST["usa"]
+        assert is_dst_active(region, date(2026, 11, 1)) is False
+
+    def test_usa_summer_july(self):
+        """USA: July -> summer time active."""
+        region = DST_REGIONS_TEST["usa"]
+        assert is_dst_active(region, date(2026, 7, 15)) is True
+
+    # === Australia Tests (Southern Hemisphere!) ===
+
+    def test_australia_winter_transition_day(self):
+        """Australia: 1st Sunday April -> winter time active."""
+        region = DST_REGIONS_TEST["australia"]
+        assert is_dst_active(region, date(2026, 4, 5)) is False
+
+    def test_australia_winter_july(self):
+        """Australia: July (winter in Southern Hemisphere) -> winter time."""
+        region = DST_REGIONS_TEST["australia"]
+        assert is_dst_active(region, date(2026, 7, 15)) is False
+
+    def test_australia_summer_transition_day(self):
+        """Australia: 1st Sunday October -> summer time active."""
+        region = DST_REGIONS_TEST["australia"]
+        assert is_dst_active(region, date(2026, 10, 4)) is True
+
+    def test_australia_summer_december(self):
+        """Australia: December (summer in Southern Hemisphere) -> summer time."""
+        region = DST_REGIONS_TEST["australia"]
+        assert is_dst_active(region, date(2026, 12, 15)) is True
+
+    # === New Zealand Tests ===
+
+    def test_new_zealand_summer_transition_day(self):
+        """New Zealand: Last Sunday September -> summer time active."""
+        region = DST_REGIONS_TEST["new_zealand"]
+        assert is_dst_active(region, date(2026, 9, 27)) is True
+
+    def test_new_zealand_winter_transition_day(self):
+        """New Zealand: 1st Sunday April -> winter time active."""
+        region = DST_REGIONS_TEST["new_zealand"]
+        assert is_dst_active(region, date(2026, 4, 5)) is False
+
+
+class TestDstKnownDates:
+    """Tests verifying known DST dates for multiple years."""
+
+    # EU known dates
+    def test_eu_summer_2025(self):
+        """EU summer 2025 = March 30th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "summer", 2025)
+        assert result == date(2025, 3, 30)
+
+    def test_eu_winter_2025(self):
+        """EU winter 2025 = October 26th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "winter", 2025)
+        assert result == date(2025, 10, 26)
+
+    def test_eu_summer_2027(self):
+        """EU summer 2027 = March 28th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "summer", 2027)
+        assert result == date(2027, 3, 28)
+
+    def test_eu_winter_2027(self):
+        """EU winter 2027 = October 31st."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "winter", 2027)
+        assert result == date(2027, 10, 31)
+
+    def test_eu_summer_2028(self):
+        """EU summer 2028 = March 26th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "summer", 2028)
+        assert result == date(2028, 3, 26)
+
+    def test_eu_winter_2028(self):
+        """EU winter 2028 = October 29th."""
+        region = DST_REGIONS_TEST["eu"]
+        result = calculate_dst_date(region, "winter", 2028)
+        assert result == date(2028, 10, 29)
+
+    # USA known dates
+    def test_usa_summer_2025(self):
+        """USA summer 2025 = March 9th."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "summer", 2025)
+        assert result == date(2025, 3, 9)
+
+    def test_usa_winter_2025(self):
+        """USA winter 2025 = November 2nd."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "winter", 2025)
+        assert result == date(2025, 11, 2)
+
+    def test_usa_summer_2027(self):
+        """USA summer 2027 = March 14th."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "summer", 2027)
+        assert result == date(2027, 3, 14)
+
+    def test_usa_winter_2027(self):
+        """USA winter 2027 = November 7th."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "winter", 2027)
+        assert result == date(2027, 11, 7)
+
+    def test_usa_summer_2028(self):
+        """USA summer 2028 = March 12th."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "summer", 2028)
+        assert result == date(2028, 3, 12)
+
+    def test_usa_winter_2028(self):
+        """USA winter 2028 = November 5th."""
+        region = DST_REGIONS_TEST["usa"]
+        result = calculate_dst_date(region, "winter", 2028)
+        assert result == date(2028, 11, 5)

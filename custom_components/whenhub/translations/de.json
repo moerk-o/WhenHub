@@ -94,6 +94,34 @@
           "website_url": "Relevante URL zum Event",
           "notes": "Zusätzliche Informationen über das Special Event"
         }
+      },
+      "dst_type": {
+        "title": "Zeitumstellung - Typ wählen",
+        "description": "Welches Zeitumstellungs-Event möchtest du tracken?",
+        "data": {
+          "dst_type": "Event-Typ"
+        },
+        "data_description": {
+          "dst_type": "Wähle ob du den nächsten Wechsel, die Sommerzeit oder die Winterzeit tracken möchtest"
+        }
+      },
+      "dst_region": {
+        "title": "Zeitumstellung - Region & Details",
+        "description": "Wähle die Region und gib dem Event einen Namen",
+        "data": {
+          "dst_region": "Region",
+          "event_name": "Event-Name",
+          "image_path": "Bildpfad (optional)",
+          "website_url": "Website URL (optional)",
+          "notes": "Notizen (optional)"
+        },
+        "data_description": {
+          "dst_region": "In welcher Region gelten die DST-Regeln?",
+          "event_name": "z.B. 'Sommerzeit EU' oder 'Zeitumstellung'",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg",
+          "website_url": "Relevante URL zum Event",
+          "notes": "Zusätzliche Informationen"
+        }
       }
     },
     "error": {
@@ -126,6 +154,10 @@
       "special_options": {
         "title": "Special Event Optionen",
         "description": "Bearbeite die Einstellungen für dieses Special Event"
+      },
+      "dst_options": {
+        "title": "Zeitumstellung Optionen",
+        "description": "Bearbeite die Einstellungen für diese Zeitumstellung"
       }
     }
   },
@@ -163,7 +195,23 @@
       "options": {
         "traditional": "Traditionelle Feiertage",
         "calendar": "Kalendarische Feiertage",
-        "astronomical": "Astronomische Events"
+        "astronomical": "Astronomische Events",
+        "dst": "Zeitumstellung"
+      }
+    },
+    "dst_type": {
+      "options": {
+        "next_change": "Nächster Wechsel - Nächste Zeitumstellung (Sommer oder Winter)",
+        "next_summer": "Sommerzeit - Nächster Beginn der Sommerzeit",
+        "next_winter": "Winterzeit - Nächster Beginn der Winterzeit"
+      }
+    },
+    "dst_region": {
+      "options": {
+        "eu": "EU - Letzter Sonntag März/Oktober",
+        "usa": "USA - 2. Sonntag März / 1. Sonntag November",
+        "australia": "Australien - 1. Sonntag Oktober/April",
+        "new_zealand": "Neuseeland - Letzter Sonntag September / 1. Sonntag April"
       }
     }
   },
@@ -212,6 +260,9 @@
       },
       "is_today": {
         "name": "Ist heute"
+      },
+      "is_dst_active": {
+        "name": "Sommerzeit aktiv"
       }
     },
     "image": {

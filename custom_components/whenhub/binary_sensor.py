@@ -25,6 +25,7 @@ from .const import (
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
+    CONF_SPECIAL_CATEGORY,
     CONF_IMAGE_PATH,
     CONF_WEBSITE_URL,
     CONF_NOTES,
@@ -32,6 +33,7 @@ from .const import (
     MILESTONE_BINARY_SENSOR_TYPES,
     ANNIVERSARY_BINARY_SENSOR_TYPES,
     SPECIAL_BINARY_SENSOR_TYPES,
+    DST_BINARY_SENSOR_TYPES,
     DEFAULT_IMAGE,
     BINARY_UNIQUE_ID_PATTERN,
 )
@@ -85,10 +87,18 @@ async def async_setup_entry(
                 )
 
         elif event_type == EVENT_TYPE_SPECIAL:
-            for sensor_type in SPECIAL_BINARY_SENSOR_TYPES:
-                binary_sensors.append(
-                    SpecialBinarySensor(coordinator, config_entry, event_data, sensor_type)
-                )
+            # Check if this is a DST event
+            special_category = event_data.get(CONF_SPECIAL_CATEGORY)
+            if special_category == "dst":
+                for sensor_type in DST_BINARY_SENSOR_TYPES:
+                    binary_sensors.append(
+                        DSTBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                    )
+            else:
+                for sensor_type in SPECIAL_BINARY_SENSOR_TYPES:
+                    binary_sensors.append(
+                        SpecialBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                    )
 
         if binary_sensors:
             _LOGGER.info("Created %d binary sensors for %s", len(binary_sensors), event_data[CONF_EVENT_NAME])
@@ -396,6 +406,73 @@ class SpecialBinarySensor(BaseBinarySensor):
 
         if data and data.get("next_date"):
             attributes["next_date"] = data.get("next_date")
+
+        if self._event_data.get(CONF_IMAGE_PATH):
+            attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
+        else:
+            attributes["image_path"] = DEFAULT_IMAGE
+
+        if self._event_data.get(CONF_WEBSITE_URL):
+            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
+
+        if self._event_data.get(CONF_NOTES):
+            attributes["notes"] = self._event_data[CONF_NOTES]
+
+        return attributes
+
+
+class DSTBinarySensor(BaseBinarySensor):
+    """Binary sensor for DST (Daylight Saving Time) events.
+
+    Provides boolean sensors for DST conditions:
+    - is_today: True if today is a DST transition day
+    - is_dst_active: True if summer time (DST) is currently active
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
+    """
+
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
+        """Initialize the DST binary sensor.
+
+        Args:
+            coordinator: The data update coordinator for this event
+            config_entry: Home Assistant config entry
+            event_data: DST event configuration with dst_type and dst_region
+            sensor_type: Type of DST binary sensor to create
+        """
+        super().__init__(coordinator, config_entry, event_data, sensor_type, DST_BINARY_SENSOR_TYPES)
+
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value for this DST condition from coordinator data."""
+        if self._sensor_type == "is_today":
+            return data.get("is_today", False)
+        elif self._sensor_type == "is_dst_active":
+            return data.get("is_dst_active", False)
+        return False
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return state attributes for this sensor."""
+        data = self.coordinator.data
+        attributes = {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
+            "dst_type": data.get("dst_type") if data else None,
+            "dst_region": data.get("dst_region") if data else None,
+            "region_name": data.get("region_name") if data else None,
+        }
+
+        if data and data.get("next_date"):
+            attributes["next_date"] = data.get("next_date")
+
+        if data and data.get("last_date"):
+            attributes["last_date"] = data.get("last_date")
 
         if self._event_data.get(CONF_IMAGE_PATH):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
