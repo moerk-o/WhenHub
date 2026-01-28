@@ -130,14 +130,18 @@ Vor Implementation prüfen:
 ## Status
 
 ### Teil 1: website_url und notes entfernen
-- [ ] const.py bereinigen
-- [ ] config_flow.py bereinigen (alle Event-Typen)
-- [ ] binary_sensor.py bereinigen
-- [ ] strings.json bereinigen
-- [ ] translations/en.json bereinigen
-- [ ] translations/de.json bereinigen
+- [x] const.py bereinigen
+- [x] config_flow.py bereinigen (alle Event-Typen)
+- [x] binary_sensor.py bereinigen
+- [x] strings.json bereinigen
+- [x] translations/en.json bereinigen
+- [x] translations/de.json bereinigen
+
+**Erledigt:** 2026-01-28
 
 ### Teil 2: image_path ausblenden
-- [ ] Recherche: HA Config Flow Möglichkeiten
-- [ ] Lösungsansatz wählen
-- [ ] Implementation
+- **ZURÜCKGESTELLT**
+
+Home Assistant Config Flows unterstützen kein dynamisches Ein-/Ausblenden von Feldern innerhalb eines Steps. Die verfügbaren Workarounds (mehrstufige Flows, Step-Neuladen) sind zu komplex für den Nutzen.
+
+**Entscheidung:** `image_path` bleibt im Config Flow sichtbar. Das Feld ist optional und stört nicht wesentlich.

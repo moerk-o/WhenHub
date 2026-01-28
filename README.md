@@ -172,12 +172,10 @@ When setting up a Special Event, you configure:
 - **Event Category**: Choose from 3 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time)
 - **Event Name**: e.g., "Christmas Countdown" or "Easter Countdown"
 - **Special Event Type**: Choose from 13 predefined holidays
-- **Image Path** *(optional)*: 
+- **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (purple star icon)
   - File path = e.g., `/local/images/christmas.jpg` for custom images
   - Base64 string = Directly embedded encoded image
-- **Website URL** *(optional)*: Relevant URL for the event
-- **Notes** *(optional)*: Additional information
 
 ### Available Entities
 

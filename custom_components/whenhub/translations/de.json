@@ -18,17 +18,13 @@
           "event_name": "Name des Trips",
           "start_date": "Startdatum (YYYY-MM-DD)",
           "end_date": "Enddatum (YYYY-MM-DD)",
-          "image_path": "Bildpfad (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notizen (optional)"
+          "image_path": "Bildpfad (optional)"
         },
         "data_description": {
           "event_name": "z.B. 'Dänemarkurlaub 2025' oder 'Geschäftsreise Berlin'",
           "start_date": "Das Datum, an dem der Trip beginnt",
           "end_date": "Das Datum, an dem der Trip endet",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg",
-          "website_url": "Link zur Unterkunft oder anderen relevanten Informationen",
-          "notes": "Zusätzliche Informationen über den Trip"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg"
         }
       },
       "milestone": {
@@ -37,16 +33,12 @@
         "data": {
           "event_name": "Name des Milestones",
           "target_date": "Zieldatum (YYYY-MM-DD)",
-          "image_path": "Bildpfad (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notizen (optional)"
+          "image_path": "Bildpfad (optional)"
         },
         "data_description": {
           "event_name": "z.B. 'Geburtstag Max' oder 'Projektabgabe'",
           "target_date": "Das Datum des wichtigen Termins",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg",
-          "website_url": "Relevante URL zum Event",
-          "notes": "Zusätzliche Informationen über den Milestone"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg"
         }
       },
       "anniversary": {
@@ -55,16 +47,12 @@
         "data": {
           "event_name": "Name des Anniversarys",
           "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
-          "image_path": "Bildpfad (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notizen (optional)"
+          "image_path": "Bildpfad (optional)"
         },
         "data_description": {
           "event_name": "z.B. 'Hochzeitstag' oder 'Firmenjubiläum'",
           "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg",
-          "website_url": "Relevante URL zum Event",
-          "notes": "Zusätzliche Informationen über das Anniversary"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg"
         }
       },
       "special_category": {
@@ -83,16 +71,12 @@
         "data": {
           "event_name": "Name des Special Events",
           "special_type": "Special Event",
-          "image_path": "Bildpfad (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notizen (optional)"
+          "image_path": "Bildpfad (optional)"
         },
         "data_description": {
           "event_name": "z.B. 'Weihnachts-Countdown' oder 'Oster-Countdown'",
           "special_type": "Wähle das spezifische Event aus der Kategorie",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg",
-          "website_url": "Relevante URL zum Event",
-          "notes": "Zusätzliche Informationen über das Special Event"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg"
         }
       },
       "dst_event": {
@@ -102,17 +86,13 @@
           "dst_region": "Region",
           "dst_type": "Event-Typ",
           "event_name": "Event-Name",
-          "image_path": "Bildpfad (optional)",
-          "website_url": "Website URL (optional)",
-          "notes": "Notizen (optional)"
+          "image_path": "Bildpfad (optional)"
         },
         "data_description": {
           "dst_region": "Für welche Region soll die Zeitumstellung berechnet werden?",
           "dst_type": "Welches Zeitumstellungs-Event möchtest du tracken?",
           "event_name": "z.B. 'Zeitumstellung' oder 'Sommerzeit'",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg",
-          "website_url": "Relevante URL zum Event",
-          "notes": "Zusätzliche Informationen"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg"
         }
       }
     },

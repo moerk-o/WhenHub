@@ -29,9 +29,6 @@ from .const import (
     CONF_DST_TYPE,
     CONF_DST_REGION,
     CONF_IMAGE_PATH,
-    CONF_IMAGE_UPLOAD,
-    CONF_WEBSITE_URL,
-    CONF_NOTES,
     SPECIAL_EVENTS,
     SPECIAL_EVENT_CATEGORIES,
     DST_EVENT_TYPES,
@@ -140,8 +137,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): str,
             vol.Required(CONF_END_DATE, default="" if user_input is None else user_input.get(CONF_END_DATE, "")): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -151,10 +146,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "event_name": "z.B. Dänemarkurlaub 2025",
                 "start_date": "Format: YYYY-MM-DD",
-                "end_date": "Format: YYYY-MM-DD", 
+                "end_date": "Format: YYYY-MM-DD",
                 "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "URL zur Unterkunft (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
             },
         )
 
@@ -199,8 +192,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -211,8 +202,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "event_name": "z.B. Geburtstag Max oder Projektabgabe",
                 "target_date": "Format: YYYY-MM-DD",
                 "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
             },
         )
 
@@ -257,8 +246,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -269,8 +256,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
                 "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
                 "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
             },
         )
 
@@ -356,8 +341,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             ),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -441,8 +424,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             vol.Required(CONF_EVENT_NAME, default=default_name): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default="" if user_input is None else user_input.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default="" if user_input is None else user_input.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -530,8 +511,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): str,
             vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, "")): str,
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -572,8 +551,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): str,
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -583,8 +560,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 "event_name": "z.B. Geburtstag Max oder Projektabgabe",
                 "target_date": "Format: YYYY-MM-DD",
                 "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
             },
         )
 
@@ -621,8 +596,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): str,
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -632,8 +605,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 "event_name": "z.B. Hochzeitstag oder Firmenjubiläum",
                 "target_date": "Ursprüngliches Datum (YYYY-MM-DD)",
                 "image_path": "z.B. /local/images/event.jpg (optional)",
-                "website_url": "Relevante URL (optional)",
-                "notes": "Zusätzliche Notizen (optional)",
             },
         )
 
@@ -689,8 +660,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 )
             ),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
@@ -740,8 +709,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             ),
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
-            vol.Optional(CONF_WEBSITE_URL, default=current_data.get(CONF_WEBSITE_URL, "")): str,
-            vol.Optional(CONF_NOTES, default=current_data.get(CONF_NOTES, "")): str,
         })
 
         return self.async_show_form(
