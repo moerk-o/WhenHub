@@ -12,7 +12,11 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -30,6 +34,36 @@ from ..calculations import (
     countdown_breakdown,
     anniversary_for_year,
 )
+
+
+# Device class mapping from string to enum
+DEVICE_CLASS_MAP = {
+    "duration": SensorDeviceClass.DURATION,
+    "timestamp": SensorDeviceClass.TIMESTAMP,
+}
+
+
+def create_sensor_description(sensor_key: str, sensor_config: dict) -> SensorEntityDescription:
+    """Create a SensorEntityDescription from sensor config dict.
+
+    Args:
+        sensor_key: The sensor type key (e.g., 'days_until')
+        sensor_config: Dictionary with icon, unit, device_class
+
+    Returns:
+        SensorEntityDescription with translation_key set for localization
+    """
+    device_class = None
+    if "device_class" in sensor_config:
+        device_class = DEVICE_CLASS_MAP.get(sensor_config["device_class"])
+
+    return SensorEntityDescription(
+        key=sensor_key,
+        translation_key=sensor_key,  # Uses entity.sensor.<key>.name from translations
+        icon=sensor_config.get("icon"),
+        native_unit_of_measurement=sensor_config.get("unit"),
+        device_class=device_class,
+    )
 
 if TYPE_CHECKING:
     from ..coordinator import WhenHubCoordinator
@@ -67,7 +101,7 @@ def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
 
 
 # Re-export parse_date for backward compatibility
-__all__ = ["get_device_info", "parse_date", "BaseSensor", "BaseCountdownSensor"]
+__all__ = ["get_device_info", "parse_date", "BaseSensor", "BaseCountdownSensor", "create_sensor_description"]
 
 
 class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
@@ -77,9 +111,15 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
     and Anniversary sensors. It uses CoordinatorEntity for efficient updates
     and handles entity initialization, device info, and attribute management.
 
+    Uses SensorEntityDescription with translation_key for proper entity name
+    localization (following the pattern used in solstice_season).
+
     Child classes must implement their own native_value calculation logic,
     typically by reading from self.coordinator.data.
     """
+
+    entity_description: SensorEntityDescription
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -104,31 +144,14 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._sensor_type = sensor_type
         self._sensor_types = sensor_types
 
-        # Set entity attributes based on sensor type configuration
-        # Use translation_key for entity name translation (HA i18n system)
-        # Note: Do NOT set _attr_name when using translation_key - it would override translations
-        self._attr_has_entity_name = True
-        self._attr_translation_key = sensor_type
+        # Create and set entity_description with translation_key for localization
+        # This is the official HA pattern for translatable entity names
+        self.entity_description = create_sensor_description(
+            sensor_type, sensor_types[sensor_type]
+        )
+
+        # Set unique_id for entity registry
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
-        self._attr_icon = sensor_types[sensor_type]["icon"]
-        self._attr_native_unit_of_measurement = sensor_types[sensor_type].get("unit")
-
-        # Set device_class if specified in sensor type configuration
-        device_class = sensor_types[sensor_type].get("device_class")
-        if device_class:
-            self._attr_device_class = device_class
-
-        # Store sensor_type for stable entity_id generation (via suggested_object_id)
-        self._object_id_key = sensor_type
-
-    @property
-    def suggested_object_id(self) -> str:
-        """Return a stable object_id based on sensor_type key.
-
-        This ensures entity IDs remain stable regardless of translation language.
-        The displayed name uses translation_key for localization.
-        """
-        return self._object_id_key
 
     @property
     def device_info(self) -> DeviceInfo:

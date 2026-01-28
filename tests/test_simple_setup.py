@@ -42,5 +42,5 @@ async def test_manual_config_entry_setup(hass: HomeAssistant, trip_config_entry)
     assert trip_config_entry.state == ConfigEntryState.LOADED
     
     # Verify entities were created
-    assert hass.states.get("sensor.danemark_2026_days_until") is not None
+    assert hass.states.get("sensor.danemark_2026_days_until_start") is not None
     print("✅ Config entry setup through Home Assistant flow works")

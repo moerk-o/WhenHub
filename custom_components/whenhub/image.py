@@ -88,21 +88,9 @@ class WhenHubImage(ImageEntity):
         self._attr_translation_key = "event_image"
         self._attr_unique_id = f"{config_entry.entry_id}_image"
 
-        # Store key for stable entity_id generation (via suggested_object_id)
-        self._object_id_key = "image"
-
         # Extract image configuration
         self._image_path = event_data.get(CONF_IMAGE_PATH)
         self._image_data = event_data.get("image_data")  # Base64 encoded image data
-
-    @property
-    def suggested_object_id(self) -> str:
-        """Return a stable object_id.
-
-        This ensures entity IDs remain stable regardless of translation language.
-        The displayed name uses translation_key for localization.
-        """
-        return self._object_id_key
 
     @property
     def device_info(self) -> DeviceInfo:

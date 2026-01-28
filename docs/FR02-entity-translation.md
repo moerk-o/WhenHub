@@ -157,9 +157,40 @@ Falls `strings.json` beibehalten wird:
 
 ## Status
 
-- [ ] Entscheidung: Option A oder B
-- [ ] strings.json anpassen/löschen
-- [ ] validate.yaml Workflow erstellen
-- [ ] Alle Entity-Klassen auf translation_key prüfen
-- [ ] Lokaler hassfest Test
-- [ ] Test mit deutscher Sprache
+- [x] Entscheidung: Option A (strings.json entfernen)
+- [x] strings.json gelöscht
+- [x] validate.yaml Workflow erstellen (bereits in FR03 erledigt)
+- [x] Sensor-Klassen auf SensorEntityDescription umgestellt
+- [x] BinarySensor-Klassen auf BinarySensorEntityDescription umgestellt
+- [x] suggested_object_id ENTFERNT (für sprachabhängige Entity-IDs bei Erstellung)
+- [x] Alle 173 Tests angepasst und bestanden
+- [ ] Lokaler hassfest Test (manuell)
+- [ ] Test mit deutscher Sprache (manuell)
+
+**Erledigt:** 2026-01-28
+
+### Technische Änderung
+
+1. **strings.json gelöscht** - Für Custom Integrations reicht `translations/en.json` als Fallback
+
+2. **EntityDescription statt _attr_translation_key**:
+   - `SensorEntityDescription` mit `translation_key` Parameter für Sensoren
+   - `BinarySensorEntityDescription` mit `translation_key` Parameter für Binary Sensoren
+   - `_attr_translation_key` für Image Entities (ImageEntityDescription existiert nicht)
+
+3. **suggested_object_id ENTFERNT** (wie in solstice_season):
+   - Ohne `suggested_object_id` nutzt Home Assistant den übersetzten Namen für die Entity-ID
+   - Deutsches System erstellt: `sensor.gerät_tage_bis_start`
+   - Englisches System erstellt: `sensor.gerät_days_until_start`
+   - Entity-IDs sind stabil NACH Erstellung, aber sprachabhängig BEI Erstellung
+
+### Wichtiger Unterschied zu vorheriger Implementierung
+
+**Vorher (mit suggested_object_id):**
+- Entity-ID immer englisch: `sensor.gerät_days_until`
+- Unabhängig von Systemsprache
+
+**Jetzt (ohne suggested_object_id, wie solstice_season):**
+- Entity-ID abhängig von Systemsprache bei Erstellung
+- Deutsches System: `sensor.gerät_tage_bis_start` (aus "Tage bis Start")
+- Englisches System: `sensor.gerät_days_until_start` (aus "Days until start")

@@ -10,7 +10,11 @@ import logging
 from datetime import date
 from typing import Any, TYPE_CHECKING
 
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+    BinarySensorEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -36,6 +40,34 @@ from .const import (
     BINARY_UNIQUE_ID_PATTERN,
 )
 from .sensors.base import get_device_info
+
+
+# Device class mapping from string to enum for binary sensors
+BINARY_DEVICE_CLASS_MAP = {
+    "occurrence": BinarySensorDeviceClass.RUNNING,  # 'occurrence' maps to 'running' for "is active" sensors
+}
+
+
+def create_binary_sensor_description(sensor_key: str, sensor_config: dict) -> BinarySensorEntityDescription:
+    """Create a BinarySensorEntityDescription from sensor config dict.
+
+    Args:
+        sensor_key: The sensor type key (e.g., 'trip_starts_today')
+        sensor_config: Dictionary with icon, device_class
+
+    Returns:
+        BinarySensorEntityDescription with translation_key set for localization
+    """
+    device_class = None
+    if "device_class" in sensor_config:
+        device_class = BINARY_DEVICE_CLASS_MAP.get(sensor_config["device_class"])
+
+    return BinarySensorEntityDescription(
+        key=sensor_key,
+        translation_key=sensor_key,  # Uses entity.binary_sensor.<key>.name from translations
+        icon=sensor_config.get("icon"),
+        device_class=device_class,
+    )
 
 if TYPE_CHECKING:
     from .coordinator import WhenHubCoordinator
@@ -112,7 +144,13 @@ class BaseBinarySensor(CoordinatorEntity["WhenHubCoordinator"], BinarySensorEnti
     Provides common functionality for Trip, Milestone, and Anniversary binary sensors
     using CoordinatorEntity for efficient updates. Child classes implement
     the specific boolean logic for their sensor types.
+
+    Uses BinarySensorEntityDescription with translation_key for proper entity name
+    localization (following the pattern used in solstice_season).
     """
+
+    entity_description: BinarySensorEntityDescription
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -137,32 +175,17 @@ class BaseBinarySensor(CoordinatorEntity["WhenHubCoordinator"], BinarySensorEnti
         self._sensor_type = sensor_type
         self._sensor_types = sensor_types
 
-        # Set entity attributes using translation system for i18n support
-        # Note: Do NOT set _attr_name when using translation_key - it would override translations
-        self._attr_has_entity_name = True
-        self._attr_translation_key = sensor_type
+        # Create and set entity_description with translation_key for localization
+        # This is the official HA pattern for translatable entity names
+        self.entity_description = create_binary_sensor_description(
+            sensor_type, sensor_types[sensor_type]
+        )
+
+        # Set unique_id for entity registry
         self._attr_unique_id = BINARY_UNIQUE_ID_PATTERN.format(
             entry_id=config_entry.entry_id,
             sensor_type=sensor_type
         )
-        self._attr_icon = sensor_types[sensor_type]["icon"]
-
-        # Store sensor_type for stable entity_id generation (via suggested_object_id)
-        self._object_id_key = sensor_type
-
-        # Set Home Assistant device class if specified (e.g., 'occurrence')
-        device_class = sensor_types[sensor_type].get("device_class")
-        if device_class:
-            self._attr_device_class = getattr(BinarySensorDeviceClass, device_class.upper(), None)
-
-    @property
-    def suggested_object_id(self) -> str:
-        """Return a stable object_id based on sensor_type key.
-
-        This ensures entity IDs remain stable regardless of translation language.
-        The displayed name uses translation_key for localization.
-        """
-        return self._object_id_key
 
     @property
     def device_info(self) -> DeviceInfo:
