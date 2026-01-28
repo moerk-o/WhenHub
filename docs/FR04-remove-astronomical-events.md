@@ -136,10 +136,16 @@ Falls Nutzer bereits astronomische Events in WhenHub konfiguriert haben:
 
 ## Status
 
-- [ ] const.py bereinigen
-- [ ] strings.json bereinigen
-- [ ] translations/en.json bereinigen
-- [ ] translations/de.json bereinigen
-- [ ] README.md anpassen
-- [ ] Release Notes vorbereiten
-- [ ] Testen dass bestehende non-astronomical Events weiter funktionieren
+✅ **Abgeschlossen** (2026-01-28)
+
+- [x] const.py bereinigen
+- [x] strings.json bereinigen (entfernt zugunsten translations/en.json)
+- [x] translations/en.json bereinigen
+- [x] translations/de.json bereinigen
+- [x] README.md anpassen
+- [x] Release Notes vorbereiten
+- [x] Testen dass bestehende non-astronomical Events weiter funktionieren
+
+**Commits:**
+- `b961f4b` - FR04: Remove astronomical special events
+- `34830ac` - Merge branch 'feature/fr04-remove-astronomical': FR04 + FR07
