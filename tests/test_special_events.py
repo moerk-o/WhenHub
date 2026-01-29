@@ -160,3 +160,55 @@ class TestDSTEvents:
         assert state is not None
         # Should be either "on" or "off"
         assert state.state in ("on", "off")
+
+    @pytest.mark.asyncio
+    async def test_dst_australia_setup(self, hass: HomeAssistant, dst_australia_config_entry):
+        """Test that Australia DST event creates expected sensors."""
+        dst_australia_config_entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(dst_australia_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        base = "sensor.dst_australia"
+        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_next_date") is not None
+
+    @pytest.mark.asyncio
+    async def test_dst_new_zealand_setup(self, hass: HomeAssistant, dst_nz_config_entry):
+        """Test that New Zealand DST event creates expected sensors."""
+        dst_nz_config_entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(dst_nz_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        base = "sensor.dst_new_zealand"
+        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_next_date") is not None
+
+    @pytest.mark.asyncio
+    async def test_dst_next_summer_type(self, hass: HomeAssistant, dst_eu_summer_config_entry):
+        """Test that next_summer DST type works correctly."""
+        from datetime import datetime
+        dst_eu_summer_config_entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(dst_eu_summer_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        state = hass.states.get("sensor.sommerzeit_eu_next_date")
+        assert state is not None
+        # Should be in March (EU summer time starts last Sunday of March)
+        date_str = state.state.split("T")[0]
+        dst_date = datetime.strptime(date_str, "%Y-%m-%d")
+        assert dst_date.month == 3, f"EU summer DST {date_str} should be in March"
+
+    @pytest.mark.asyncio
+    async def test_dst_next_winter_type(self, hass: HomeAssistant, dst_eu_winter_config_entry):
+        """Test that next_winter DST type works correctly."""
+        from datetime import datetime
+        dst_eu_winter_config_entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(dst_eu_winter_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+        state = hass.states.get("sensor.winterzeit_eu_next_date")
+        assert state is not None
+        # Should be in October (EU winter time starts last Sunday of October)
+        date_str = state.state.split("T")[0]
+        dst_date = datetime.strptime(date_str, "%Y-%m-%d")
+        assert dst_date.month == 10, f"EU winter DST {date_str} should be in October"

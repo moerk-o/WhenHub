@@ -310,3 +310,95 @@ def dst_usa_config_entry():
         unique_id="whenhub_dst_usa",
         version=1,
     )
+
+
+@pytest.fixture
+def dst_australia_config_entry():
+    """Create a mock config entry for Australia DST event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "DST Australia",
+            "event_type": "special",
+            "special_type": "dst",
+            "special_category": "dst",
+            "dst_type": "next_change",
+            "dst_region": "australia",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_dst_australia",
+        version=1,
+    )
+
+
+@pytest.fixture
+def dst_nz_config_entry():
+    """Create a mock config entry for New Zealand DST event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "DST New Zealand",
+            "event_type": "special",
+            "special_type": "dst",
+            "special_category": "dst",
+            "dst_type": "next_change",
+            "dst_region": "new_zealand",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_dst_nz",
+        version=1,
+    )
+
+
+@pytest.fixture
+def dst_eu_summer_config_entry():
+    """Create a mock config entry for EU DST summer event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Sommerzeit EU",
+            "event_type": "special",
+            "special_type": "dst",
+            "special_category": "dst",
+            "dst_type": "next_summer",
+            "dst_region": "eu",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_dst_eu_summer",
+        version=1,
+    )
+
+
+@pytest.fixture
+def dst_eu_winter_config_entry():
+    """Create a mock config entry for EU DST winter event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Winterzeit EU",
+            "event_type": "special",
+            "special_type": "dst",
+            "special_category": "dst",
+            "dst_type": "next_winter",
+            "dst_region": "eu",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_dst_eu_winter",
+        version=1,
+    )
