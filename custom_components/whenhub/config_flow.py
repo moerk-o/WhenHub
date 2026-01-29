@@ -393,15 +393,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
         """Create the options flow."""
-        return OptionsFlowHandler(config_entry)
+        return OptionsFlowHandler()
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for WhenHub."""
+    """Handle options flow for WhenHub.
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
+    Note: config_entry is automatically provided by the OptionsFlow base class
+    as a read-only property. Do not override __init__ to set it manually.
+    """
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
