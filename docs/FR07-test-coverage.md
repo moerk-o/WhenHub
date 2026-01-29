@@ -58,6 +58,13 @@ Während der Implementierung von FR04 (Entfernung astronomischer Events) wurde f
 - [x] Test für mehrere parallele Trip Events
 - [x] Test für gemischte Event-Typen
 
+### International Character Sets (`test_edge_cases_extended.py`)
+- [x] Test für Kyrillisch (Russisch): Поездка в Москву
+- [x] Test für Chinesisch: 北京之旅
+- [x] Test für Japanisch: 東京旅行
+- [x] Test für Arabisch: رحلة إلى القاهرة
+- [x] Test für Hebräisch: טיול לתל אביב
+
 ## Bugfixes während Implementation
 
 ### DSTBinarySensor Icon Bug
@@ -69,11 +76,12 @@ Während der Implementierung von FR04 (Entfernung astronomischer Events) wurde f
 
 | Metrik | Vorher | Nachher |
 |--------|--------|---------|
-| Gesamte Tests | 173 | 207 |
+| Gesamte Tests | 173 | 212 |
 | Special Events Tests | 0 | 7 |
 | DST Tests | 0 | 9 |
 | Config Flow Tests | 0 | 8 |
 | Edge Case Tests | 0 | 10 |
+| International Charset Tests | 0 | 5 |
 
 ## Status
 
@@ -84,6 +92,7 @@ Während der Implementierung von FR04 (Entfernung astronomischer Events) wurde f
 - `9c5f4e8` - FR07: Add config flow tests
 - `a2c34f1` - FR07: Add DST region and type tests
 - `c0db414` - FR07: Add extended edge case tests
+- `88edc82` - FR07: Add international character set tests
 
 ## Notizen
 
