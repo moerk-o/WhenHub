@@ -47,6 +47,19 @@ Während der Implementierung von FR04 (Entfernung astronomischer Events) wurde f
 - [x] Test für kompletten Trip Flow
 - [x] Test für kompletten Milestone Flow
 
+### Options Flow (`test_config_flow.py`)
+- [x] Test für Trip Options zeigt Formular
+- [x] Test für Trip Options Update
+- [x] Test für Trip Options ungültige Daten (Ende vor Start)
+- [x] Test für Milestone Options zeigt Formular
+- [x] Test für Milestone Options Update
+- [x] Test für Anniversary Options zeigt Formular
+- [x] Test für Anniversary Options Update
+- [x] Test für Special Options zeigt Formular
+- [x] Test für Special Options Update
+- [x] Test für DST Options zeigt Formular
+- [x] Test für DST Options Update
+
 ### Extended Edge Cases (`test_edge_cases_extended.py`)
 - [x] Test für Umlaute in Event-Namen (ä, ö, ü)
 - [x] Test für ß (Eszett) in Event-Namen
@@ -72,14 +85,20 @@ Während der Implementierung von FR04 (Entfernung astronomischer Events) wurde f
 - **Ursache**: `_attr_icon` wurde nie gesetzt, stattdessen sollte `entity_description.icon` verwendet werden
 - **Fix**: Zeile 471 in `binary_sensor.py` geändert zu `return self.entity_description.icon`
 
+### Options Flow Error Display Bug
+- **Problem**: Validierungsfehler wurden im Options Flow nicht angezeigt (z.B. Enddatum vor Startdatum)
+- **Ursache**: `errors` Parameter wurde nicht an `async_show_form()` übergeben
+- **Fix**: `errors=errors` Parameter in `async_step_trip_options` in `config_flow.py` hinzugefügt
+
 ## Statistik
 
 | Metrik | Vorher | Nachher |
 |--------|--------|---------|
-| Gesamte Tests | 173 | 212 |
+| Gesamte Tests | 173 | 223 |
 | Special Events Tests | 0 | 7 |
 | DST Tests | 0 | 9 |
 | Config Flow Tests | 0 | 8 |
+| Options Flow Tests | 0 | 11 |
 | Edge Case Tests | 0 | 10 |
 | International Charset Tests | 0 | 5 |
 

@@ -41,17 +41,18 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up WhenHub image based on a config entry.
-    
+
     Creates a single image entity for each WhenHub event that can display
     user-provided images or auto-generated event type graphics.
-    
+
     Args:
         hass: Home Assistant instance
         config_entry: Config entry for this WhenHub integration instance
         async_add_entities: Callback to add entities to Home Assistant
     """
-    event_data = hass.data[DOMAIN][config_entry.entry_id]
-    
+    data = hass.data[DOMAIN][config_entry.entry_id]
+    event_data: dict = data["event_data"]
+
     # Always create one image entity per event
     image_entity = WhenHubImage(hass, config_entry, event_data)
     async_add_entities([image_entity])
@@ -81,9 +82,12 @@ class WhenHubImage(ImageEntity):
         
         self._config_entry = config_entry
         self._event_data = event_data
-        self._attr_name = f"{event_data[CONF_EVENT_NAME]} Image"
+        # Use translation system for entity name
+        # Note: Do NOT set _attr_name when using translation_key - it would override translations
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "event_image"
         self._attr_unique_id = f"{config_entry.entry_id}_image"
-        
+
         # Extract image configuration
         self._image_path = event_data.get(CONF_IMAGE_PATH)
         self._image_data = event_data.get("image_data")  # Base64 encoded image data

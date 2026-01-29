@@ -1,4 +1,13 @@
-"""Constants for the WhenHub integration."""
+"""Constants for the WhenHub integration.
+
+This module defines all constants used throughout the WhenHub integration:
+- Domain and event type identifiers
+- Configuration keys for config flow
+- Sensor type definitions with metadata (name, icon, unit)
+- Binary sensor type definitions
+- Special event categories and definitions
+- Common text constants and patterns
+"""
 from __future__ import annotations
 
 DOMAIN = "whenhub"
@@ -12,25 +21,25 @@ EVENT_TYPE_SPECIAL = "special"
 EVENT_TYPES = {
     EVENT_TYPE_TRIP: {
         "name": "Trip",
-        "description": "Mehrtägige Reise oder Event",
+        "description": "Multi-day trip or event",
         "icon": "mdi:airplane",
         "model": "Trip Tracker",
     },
     EVENT_TYPE_MILESTONE: {
-        "name": "Milestone", 
-        "description": "Einmaliges wichtiges Datum",
+        "name": "Milestone",
+        "description": "One-time important date",
         "icon": "mdi:flag-checkered",
         "model": "Milestone Tracker",
     },
     EVENT_TYPE_ANNIVERSARY: {
         "name": "Anniversary",
-        "description": "Wiederkehrendes jährliches Event", 
+        "description": "Recurring yearly event",
         "icon": "mdi:calendar-heart",
         "model": "Anniversary Tracker",
     },
     EVENT_TYPE_SPECIAL: {
         "name": "Special Event",
-        "description": "Spezielle Feiertage und astronomische Events",
+        "description": "Special holidays and calendar events",
         "icon": "mdi:star",
         "model": "Special Event Tracker",
     }
@@ -41,13 +50,13 @@ CONF_EVENT_TYPE = "event_type"
 CONF_EVENT_NAME = "event_name"
 CONF_START_DATE = "start_date"
 CONF_END_DATE = "end_date"
-CONF_TARGET_DATE = "target_date"  # Für Milestone und Anniversary
-CONF_SPECIAL_TYPE = "special_type"  # Für Special Events
-CONF_SPECIAL_CATEGORY = "special_category"  # Für Special Event Kategorien
+CONF_TARGET_DATE = "target_date"  # For Milestone and Anniversary
+CONF_SPECIAL_TYPE = "special_type"  # For Special Events
+CONF_SPECIAL_CATEGORY = "special_category"  # For Special Event Categories
+CONF_DST_TYPE = "dst_type"  # For DST Events
+CONF_DST_REGION = "dst_region"  # For DST Events
 CONF_IMAGE_PATH = "image_path"
 CONF_IMAGE_UPLOAD = "image_upload"
-CONF_WEBSITE_URL = "website_url"
-CONF_NOTES = "notes"
 
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"
@@ -57,35 +66,39 @@ UNIQUE_ID_PATTERN = "{entry_id}_{sensor_type}"
 BINARY_UNIQUE_ID_PATTERN = "{entry_id}_binary_{sensor_type}"
 SENSOR_NAME_PATTERN = "{event_name} {sensor_name}"
 
-# Common text constants
+# Common text constants (German - see prompt.md for rationale)
 TEXT_ZERO_DAYS = "0 Tage"
 TEXT_CALCULATION_RUNNING = "Berechnung läuft..."
 
 # Device constants
 MANUFACTURER = "WhenHub"
-SW_VERSION = "1.0.0"
+SW_VERSION = "2.1.0"
 
-# Sensor types - für Trip (mehrtägig)
+# Sensor types for Trip (multi-day events)
 TRIP_SENSOR_TYPES = {
     "days_until": {
         "name": "Days Until Start",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "days_until_end": {
         "name": "Days Until End",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
     "trip_left_days": {
         "name": "Trip Left Days",
         "icon": "mdi:calendar-minus",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "trip_left_percent": {
         "name": "Trip Left Percent",
@@ -94,55 +107,62 @@ TRIP_SENSOR_TYPES = {
     },
 }
 
-# Sensor types - für Milestone (eintägig, einmalig)
+# Sensor types for Milestone (single-day, one-time events)
 MILESTONE_SENSOR_TYPES = {
     "days_until": {
         "name": "Days Until",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text", 
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
 }
 
-# Sensor types - für Anniversary (eintägig, wiederkehrend)
+# Sensor types for Anniversary (single-day, recurring yearly)
 ANNIVERSARY_SENSOR_TYPES = {
     "days_until_next": {
         "name": "Days Until Next",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "days_since_last": {
         "name": "Days Since Last",
         "icon": "mdi:calendar-minus",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text", 
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
     "occurrences_count": {
         "name": "Occurrences Count",
         "icon": "mdi:counter",
-        "unit": "times",
+        "unit": None,
     },
     "next_date": {
         "name": "Next Date",
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
+        "device_class": "timestamp",
     },
     "last_date": {
         "name": "Last Date",
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
+        "device_class": "timestamp",
     },
 }
 
-# Binary sensor types - für Trip
+# Binary sensor types for Trip
 TRIP_BINARY_SENSOR_TYPES = {
     "trip_starts_today": {
         "name": "Trip Starts Today",
@@ -161,7 +181,7 @@ TRIP_BINARY_SENSOR_TYPES = {
     },
 }
 
-# Binary sensor types - für Milestone
+# Binary sensor types for Milestone
 MILESTONE_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
@@ -170,7 +190,7 @@ MILESTONE_BINARY_SENSOR_TYPES = {
     },
 }
 
-# Binary sensor types - für Anniversary
+# Binary sensor types for Anniversary
 ANNIVERSARY_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
@@ -179,36 +199,41 @@ ANNIVERSARY_BINARY_SENSOR_TYPES = {
     },
 }
 
-# Sensor types - für Special Events
+# Sensor types for Special Events
 SPECIAL_SENSOR_TYPES = {
     "days_until": {
         "name": "Days Until",
         "icon": "mdi:calendar-clock",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
     "days_since_last": {
         "name": "Days Since Last",
         "icon": "mdi:calendar-minus",
-        "unit": "days",
+        "unit": "d",
+        "device_class": "duration",
     },
-    "countdown_text": {
-        "name": "Countdown Text",
-        "icon": "mdi:calendar-text",
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
         "unit": None,
+        "device_class": "timestamp",
     },
     "next_date": {
         "name": "Next Date",
         "icon": "mdi:calendar-arrow-right",
         "unit": None,
+        "device_class": "timestamp",
     },
     "last_date": {
         "name": "Last Date",
         "icon": "mdi:calendar-arrow-left",
         "unit": None,
+        "device_class": "timestamp",
     },
 }
 
-# Binary sensor types - für Special Events
+# Binary sensor types for Special Events
 SPECIAL_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
@@ -217,7 +242,21 @@ SPECIAL_BINARY_SENSOR_TYPES = {
     },
 }
 
-# Special Event Kategorien
+# Binary sensor types for DST Events (extends SPECIAL_BINARY_SENSOR_TYPES)
+DST_BINARY_SENSOR_TYPES = {
+    "is_today": {
+        "name": "Is Today",
+        "icon": "mdi:calendar-today",
+        "device_class": "occurrence",
+    },
+    "is_dst_active": {
+        "name": "DST Active",
+        "icon": "mdi:weather-sunny",
+        "device_class": None,  # No standard device_class fits
+    },
+}
+
+# Special Event Categories (German - see prompt.md for rationale)
 SPECIAL_EVENT_CATEGORIES = {
     "traditional": {
         "name": "Traditionelle Feiertage",
@@ -229,16 +268,16 @@ SPECIAL_EVENT_CATEGORIES = {
         "description": "Neujahr und Silvester",
         "icon": "mdi:calendar"
     },
-    "astronomical": {
-        "name": "Astronomische Events",
-        "description": "Jahreszeitenanfänge",
-        "icon": "mdi:weather-sunny"
+    "dst": {
+        "name": "Zeitumstellung",
+        "description": "Sommer- und Winterzeitwechsel",
+        "icon": "mdi:clock-time-four"
     }
 }
 
-# Special Event Definitionen
+# Special Event Definitions (German - see prompt.md for rationale)
 SPECIAL_EVENTS = {
-    # Traditionelle Feiertage (11 Events)
+    # Traditional Holidays (11 Events)
     "christmas_eve": {
         "name": "Heilig Abend",
         "category": "traditional",
@@ -310,8 +349,8 @@ SPECIAL_EVENTS = {
         "type": "calculated",
         "calculation": "advent_4",
     },
-    
-    # Kalendarische Feiertage (2 Events)
+
+    # Calendar Holidays (2 Events)
     "new_year": {
         "name": "Neujahr",
         "category": "calendar",
@@ -326,37 +365,99 @@ SPECIAL_EVENTS = {
         "month": 12,
         "day": 31,
     },
-    
-    # Astronomische Events (4 Events)
-    "spring_start": {
-        "name": "Frühlingsanfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 3,
-        "day": 20,
+}
+
+# DST Event Types
+DST_EVENT_TYPES = {
+    "next_change": {
+        "name": "Nächster Wechsel",
+        "description": "Nächste Zeitumstellung (Sommer oder Winter)",
+        "icon": "mdi:clock-time-four",
     },
-    "summer_start": {
-        "name": "Sommeranfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 6,
-        "day": 21,
+    "next_summer": {
+        "name": "Nächste Sommerzeit",
+        "description": "Nächster Beginn der Sommerzeit (Uhr vor)",
+        "icon": "mdi:weather-sunny",
     },
-    "autumn_start": {
-        "name": "Herbstanfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 9,
-        "day": 23,
-    },
-    "winter_start": {
-        "name": "Winteranfang",
-        "category": "astronomical",
-        "type": "fixed",
-        "month": 12,
-        "day": 21,
+    "next_winter": {
+        "name": "Nächste Winterzeit",
+        "description": "Nächster Beginn der Winterzeit (Uhr zurück)",
+        "icon": "mdi:weather-snowy",
     },
 }
 
-# Legacy compatibility - wird durch TRIP_SENSOR_TYPES ersetzt
+# DST Regions with transition rules
+DST_REGIONS = {
+    "eu": {
+        "name": "EU",
+        "summer": {
+            "rule": "last",      # "last" or "nth"
+            "weekday": 6,        # 0=Monday, 6=Sunday
+            "month": 3,          # March
+        },
+        "winter": {
+            "rule": "last",
+            "weekday": 6,
+            "month": 10,         # October
+        },
+    },
+    "usa": {
+        "name": "USA",
+        "summer": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 3,          # March
+            "n": 2,              # 2nd Sunday
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 11,         # November
+            "n": 1,              # 1st Sunday
+        },
+    },
+    "australia": {
+        "name": "Australien",
+        "summer": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 10,         # October
+            "n": 1,              # 1st Sunday
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 4,          # April
+            "n": 1,              # 1st Sunday
+        },
+    },
+    "new_zealand": {
+        "name": "Neuseeland",
+        "summer": {
+            "rule": "last",
+            "weekday": 6,
+            "month": 9,          # September
+        },
+        "winter": {
+            "rule": "nth",
+            "weekday": 6,
+            "month": 4,          # April
+            "n": 1,              # 1st Sunday
+        },
+    },
+}
+
+# Timezone to DST region mapping for auto-detection
+TIMEZONE_TO_DST_REGION = {
+    "Europe/": "eu",
+    "America/New_York": "usa",
+    "America/Chicago": "usa",
+    "America/Denver": "usa",
+    "America/Los_Angeles": "usa",
+    "America/Toronto": "usa",
+    "Australia/": "australia",
+    "Pacific/Auckland": "new_zealand",
+}
+
+# Legacy compatibility - replaced by TRIP_SENSOR_TYPES
 SENSOR_TYPES = TRIP_SENSOR_TYPES

@@ -8,40 +8,69 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
+from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+    BinarySensorEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
-    EVENT_TYPES,
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
-    CONF_START_DATE,
-    CONF_END_DATE,
-    CONF_TARGET_DATE,
-    CONF_SPECIAL_TYPE,
+    CONF_SPECIAL_CATEGORY,
     CONF_IMAGE_PATH,
-    CONF_WEBSITE_URL,
-    CONF_NOTES,
     TRIP_BINARY_SENSOR_TYPES,
     MILESTONE_BINARY_SENSOR_TYPES,
     ANNIVERSARY_BINARY_SENSOR_TYPES,
     SPECIAL_BINARY_SENSOR_TYPES,
-    SPECIAL_EVENTS,
+    DST_BINARY_SENSOR_TYPES,
     DEFAULT_IMAGE,
     BINARY_UNIQUE_ID_PATTERN,
-    SENSOR_NAME_PATTERN,
 )
-from .sensors.base import get_device_info, parse_date
+from .sensors.base import get_device_info
+
+
+# Device class mapping from string to enum for binary sensors
+BINARY_DEVICE_CLASS_MAP = {
+    "occurrence": BinarySensorDeviceClass.RUNNING,  # 'occurrence' maps to 'running' for "is active" sensors
+}
+
+
+def create_binary_sensor_description(sensor_key: str, sensor_config: dict) -> BinarySensorEntityDescription:
+    """Create a BinarySensorEntityDescription from sensor config dict.
+
+    Args:
+        sensor_key: The sensor type key (e.g., 'trip_starts_today')
+        sensor_config: Dictionary with icon, device_class
+
+    Returns:
+        BinarySensorEntityDescription with translation_key set for localization
+    """
+    device_class = None
+    if "device_class" in sensor_config:
+        device_class = BINARY_DEVICE_CLASS_MAP.get(sensor_config["device_class"])
+
+    return BinarySensorEntityDescription(
+        key=sensor_key,
+        translation_key=sensor_key,  # Uses entity.binary_sensor.<key>.name from translations
+        icon=sensor_config.get("icon"),
+        device_class=device_class,
+    )
+
+if TYPE_CHECKING:
+    from .coordinator import WhenHubCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,38 +81,55 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up WhenHub binary sensors based on a config entry.
-    
+
     Creates binary sensors based on the event type. Each event type has different
     binary sensor types optimized for that use case.
-    
+
     Args:
         hass: Home Assistant instance
         config_entry: Config entry for this WhenHub integration instance
         async_add_entities: Callback to add entities to Home Assistant
     """
-    event_data = hass.data[DOMAIN][config_entry.entry_id]
+    data = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: "WhenHubCoordinator" = data["coordinator"]
+    event_data: dict = data["event_data"]
     event_type = event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_TRIP)
-    
+
     binary_sensors = []
-    
+
     try:
-        # Create binary sensors based on event type
         if event_type == EVENT_TYPE_TRIP:
             for sensor_type in TRIP_BINARY_SENSOR_TYPES:
-                binary_sensors.append(TripBinarySensor(config_entry, event_data, sensor_type))
-        
+                binary_sensors.append(
+                    TripBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                )
+
         elif event_type == EVENT_TYPE_MILESTONE:
             for sensor_type in MILESTONE_BINARY_SENSOR_TYPES:
-                binary_sensors.append(MilestoneBinarySensor(config_entry, event_data, sensor_type))
-        
+                binary_sensors.append(
+                    MilestoneBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                )
+
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             for sensor_type in ANNIVERSARY_BINARY_SENSOR_TYPES:
-                binary_sensors.append(AnniversaryBinarySensor(config_entry, event_data, sensor_type))
-        
+                binary_sensors.append(
+                    AnniversaryBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                )
+
         elif event_type == EVENT_TYPE_SPECIAL:
-            for sensor_type in SPECIAL_BINARY_SENSOR_TYPES:
-                binary_sensors.append(SpecialBinarySensor(config_entry, event_data, sensor_type))
-        
+            # Check if this is a DST event
+            special_category = event_data.get(CONF_SPECIAL_CATEGORY)
+            if special_category == "dst":
+                for sensor_type in DST_BINARY_SENSOR_TYPES:
+                    binary_sensors.append(
+                        DSTBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                    )
+            else:
+                for sensor_type in SPECIAL_BINARY_SENSOR_TYPES:
+                    binary_sensors.append(
+                        SpecialBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                    )
+
         if binary_sensors:
             _LOGGER.info("Created %d binary sensors for %s", len(binary_sensors), event_data[CONF_EVENT_NAME])
             async_add_entities(binary_sensors)
@@ -92,416 +138,359 @@ async def async_setup_entry(
         async_add_entities([])
 
 
-class BaseBinarySensor(BinarySensorEntity):
+class BaseBinarySensor(CoordinatorEntity["WhenHubCoordinator"], BinarySensorEntity):
     """Base class for all WhenHub binary sensors.
-    
+
     Provides common functionality for Trip, Milestone, and Anniversary binary sensors
-    including device info, error handling, and entity setup. Child classes implement
+    using CoordinatorEntity for efficient updates. Child classes implement
     the specific boolean logic for their sensor types.
+
+    Uses BinarySensorEntityDescription with translation_key for proper entity name
+    localization (following the pattern used in solstice_season).
     """
 
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str, sensor_types: dict) -> None:
+    entity_description: BinarySensorEntityDescription
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+        sensor_types: dict,
+    ) -> None:
         """Initialize the binary sensor.
-        
+
         Args:
+            coordinator: The data update coordinator for this event
             config_entry: Home Assistant config entry for this integration
             event_data: Dictionary with event configuration data
             sensor_type: String identifying binary sensor type (e.g. 'trip_starts_today')
             sensor_types: Dictionary mapping sensor types to their metadata
         """
+        super().__init__(coordinator)
         self._config_entry = config_entry
         self._event_data = event_data
         self._sensor_type = sensor_type
         self._sensor_types = sensor_types
-        
-        # Set entity attributes using standardized patterns
-        self._attr_name = SENSOR_NAME_PATTERN.format(
-            event_name=event_data[CONF_EVENT_NAME],
-            sensor_name=sensor_types[sensor_type]['name']
+
+        # Create and set entity_description with translation_key for localization
+        # This is the official HA pattern for translatable entity names
+        self.entity_description = create_binary_sensor_description(
+            sensor_type, sensor_types[sensor_type]
         )
+
+        # Set unique_id for entity registry
         self._attr_unique_id = BINARY_UNIQUE_ID_PATTERN.format(
             entry_id=config_entry.entry_id,
             sensor_type=sensor_type
         )
-        self._attr_icon = sensor_types[sensor_type]["icon"]
-        
-        # Set Home Assistant device class if specified (e.g., 'occurrence')
-        device_class = sensor_types[sensor_type].get("device_class")
-        if device_class:
-            self._attr_device_class = getattr(BinarySensorDeviceClass, device_class.upper(), None)
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device information about this entity.
-        
+
         Groups all binary sensors from the same WhenHub event under one device.
         """
         return get_device_info(self._config_entry, self._event_data)
 
-    def _safe_calculate(self, calculation_func, fallback=False):
-        """Safely execute boolean calculation with error handling.
-        
-        Prevents integration failures from calculation errors in binary sensor logic.
-        
-        Args:
-            calculation_func: Function that returns a boolean value
-            fallback: Boolean value to return on error (default: False)
-            
-        Returns:
-            Result of calculation_func() or fallback value on error
-        """
-        try:
-            return calculation_func()
-        except Exception as err:
-            _LOGGER.warning("Binary sensor calculation error in %s: %s", self._sensor_type, err)
-            return fallback
-
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor condition is met.
-        
-        Delegates to _calculate_value() with error handling.
-        """
-        return self._safe_calculate(self._calculate_value)
 
-    def _calculate_value(self) -> bool:
-        """Calculate the current boolean value.
-        
-        Abstract method to be implemented by child classes with their specific logic.
-        
+        Reads boolean value from coordinator data.
+        """
+        data = self.coordinator.data
+        if not data:
+            return False
+        return self._get_value_from_coordinator(data)
+
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value from coordinator data.
+
+        Abstract method to be implemented by child classes.
+
+        Args:
+            data: Coordinator data dictionary
+
         Returns:
             Boolean indicating if the sensor condition is currently true
         """
         return False
 
-    async def async_update(self) -> None:
-        """Update the binary sensor value.
-        
-        Called by Home Assistant to refresh the sensor state. Updates the
-        internal state attribute with the current calculated value.
-        """
-        self._attr_is_on = self._calculate_value()
-
 
 class TripBinarySensor(BaseBinarySensor):
     """Binary sensor for multi-day trip events.
-    
+
     Provides boolean sensors for trip-related conditions:
     - trip_starts_today: True if today is the trip start date
     - trip_active_today: True if today falls within the trip duration
     - trip_ends_today: True if today is the trip end date
-    
-    Useful for automations like "turn on vacation mode when trip starts".
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
     """
 
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
         """Initialize the trip binary sensor.
-        
+
         Args:
+            coordinator: The data update coordinator for this event
             config_entry: Home Assistant config entry
             event_data: Trip configuration with start_date and end_date
             sensor_type: Type of trip binary sensor to create
         """
-        super().__init__(config_entry, event_data, sensor_type, TRIP_BINARY_SENSOR_TYPES)
-        
-        # Parse trip date range for calculations
-        self._start_date = parse_date(event_data[CONF_START_DATE])
-        self._end_date = parse_date(event_data[CONF_END_DATE])
+        super().__init__(coordinator, config_entry, event_data, sensor_type, TRIP_BINARY_SENSOR_TYPES)
 
-    def _calculate_value(self) -> bool:
-        """Calculate the current boolean value for this trip condition.
-        
-        Returns:
-            Boolean indicating if the trip condition is currently true
-        """
-        today = date.today()
-        
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value for this trip condition from coordinator data."""
         if self._sensor_type == "trip_starts_today":
-            # Trip starts today
-            return today == self._start_date
+            return data.get("trip_starts_today", False)
         elif self._sensor_type == "trip_active_today":
-            # Trip is currently active (today is between start and end dates, inclusive)
-            return self._start_date <= today <= self._end_date
+            return data.get("trip_active_today", False)
         elif self._sensor_type == "trip_ends_today":
-            # Trip ends today
-            return today == self._end_date
+            return data.get("trip_ends_today", False)
         return False
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return state attributes for this sensor.
-        
-        Trip binary sensors don't provide additional attributes to keep them lightweight.
-        """
+        """Return state attributes for this sensor."""
         return {}
 
 
 class MilestoneBinarySensor(BaseBinarySensor):
     """Binary sensor for one-time milestone events.
-    
+
     Provides boolean sensors for milestone conditions:
     - is_today: True if today is the milestone date
-    
-    Useful for automations like "send birthday notification" or "reminder for deadline".
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
     """
 
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
         """Initialize the milestone binary sensor.
-        
+
         Args:
+            coordinator: The data update coordinator for this event
             config_entry: Home Assistant config entry
             event_data: Milestone configuration with target_date
             sensor_type: Type of milestone binary sensor to create
         """
-        super().__init__(config_entry, event_data, sensor_type, MILESTONE_BINARY_SENSOR_TYPES)
-        
-        # Parse and validate milestone target date
-        target_date = event_data.get(CONF_TARGET_DATE)
-        if not target_date:
-            _LOGGER.error("No target_date found for milestone binary sensor: %s", event_data.get(CONF_EVENT_NAME))
-            target_date = date.today().isoformat()
-        
-        self._target_date = parse_date(target_date)
+        super().__init__(coordinator, config_entry, event_data, sensor_type, MILESTONE_BINARY_SENSOR_TYPES)
 
-    def _calculate_value(self) -> bool:
-        """Calculate the current boolean value for this milestone condition.
-        
-        Returns:
-            Boolean indicating if the milestone condition is currently true
-        """
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value for this milestone condition from coordinator data."""
         if self._sensor_type == "is_today":
-            # Milestone date is today
-            return date.today() == self._target_date
+            return data.get("is_today", False)
         return False
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return state attributes for this sensor.
-        
-        Milestone binary sensors include event metadata for automation use.
-        
-        Returns:
-            Dictionary with event details and optional user-provided metadata
-        """
+        """Return state attributes for this sensor."""
+        data = self.coordinator.data
         attributes = {
             "event_name": self._event_data[CONF_EVENT_NAME],
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_MILESTONE),
-            "target_date": self._target_date.isoformat(),
+            "target_date": data.get("target_date") if data else None,
         }
-        
-        # Add optional user-provided attributes
+
         if self._event_data.get(CONF_IMAGE_PATH):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
         else:
             attributes["image_path"] = DEFAULT_IMAGE
-            
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-            
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
-        
+
         return attributes
 
 
 class AnniversaryBinarySensor(BaseBinarySensor):
     """Binary sensor for recurring anniversary events.
-    
+
     Provides boolean sensors for anniversary conditions:
     - is_today: True if today is an anniversary occurrence
-    
-    Handles leap year edge cases (Feb 29 -> Feb 28) and calculates the correct
-    anniversary date for the current year.
-    
-    Useful for automations like "anniversary reminders" or "annual celebrations".
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
     """
 
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
         """Initialize the anniversary binary sensor.
-        
+
         Args:
+            coordinator: The data update coordinator for this event
             config_entry: Home Assistant config entry
             event_data: Anniversary configuration with target_date (original date)
             sensor_type: Type of anniversary binary sensor to create
         """
-        super().__init__(config_entry, event_data, sensor_type, ANNIVERSARY_BINARY_SENSOR_TYPES)
-        
-        # Parse and validate original anniversary date
-        target_date = event_data.get(CONF_TARGET_DATE)
-        if not target_date:
-            _LOGGER.error("No target_date found for anniversary binary sensor: %s", event_data.get(CONF_EVENT_NAME))
-            target_date = date.today().isoformat()
-        
-        self._original_date = parse_date(target_date)
+        super().__init__(coordinator, config_entry, event_data, sensor_type, ANNIVERSARY_BINARY_SENSOR_TYPES)
 
-    def _get_next_anniversary(self) -> date:
-        """Calculate the next anniversary date from today.
-        
-        Determines when the next occurrence of this anniversary will happen,
-        handling leap year edge cases for February 29th dates.
-        
-        Returns:
-            Date of the next anniversary occurrence
-        """
-        today = date.today()
-        current_year = today.year
-        
-        # Try this year's anniversary first
-        try:
-            this_year_anniversary = self._original_date.replace(year=current_year)
-            if this_year_anniversary >= today:
-                return this_year_anniversary
-        except ValueError:
-            # Handle leap year edge case (Feb 29 -> Feb 28 in non-leap years)
-            this_year_anniversary = date(current_year, 2, 28)
-            if this_year_anniversary >= today:
-                return this_year_anniversary
-        
-        # If this year's anniversary has passed, get next year's
-        try:
-            next_year_anniversary = self._original_date.replace(year=current_year + 1)
-            return next_year_anniversary
-        except ValueError:
-            # Handle leap year edge case for next year
-            return date(current_year + 1, 2, 28)
-
-    def _calculate_value(self) -> bool:
-        """Calculate the current boolean value for this anniversary condition.
-        
-        Returns:
-            Boolean indicating if today is an anniversary occurrence
-        """
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value for this anniversary condition from coordinator data."""
         if self._sensor_type == "is_today":
-            # Anniversary is today
-            today = date.today()
-            next_anniversary = self._get_next_anniversary()
-            return today == next_anniversary
+            return data.get("is_today", False)
         return False
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return state attributes for this sensor.
-        
-        Anniversary binary sensors include comprehensive metadata including
-        anniversary progression information for automation use.
-        
-        Returns:
-            Dictionary with event details, anniversary dates, and optional user metadata
-        """
+        """Return state attributes for this sensor."""
+        data = self.coordinator.data
         attributes = {
             "event_name": self._event_data[CONF_EVENT_NAME],
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_ANNIVERSARY),
-            "original_date": self._original_date.isoformat(),
+            "original_date": data.get("original_date") if data else None,
         }
-        
-        # Add optional user-provided attributes
+
         if self._event_data.get(CONF_IMAGE_PATH):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
         else:
             attributes["image_path"] = DEFAULT_IMAGE
-            
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-            
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
-        
-        # Add anniversary progression metadata
-        next_anniversary = self._get_next_anniversary()
-        attributes.update({
-            "next_anniversary": next_anniversary.isoformat(),
-            "years_on_next": next_anniversary.year - self._original_date.year,
-        })
-        
+
+        if data:
+            attributes.update({
+                "next_anniversary": data.get("next_anniversary"),
+                "years_on_next": data.get("years_on_next", 0),
+            })
+
         return attributes
 
 
 class SpecialBinarySensor(BaseBinarySensor):
     """Binary sensor for special holiday and astronomical events.
-    
+
     Provides boolean sensors for special event conditions:
     - is_today: True if today is the special event occurrence
-    
-    Handles both fixed dates (Christmas, Halloween) and calculated dates 
-    (Easter, Solstices) with intelligent date calculation algorithms.
-    
-    Useful for automations like "holiday notifications" or "seasonal celebrations".
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
     """
 
-    def __init__(self, config_entry: ConfigEntry, event_data: dict, sensor_type: str) -> None:
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
         """Initialize the special event binary sensor.
-        
+
         Args:
+            coordinator: The data update coordinator for this event
             config_entry: Home Assistant config entry
             event_data: Special event configuration with special_type
             sensor_type: Type of special event binary sensor to create
         """
-        super().__init__(config_entry, event_data, sensor_type, SPECIAL_BINARY_SENSOR_TYPES)
-        
-        # Get the special event type and info
-        self._special_type = event_data.get(CONF_SPECIAL_TYPE, "christmas")
-        self._special_info = SPECIAL_EVENTS.get(self._special_type, SPECIAL_EVENTS["christmas"])
-        
-        # Use consistent star icon for all special events (matches other event types)
+        super().__init__(coordinator, config_entry, event_data, sensor_type, SPECIAL_BINARY_SENSOR_TYPES)
 
-    def _get_next_event_date(self):
-        """Calculate the next occurrence of this special event.
-        
-        Returns:
-            Date of the next event occurrence, or None if calculation fails
-        """
-        # Import from special sensor to reuse calculation logic
-        from .sensors.special import SpecialEventSensor
-        
-        # Create a temporary special sensor to use its calculation methods
-        temp_sensor = SpecialEventSensor(self._config_entry, self._event_data, "next_date")
-        return temp_sensor._get_next_event_date()
-
-    def _calculate_value(self) -> bool:
-        """Calculate the current boolean value for this special event condition.
-        
-        Returns:
-            Boolean indicating if today is the special event occurrence
-        """
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value for this special event condition from coordinator data."""
         if self._sensor_type == "is_today":
-            # Special event is today
-            today = date.today()
-            next_event_date = self._get_next_event_date()
-            return today == next_event_date if next_event_date else False
+            return data.get("is_today", False)
         return False
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return state attributes for this sensor.
-        
-        Special event binary sensors include comprehensive metadata including
-        event type information and next occurrence date for automation use.
-        
-        Returns:
-            Dictionary with event details, special event info, and optional user metadata
-        """
+        """Return state attributes for this sensor."""
+        data = self.coordinator.data
         attributes = {
             "event_name": self._event_data[CONF_EVENT_NAME],
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
-            "special_type": self._special_type,
-            "special_name": self._special_info.get("name", "Unknown"),
+            "special_type": data.get("special_type") if data else None,
+            "special_name": data.get("special_name") if data else None,
         }
-        
-        # Add next event date
-        next_date = self._get_next_event_date()
-        if next_date:
-            attributes["next_date"] = next_date.isoformat()
-        
-        # Add optional user-provided attributes
+
+        if data and data.get("next_date"):
+            attributes["next_date"] = data.get("next_date")
+
         if self._event_data.get(CONF_IMAGE_PATH):
             attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
         else:
             attributes["image_path"] = DEFAULT_IMAGE
-            
-        if self._event_data.get(CONF_WEBSITE_URL):
-            attributes["website_url"] = self._event_data[CONF_WEBSITE_URL]
-            
-        if self._event_data.get(CONF_NOTES):
-            attributes["notes"] = self._event_data[CONF_NOTES]
-        
+
+        return attributes
+
+
+class DSTBinarySensor(BaseBinarySensor):
+    """Binary sensor for DST (Daylight Saving Time) events.
+
+    Provides boolean sensors for DST conditions:
+    - is_today: True if today is a DST transition day
+    - is_dst_active: True if summer time (DST) is currently active
+
+    Data is provided by the WhenHubCoordinator for efficient updates.
+    """
+
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
+        """Initialize the DST binary sensor.
+
+        Args:
+            coordinator: The data update coordinator for this event
+            config_entry: Home Assistant config entry
+            event_data: DST event configuration with dst_type and dst_region
+            sensor_type: Type of DST binary sensor to create
+        """
+        super().__init__(coordinator, config_entry, event_data, sensor_type, DST_BINARY_SENSOR_TYPES)
+
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        """Get the boolean value for this DST condition from coordinator data."""
+        if self._sensor_type == "is_today":
+            return data.get("is_today", False)
+        elif self._sensor_type == "is_dst_active":
+            return data.get("is_dst_active", False)
+        return False
+
+    @property
+    def icon(self) -> str:
+        """Return dynamic icon based on DST state for is_dst_active sensor."""
+        if self._sensor_type == "is_dst_active":
+            # Dynamic icon: sun-clock when DST active, sun-clock-outline when not
+            if self.is_on:
+                return "mdi:sun-clock"
+            return "mdi:sun-clock-outline"
+        # For other sensor types, use the default icon from entity_description
+        return self.entity_description.icon
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return state attributes for this sensor."""
+        data = self.coordinator.data
+        attributes = {
+            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
+            "dst_type": data.get("dst_type") if data else None,
+            "dst_region": data.get("dst_region") if data else None,
+            "region_name": data.get("region_name") if data else None,
+        }
+
+        if data and data.get("next_date"):
+            attributes["next_date"] = data.get("next_date")
+
+        if data and data.get("last_date"):
+            attributes["last_date"] = data.get("last_date")
+
+        if self._event_data.get(CONF_IMAGE_PATH):
+            attributes["image_path"] = self._event_data[CONF_IMAGE_PATH]
+        else:
+            attributes["image_path"] = DEFAULT_IMAGE
+
         return attributes

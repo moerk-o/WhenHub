@@ -1,0 +1,241 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "WhenHub Event-Typ wählen",
+        "description": "Wähle den Typ deines Events aus",
+        "data": {
+          "event_type": "Event-Typ"
+        },
+        "data_description": {
+          "event_type": "Trip für mehrtägige Events, Milestone für einmalige Termine, Anniversary für jährlich wiederkehrende Events"
+        }
+      },
+      "trip": {
+        "title": "Trip einrichten",
+        "description": "Richte einen neuen Trip bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Trips",
+          "start_date": "Startdatum",
+          "end_date": "Enddatum",
+          "image_path": "Bildpfad (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Dänemarkurlaub 2025' oder 'Geschäftsreise Berlin'",
+          "start_date": "Das Datum, an dem der Trip beginnt",
+          "end_date": "Das Datum, an dem der Trip endet",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg"
+        }
+      },
+      "milestone": {
+        "title": "Milestone einrichten",
+        "description": "Richte einen neuen Milestone bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Milestones",
+          "target_date": "Zieldatum",
+          "image_path": "Bildpfad (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Geburtstag Max' oder 'Projektabgabe'",
+          "target_date": "Das Datum des wichtigen Termins",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg"
+        }
+      },
+      "anniversary": {
+        "title": "Anniversary einrichten",
+        "description": "Richte ein neues Anniversary bei WhenHub ein",
+        "data": {
+          "event_name": "Name des Anniversarys",
+          "target_date": "Ursprüngliches Datum",
+          "image_path": "Bildpfad (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Hochzeitstag' oder 'Firmenjubiläum'",
+          "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg"
+        }
+      },
+      "special_category": {
+        "title": "Special Event Kategorie wählen",
+        "description": "Wähle eine Kategorie für dein Special Event",
+        "data": {
+          "special_category": "Event Kategorie"
+        },
+        "data_description": {
+          "special_category": "Wähle die passende Kategorie für dein Event"
+        }
+      },
+      "special_event": {
+        "title": "Special Event einrichten",
+        "description": "Richte dein Special Event ein",
+        "data": {
+          "event_name": "Name des Special Events",
+          "special_type": "Special Event",
+          "image_path": "Bildpfad (optional)"
+        },
+        "data_description": {
+          "event_name": "z.B. 'Weihnachts-Countdown' oder 'Oster-Countdown'",
+          "special_type": "Wähle das spezifische Event aus der Kategorie",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg"
+        }
+      },
+      "dst_event": {
+        "title": "Zeitumstellung einrichten",
+        "description": "Richte dein Zeitumstellungs-Event ein",
+        "data": {
+          "dst_region": "Region",
+          "dst_type": "Event-Typ",
+          "event_name": "Event-Name",
+          "image_path": "Bildpfad (optional)"
+        },
+        "data_description": {
+          "dst_region": "Für welche Region soll die Zeitumstellung berechnet werden?",
+          "dst_type": "Welches Zeitumstellungs-Event möchtest du tracken?",
+          "event_name": "z.B. 'Zeitumstellung' oder 'Sommerzeit'",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg"
+        }
+      }
+    },
+    "error": {
+      "invalid_dates": "Das Enddatum muss nach dem Startdatum liegen",
+      "invalid_date_format": "Ungültiges Datumsformat. Verwende YYYY-MM-DD",
+      "image_upload_failed": "Fehler beim Hochladen des Bildes"
+    },
+    "abort": {
+      "already_configured": "Ein Event mit diesem Namen ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "WhenHub Optionen",
+        "description": "Bearbeite die Einstellungen für dieses Event"
+      },
+      "trip_options": {
+        "title": "Trip Optionen",
+        "description": "Bearbeite die Einstellungen für diesen Trip"
+      },
+      "milestone_options": {
+        "title": "Milestone Optionen",
+        "description": "Bearbeite die Einstellungen für diesen Milestone"
+      },
+      "anniversary_options": {
+        "title": "Anniversary Optionen",
+        "description": "Bearbeite die Einstellungen für dieses Anniversary"
+      },
+      "special_options": {
+        "title": "Special Event Optionen",
+        "description": "Bearbeite die Einstellungen für dieses Special Event"
+      },
+      "dst_options": {
+        "title": "Zeitumstellung Optionen",
+        "description": "Bearbeite die Einstellungen für diese Zeitumstellung"
+      }
+    }
+  },
+  "selector": {
+    "event_type": {
+      "options": {
+        "trip": "Trip - Mehrtägige Events wie Urlaub oder Reisen",
+        "milestone": "Milestone - Einmalige wichtige Termine",
+        "anniversary": "Anniversary - Jährlich wiederkehrende Events",
+        "special": "Special Event - Feiertage und kalendarische Events"
+      }
+    },
+    "special_type": {
+      "options": {
+        "christmas_eve": "Heilig Abend",
+        "christmas_day": "1. Weihnachtstag",
+        "boxing_day": "2. Weihnachtstag",
+        "halloween": "Halloween",
+        "easter": "Ostersonntag",
+        "pentecost": "Pfingstsonntag",
+        "nikolaus": "Nikolaus",
+        "advent_1": "1. Advent",
+        "advent_2": "2. Advent",
+        "advent_3": "3. Advent",
+        "advent_4": "4. Advent",
+        "new_year": "Neujahr",
+        "new_years_eve": "Silvester"
+      }
+    },
+    "special_category": {
+      "options": {
+        "traditional": "Traditionelle Feiertage",
+        "calendar": "Kalendarische Feiertage",
+        "dst": "Zeitumstellung"
+      }
+    },
+    "dst_type": {
+      "options": {
+        "next_change": "Nächster Wechsel",
+        "next_summer": "Sommerzeit",
+        "next_winter": "Winterzeit"
+      }
+    },
+    "dst_region": {
+      "options": {
+        "eu": "EU",
+        "usa": "USA",
+        "australia": "Australien",
+        "new_zealand": "Neuseeland"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "days_until": {
+        "name": "Tage bis Start"
+      },
+      "days_until_end": {
+        "name": "Tage bis Ende"
+      },
+      "event_date": {
+        "name": "Ereignisdatum"
+      },
+      "trip_left_days": {
+        "name": "Verbleibende Reisetage"
+      },
+      "trip_left_percent": {
+        "name": "Verbleibende Reise in Prozent"
+      },
+      "days_until_next": {
+        "name": "Tage bis zum nächsten"
+      },
+      "days_since_last": {
+        "name": "Tage seit dem letzten"
+      },
+      "occurrences_count": {
+        "name": "Anzahl Vorkommen"
+      },
+      "next_date": {
+        "name": "Nächstes Datum"
+      },
+      "last_date": {
+        "name": "Letztes Datum"
+      }
+    },
+    "binary_sensor": {
+      "trip_starts_today": {
+        "name": "Trip startet heute"
+      },
+      "trip_active_today": {
+        "name": "Trip aktiv heute"
+      },
+      "trip_ends_today": {
+        "name": "Trip endet heute"
+      },
+      "is_today": {
+        "name": "Ist heute"
+      },
+      "is_dst_active": {
+        "name": "Sommerzeit aktiv"
+      }
+    },
+    "image": {
+      "event_image": {
+        "name": "Ereignisbild"
+      }
+    }
+  }
+}

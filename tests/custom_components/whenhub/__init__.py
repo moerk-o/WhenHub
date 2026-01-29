@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from .const import DOMAIN
+from .coordinator import WhenHubCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,50 +24,55 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SE
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up WhenHub integration from a config entry.
-    
+
     This function is called when Home Assistant loads the integration. It initializes
-    the data storage, sets up all platforms, and registers update listeners.
-    
+    the data coordinator, sets up all platforms, and registers update listeners.
+
     Args:
         hass: Home Assistant instance
         entry: Configuration entry for this integration instance
-        
+
     Returns:
         True if setup was successful, False otherwise
     """
     # Initialize integration data storage
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = entry.data
+
+    # Create and initialize the data update coordinator
+    coordinator = WhenHubCoordinator(hass, entry, dict(entry.data))
+    await coordinator.async_config_entry_first_refresh()
+
+    # Store coordinator and event data for platform access
+    hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
+        "event_data": dict(entry.data),
+    }
 
     # Set up all platforms (sensors, binary sensors, images)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+
     # Register listener for configuration updates (options flow)
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
-    
+
     _LOGGER.info("WhenHub integration loaded: %s", entry.title)
-    
+
     return True
 
 
 async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Handle configuration updates from the options flow.
-    
+
     This function is called when the user modifies the integration configuration
-    through the options flow. It updates the stored data and reloads all platforms
+    through the options flow. It recreates the coordinator and reloads all platforms
     to reflect the changes.
-    
+
     Args:
         hass: Home Assistant instance
         entry: Updated configuration entry
     """
-    # Update stored configuration data
-    hass.data[DOMAIN][entry.entry_id] = entry.data
-    
-    # Reload all platforms to apply configuration changes
-    await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    
+    # Reload the entire integration to recreate coordinator with new data
+    await hass.config_entries.async_reload(entry.entry_id)
+
     _LOGGER.info("WhenHub integration updated: %s", entry.title)
 
 

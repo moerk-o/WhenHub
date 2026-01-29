@@ -428,8 +428,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle trip options."""
+        errors = {}
+
         if user_input is not None:
-            errors = {}
             # DateSelector returns date objects directly
             start_date = user_input[CONF_START_DATE]
             end_date = user_input[CONF_END_DATE]
@@ -440,22 +441,22 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if not errors:
                 # Keep original event type
                 user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
-                
+
                 # Update the config entry
                 new_data = dict(self.config_entry.data)
                 new_data.update(user_input)
-                
+
                 self.hass.config_entries.async_update_entry(
-                    self.config_entry, 
+                    self.config_entry,
                     data=new_data,
                     title=user_input[CONF_EVENT_NAME]
                 )
-                
+
                 self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
                 return self.async_create_entry(title="", data={})
 
-        # Show current trip data
-        current_data = self.config_entry.data
+        # Use user_input if available (for showing errors with entered data), otherwise current data
+        current_data = user_input if user_input is not None else self.config_entry.data
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
@@ -466,6 +467,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="trip_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_milestone_options(
