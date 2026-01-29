@@ -23,6 +23,9 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/lang/de/).
   - Edge Case Tests (Unicode, Emojis, lange Namen)
   - Internationale Zeichensätze (Kyrillisch, Chinesisch, Japanisch, Arabisch, Hebräisch)
 
+### Geändert
+- **Device Info bereinigt**: Firmware-Version aus Geräte-Info entfernt (WhenHub Events sind virtuelle Geräte ohne echte Firmware)
+
 ### Weitere Bugfixes
 - **DSTBinarySensor Icon Bug**: `AttributeError` beim Zugriff auf `_attr_icon` behoben
 - **Options Flow Error Display**: Validierungsfehler werden jetzt korrekt angezeigt
