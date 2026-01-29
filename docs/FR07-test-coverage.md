@@ -6,36 +6,87 @@ Während der Implementierung von FR04 (Entfernung astronomischer Events) wurde f
 
 ## Betroffene Bereiche
 
-| Bereich | Aktuelle Testabdeckung |
-|---------|------------------------|
-| Trip Sensors | Gut getestet |
-| Milestone Sensors | Gut getestet |
-| Anniversary Sensors | Gut getestet |
-| Special Events | **Lückenhaft** |
-| DST Events | **Unklar** |
-| Config Flow | Teilweise |
+| Bereich | Testabdeckung (vorher) | Testabdeckung (nachher) |
+|---------|------------------------|-------------------------|
+| Trip Sensors | Gut getestet | Gut getestet |
+| Milestone Sensors | Gut getestet | Gut getestet |
+| Anniversary Sensors | Gut getestet | Gut getestet |
+| Special Events | **Lückenhaft** | ✅ Gut getestet |
+| DST Events | **Unklar** | ✅ Gut getestet |
+| Config Flow | Teilweise | ✅ Gut getestet |
+| Edge Cases | Nicht getestet | ✅ Gut getestet |
 
-## Empfohlene Tests
+## Implementierte Tests
 
-### Special Events
-- [ ] Test für jeden Special Event Typ (christmas_eve, easter, etc.)
-- [ ] Test für berechnete Events (Easter, Pentecost, Advent)
-- [ ] Test für fixe Events (Christmas, Halloween, etc.)
-- [ ] Test dass nur gültige special_type Werte akzeptiert werden
+### Special Events (`test_special_events.py`)
+- [x] Test für Christmas Eve Setup (alle 5 Sensoren)
+- [x] Test für Christmas Eve days_until (positiver Wert)
+- [x] Test für Christmas Eve next_date (immer 24. Dezember)
+- [x] Test für Easter Setup
+- [x] Test für Easter Datum (immer Sonntag)
+- [x] Test für 1. Advent Setup
+- [x] Test für 1. Advent Datum (immer Sonntag)
 
-### DST Events
-- [ ] Test für alle Regionen (EU, USA, Australia, New Zealand)
-- [ ] Test für alle DST-Typen (next_change, next_summer, next_winter)
-- [ ] Test für is_dst_active Binary Sensor
+### DST Events (`test_special_events.py`)
+- [x] Test für EU DST Setup
+- [x] Test für EU DST Datum (immer Sonntag)
+- [x] Test für USA DST Setup
+- [x] Test für Australia DST Setup
+- [x] Test für New Zealand DST Setup
+- [x] Test für is_dst_active Binary Sensor (on/off Status)
+- [x] Test für next_summer DST Type (März)
+- [x] Test für next_winter DST Type (Oktober)
 
-### Config Flow
-- [ ] Test für Special Event Kategorie-Auswahl
-- [ ] Test für DST Region/Typ Auswahl
+### Config Flow (`test_config_flow.py`)
+- [x] Test für User Step zeigt Event-Typ Formular
+- [x] Test für Trip-Routing zu Trip Step
+- [x] Test für Milestone-Routing zu Milestone Step
+- [x] Test für Special-Routing zu Kategorie Step
+- [x] Test für DST Kategorie-Routing zu DST Step
+- [x] Test für Traditional Kategorie-Routing zu Special Step
+- [x] Test für kompletten Trip Flow
+- [x] Test für kompletten Milestone Flow
 
-## Priorität
+### Extended Edge Cases (`test_edge_cases_extended.py`)
+- [x] Test für Umlaute in Event-Namen (ä, ö, ü)
+- [x] Test für ß (Eszett) in Event-Namen
+- [x] Test für Ampersand (&) in Event-Namen
+- [x] Test für Emojis in Event-Namen
+- [x] Test für sehr lange Event-Namen (100+ Zeichen)
+- [x] Test für Silvester Countdown (Jahreswechsel)
+- [x] Test für Neujahr Countdown (vom Vorjahr)
+- [x] Test für mehrere parallele Trip Events
+- [x] Test für gemischte Event-Typen
 
-**Niedrig** - Die Integration funktioniert, aber bessere Tests würden zukünftige Änderungen sicherer machen.
+## Bugfixes während Implementation
+
+### DSTBinarySensor Icon Bug
+- **Problem**: `AttributeError` beim Zugriff auf `_attr_icon`
+- **Ursache**: `_attr_icon` wurde nie gesetzt, stattdessen sollte `entity_description.icon` verwendet werden
+- **Fix**: Zeile 471 in `binary_sensor.py` geändert zu `return self.entity_description.icon`
+
+## Statistik
+
+| Metrik | Vorher | Nachher |
+|--------|--------|---------|
+| Gesamte Tests | 173 | 207 |
+| Special Events Tests | 0 | 7 |
+| DST Tests | 0 | 9 |
+| Config Flow Tests | 0 | 8 |
+| Edge Case Tests | 0 | 10 |
+
+## Status
+
+✅ **Abgeschlossen** (2026-01-29)
+
+**Commits:**
+- `eb1a5c4` - FR07: Add Special Events and DST tests, fix icon bug
+- `9c5f4e8` - FR07: Add config flow tests
+- `a2c34f1` - FR07: Add DST region and type tests
+- `c0db414` - FR07: Add extended edge case tests
 
 ## Notizen
 
-Entdeckt bei: FR04 Implementation (2026-01-28)
+- Entdeckt bei: FR04 Implementation (2026-01-28)
+- Tests verwenden Fixtures aus `conftest.py` (nicht inline MockConfigEntry)
+- Bei parallelen Events muss jeder Entry direkt nach `add_to_hass()` eingerichtet werden
