@@ -402,3 +402,174 @@ def dst_eu_winter_config_entry():
         unique_id="whenhub_dst_eu_winter",
         version=1,
     )
+
+
+# =============================================================================
+# Extended Edge Case Fixtures
+# =============================================================================
+
+@pytest.fixture
+def umlaut_milestone_config_entry():
+    """Create a mock config entry with German umlauts in name."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Frühjahrsputz Büro",
+            "event_type": "milestone",
+            "target_date": "2026-04-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_umlauts_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def sharp_s_milestone_config_entry():
+    """Create a mock config entry with ß (sharp s) in name."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Großes Straßenfest",
+            "event_type": "milestone",
+            "target_date": "2026-06-15",
+            "image_path": "",
+        },
+        unique_id="whenhub_sharp_s_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def ampersand_milestone_config_entry():
+    """Create a mock config entry with & in name."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Tom & Jerry Party",
+            "event_type": "milestone",
+            "target_date": "2026-05-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_ampersand_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def emoji_trip_config_entry():
+    """Create a mock config entry with emoji in name."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Urlaub Spanien 🌴",
+            "event_type": "trip",
+            "start_date": "2026-08-01",
+            "end_date": "2026-08-15",
+            "image_path": "",
+        },
+        unique_id="whenhub_emoji_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def long_name_milestone_config_entry():
+    """Create a mock config entry with very long name."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Dieser extrem lange Event-Name testet ob die Integration auch mit sehr langen Namen korrekt umgehen kann",
+            "event_type": "milestone",
+            "target_date": "2026-09-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_long_name_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def silvester_special_config_entry():
+    """Create a mock config entry for New Year's Eve."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Silvester Test",
+            "event_type": "special",
+            "special_type": "new_years_eve",
+            "special_category": "calendar",
+            "image_path": "",
+        },
+        unique_id="whenhub_nye_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def neujahr_special_config_entry():
+    """Create a mock config entry for New Year."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Neujahr Test",
+            "event_type": "special",
+            "special_type": "new_year",
+            "special_category": "calendar",
+            "image_path": "",
+        },
+        unique_id="whenhub_ny_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def parallel_trip_1_config_entry():
+    """Create first parallel trip config entry."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Parallel Trip 1",
+            "event_type": "trip",
+            "start_date": "2026-07-01",
+            "end_date": "2026-07-15",
+            "image_path": "",
+        },
+        unique_id="whenhub_parallel_1",
+        version=1,
+    )
+
+
+@pytest.fixture
+def parallel_trip_2_config_entry():
+    """Create second parallel trip config entry."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Parallel Trip 2",
+            "event_type": "trip",
+            "start_date": "2026-07-10",
+            "end_date": "2026-07-20",
+            "image_path": "",
+        },
+        unique_id="whenhub_parallel_2",
+        version=1,
+    )
