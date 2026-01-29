@@ -260,3 +260,53 @@ def advent_config_entry():
         unique_id="whenhub_advent_1",
         version=1,
     )
+
+
+# =============================================================================
+# DST Event Fixtures
+# =============================================================================
+
+@pytest.fixture
+def dst_eu_config_entry():
+    """Create a mock config entry for EU DST event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Zeitumstellung EU",
+            "event_type": "special",
+            "special_type": "dst",
+            "special_category": "dst",
+            "dst_type": "next_change",
+            "dst_region": "eu",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_dst_eu",
+        version=1,
+    )
+
+
+@pytest.fixture
+def dst_usa_config_entry():
+    """Create a mock config entry for USA DST event."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "DST USA",
+            "event_type": "special",
+            "special_type": "dst",
+            "special_category": "dst",
+            "dst_type": "next_change",
+            "dst_region": "usa",
+            "image_path": "",
+            "website_url": "",
+            "notes": ""
+        },
+        unique_id="whenhub_dst_usa",
+        version=1,
+    )

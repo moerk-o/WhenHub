@@ -467,8 +467,8 @@ class DSTBinarySensor(BaseBinarySensor):
             if self.is_on:
                 return "mdi:sun-clock"
             return "mdi:sun-clock-outline"
-        # For other sensor types, use the default icon from const
-        return self._attr_icon
+        # For other sensor types, use the default icon from entity_description
+        return self.entity_description.icon
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
