@@ -72,7 +72,6 @@ TEXT_CALCULATION_RUNNING = "Berechnung läuft..."
 
 # Device constants
 MANUFACTURER = "WhenHub"
-SW_VERSION = "2.1.0"
 
 # Sensor types for Trip (multi-day events)
 TRIP_SENSOR_TYPES = {
