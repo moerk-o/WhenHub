@@ -573,3 +573,97 @@ def parallel_trip_2_config_entry():
         unique_id="whenhub_parallel_2",
         version=1,
     )
+
+
+# =============================================================================
+# International Character Set Fixtures
+# =============================================================================
+
+@pytest.fixture
+def cyrillic_milestone_config_entry():
+    """Create a mock config entry with Cyrillic (Russian) characters."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "Поездка в Москву",
+            "event_type": "milestone",
+            "target_date": "2026-05-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_cyrillic_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def chinese_milestone_config_entry():
+    """Create a mock config entry with Chinese characters."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "北京之旅",
+            "event_type": "milestone",
+            "target_date": "2026-06-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_chinese_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def japanese_milestone_config_entry():
+    """Create a mock config entry with Japanese characters."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "東京旅行",
+            "event_type": "milestone",
+            "target_date": "2026-07-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_japanese_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def arabic_milestone_config_entry():
+    """Create a mock config entry with Arabic characters."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "رحلة إلى القاهرة",
+            "event_type": "milestone",
+            "target_date": "2026-08-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_arabic_test",
+        version=1,
+    )
+
+
+@pytest.fixture
+def hebrew_milestone_config_entry():
+    """Create a mock config entry with Hebrew characters."""
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    return MockConfigEntry(
+        domain="whenhub",
+        data={
+            "event_name": "טיול לתל אביב",
+            "event_type": "milestone",
+            "target_date": "2026-09-01",
+            "image_path": "",
+        },
+        unique_id="whenhub_hebrew_test",
+        version=1,
+    )

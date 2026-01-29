@@ -157,3 +157,72 @@ async def test_mixed_event_types(hass: HomeAssistant, trip_config_entry, milesto
     assert hass.states.get("sensor.danemark_2026_days_until_start") is not None
     assert hass.states.get("sensor.projektabgabe_days_until_start") is not None
     assert hass.states.get("sensor.geburtstag_max_days_until_next") is not None
+
+
+# =============================================================================
+# International Character Set Tests
+# =============================================================================
+
+@pytest.mark.asyncio
+async def test_event_name_with_cyrillic(hass: HomeAssistant, cyrillic_milestone_config_entry):
+    """Test that event names with Cyrillic (Russian) characters work correctly."""
+    cyrillic_milestone_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(cyrillic_milestone_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Check that entities were created (Cyrillic likely converted/removed in entity_id)
+    states = hass.states.async_all()
+    whenhub_states = [s for s in states if "whenhub" in s.entity_id or "sensor." in s.entity_id]
+    assert len(whenhub_states) > 0, "No entities found for Cyrillic event name"
+
+
+@pytest.mark.asyncio
+async def test_event_name_with_chinese(hass: HomeAssistant, chinese_milestone_config_entry):
+    """Test that event names with Chinese characters work correctly."""
+    chinese_milestone_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(chinese_milestone_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Check that entities were created
+    states = hass.states.async_all()
+    whenhub_states = [s for s in states if "whenhub" in s.entity_id or "sensor." in s.entity_id]
+    assert len(whenhub_states) > 0, "No entities found for Chinese event name"
+
+
+@pytest.mark.asyncio
+async def test_event_name_with_japanese(hass: HomeAssistant, japanese_milestone_config_entry):
+    """Test that event names with Japanese characters work correctly."""
+    japanese_milestone_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(japanese_milestone_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Check that entities were created
+    states = hass.states.async_all()
+    whenhub_states = [s for s in states if "whenhub" in s.entity_id or "sensor." in s.entity_id]
+    assert len(whenhub_states) > 0, "No entities found for Japanese event name"
+
+
+@pytest.mark.asyncio
+async def test_event_name_with_arabic(hass: HomeAssistant, arabic_milestone_config_entry):
+    """Test that event names with Arabic characters work correctly."""
+    arabic_milestone_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(arabic_milestone_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Check that entities were created
+    states = hass.states.async_all()
+    whenhub_states = [s for s in states if "whenhub" in s.entity_id or "sensor." in s.entity_id]
+    assert len(whenhub_states) > 0, "No entities found for Arabic event name"
+
+
+@pytest.mark.asyncio
+async def test_event_name_with_hebrew(hass: HomeAssistant, hebrew_milestone_config_entry):
+    """Test that event names with Hebrew characters work correctly."""
+    hebrew_milestone_config_entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(hebrew_milestone_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    # Check that entities were created
+    states = hass.states.async_all()
+    whenhub_states = [s for s in states if "whenhub" in s.entity_id or "sensor." in s.entity_id]
+    assert len(whenhub_states) > 0, "No entities found for Hebrew event name"
