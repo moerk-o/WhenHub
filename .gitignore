@@ -33,3 +33,6 @@ Thumbs.db
 *.swo
 # Local assets (design files)
 assets_local/
+
+# Project documentation (local only)
+TESTKONZEPT.md
