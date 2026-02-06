@@ -1,4 +1,6 @@
 {
   "name": "WhenHub",
+  "zip_release": true,
+  "filename": "whenhub.zip",
   "render_readme": true
 }

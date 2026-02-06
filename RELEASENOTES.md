@@ -18,6 +18,7 @@
 
 ### 🔧 Infrastructure
 - **Device Info Cleanup**: Removed firmware version from device info (WhenHub events are virtual devices without actual firmware)
+- **HACS ZIP Release**: Enabled `zip_release` 
 
 ### 📝 Documentation
 - Added GitHub repository description and topics
@@ -27,13 +28,19 @@
   - Sunrise, sunset, solstice, equinox removed
   - These are better covered by dedicated integrations (e.g., [Solstice Season](https://github.com/moerk-o/ha-solstice_season) for precise seasonal data or HA Core [Sun](https://www.home-assistant.io/integrations/sun/))
 
-**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.0.0...v2.2.0
+**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.0.0...v2.2.1
+
+---
+
+# v2.2.0 (internal)
+
+*This version was released but superseded by v2.2.1. Changes are included above.*
 
 ---
 
 # v2.1.0 (internal)
 
-*This version was not released publicly. Changes are included in v2.2.0.*
+*This version was not released publicly. Changes are included in v2.2.1.*
 
 ---
 
