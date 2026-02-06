@@ -70,8 +70,8 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-# Load version from manifest.json (single source of truth)
-MANIFEST = json.loads((Path(__file__).parent.parent / "manifest.json").read_text())
+# Load version from manifest_test.json (copy of main manifest for tests)
+MANIFEST = json.loads((Path(__file__).parent.parent / "manifest_test.json").read_text())
 VERSION = MANIFEST["version"]
 
 
