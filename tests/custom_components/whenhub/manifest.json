@@ -1,13 +1,1 @@
-{
-  "domain": "whenhub",
-  "name": "WhenHub",
-  "codeowners": ["@moerk-o"],
-  "config_flow": true,
-  "dependencies": [],
-  "documentation": "https://github.com/moerk-o/WhenHub",
-  "integration_type": "device",
-  "iot_class": "calculated",
-  "issue_tracker": "https://github.com/moerk-o/WhenHub/issues",
-  "requirements": [],
-  "version": "2.1.0"
-}
+../../../custom_components/whenhub/manifest.json
