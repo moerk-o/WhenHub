@@ -1,3 +1,15 @@
+### 🐞 Bug Fixes
+
+- **Binary Sensor Display Fixed**: Binary sensors now show "On/Off" 
+
+- **DST Default Name Localization**: Removed hardcoded German default names for DST events
+
+**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.2.1...v2.2.2
+
+---
+
+# v2.2.1
+
 ### ✨ New Features
 
 - **Language-based Entity IDs**
@@ -28,7 +40,7 @@
   - Sunrise, sunset, solstice, equinox removed
   - These are better covered by dedicated integrations (e.g., [Solstice Season](https://github.com/moerk-o/ha-solstice_season) for precise seasonal data or HA Core [Sun](https://www.home-assistant.io/integrations/sun/))
 
-**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.0.0...v2.2.1
+**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.2.0...v2.2.1
 
 ---
 
