@@ -38,12 +38,10 @@ When setting up a Trip event, you configure:
 - **Event Name**: e.g., "Denmark Vacation" or "Grandmas visit"
 - **Start Date**: When the trip begins (Format: YYYY-MM-DD)
 - **End Date**: When the trip ends (Format: YYYY-MM-DD)
-- **Image Path** *(optional)*: 
+- **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (blue airplane icon)
   - File path = e.g., `/local/images/denmark.jpg` for custom images
   - Base64 string = Directly embedded encoded image
-- **Website URL** *(optional)*: Link to accommodation or other relevant info
-- **Notes** *(optional)*: Additional information
 
 ### Available Entities
 
@@ -84,12 +82,10 @@ When setting up a Milestone event, you configure:
 
 - **Event Name**: e.g., "New car delivery" or "Project Deadline"
 - **Target Date**: The important date (Format: YYYY-MM-DD)
-- **Image Path** *(optional)*: 
+- **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (red flag icon)
   - File path = e.g., `/local/images/birthday.jpg` for custom images
   - Base64 string = Directly embedded encoded image
-- **Website URL** *(optional)*: Relevant URL for the event
-- **Notes** *(optional)*: Additional information
 
 ### Available Entities
 
@@ -123,12 +119,10 @@ When setting up an Anniversary event, you configure:
 
 - **Event Name**: e.g., "Birthday Jon" or "Company Anniversary"
 - **Original Date**: The date of the first event (Format: YYYY-MM-DD)
-- **Image Path** *(optional)*: 
+- **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (pink heart icon)
   - File path = e.g., `/local/images/wedding.jpg` for custom images
   - Base64 string = Directly embedded encoded image
-- **Website URL** *(optional)*: Relevant URL for the event
-- **Notes** *(optional)*: Additional information
 
 ### Available Entities
 
