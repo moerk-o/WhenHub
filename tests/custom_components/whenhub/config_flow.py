@@ -349,20 +349,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Default DST type is "next_change"
         default_dst_type = "next_change"
-
-        # Generate default event name based on DST type (without region for simplicity)
-        # Maps: next_change -> "Zeitumstellung", next_summer -> "Sommerzeit", next_winter -> "Winterzeit"
-        dst_default_names = {
-            "next_change": "Zeitumstellung",
-            "next_summer": "Sommerzeit",
-            "next_winter": "Winterzeit",
-        }
-        default_name = dst_default_names.get(default_dst_type, "Zeitumstellung")
+        default_name = ""
 
         if user_input is not None:
             default_region = user_input.get(CONF_DST_REGION, default_region)
             default_dst_type = user_input.get(CONF_DST_TYPE, default_dst_type)
-            default_name = user_input.get(CONF_EVENT_NAME, default_name)
+            default_name = user_input.get(CONF_EVENT_NAME, "")
 
         data_schema = vol.Schema({
             vol.Required(CONF_DST_REGION, default=default_region): SelectSelector(
@@ -393,15 +385,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
         """Create the options flow."""
-        return OptionsFlowHandler(config_entry)
+        return OptionsFlowHandler()
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Handle options flow for WhenHub."""
+    """Handle options flow for WhenHub.
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
+    Note: config_entry is automatically provided by the OptionsFlow base class
+    as a read-only property. Do not override __init__ to set it manually.
+    """
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

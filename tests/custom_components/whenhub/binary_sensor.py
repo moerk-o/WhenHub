@@ -43,8 +43,10 @@ from .sensors.base import get_device_info
 
 
 # Device class mapping from string to enum for binary sensors
+# Note: We intentionally use None for most sensors to show simple "On"/"Off" states
+# "occurrence" is not a valid HA device_class, so we map it to None
 BINARY_DEVICE_CLASS_MAP = {
-    "occurrence": BinarySensorDeviceClass.RUNNING,  # 'occurrence' maps to 'running' for "is active" sensors
+    "occurrence": None,  # Shows "On"/"Off" instead of "Running"/"Not running"
 }
 
 

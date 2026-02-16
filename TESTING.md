@@ -34,6 +34,21 @@ VSCode sollte automatisch die Konfiguration aus `.vscode/settings.json` laden:
 - Test-Framework: pytest
 - Empfohlene Extensions: Python, Pylance, Ruff
 
+## Wichtig: Test-Verzeichnis synchronisieren
+
+> **WICHTIG:** Das pytest-homeassistant-custom-component Plugin lädt die Integration
+> aus `tests/custom_components/whenhub/`, NICHT aus `custom_components/whenhub/`!
+
+Nach jeder Änderung am Produktiv-Code muss die Kopie aktualisiert werden:
+
+```bash
+# Gesamtes Verzeichnis synchronisieren
+cp -r custom_components/whenhub/* tests/custom_components/whenhub/
+```
+
+**Fehlerquelle:** Wenn Tests fehlschlagen obwohl der Produktiv-Code korrekt ist,
+prüfen ob `tests/custom_components/whenhub/` aktuell ist!
+
 ## Test-Befehle
 
 ### Alle Tests ausführen
@@ -126,16 +141,24 @@ ruff check custom_components/whenhub
 
 ```
 tests/
-├── conftest.py                 # Fixtures für alle Tests
-├── test_basic_logic.py         # Basis-Logik ohne HA
-├── test_binary_today.py        # Binary Sensor Tests
-├── test_calculations.py        # Pure calculation functions (66 tests)
-├── test_debug_path.py          # Debug/Pfad-Tests
-├── test_edge_cases.py          # Edge Cases (Schaltjahr, lange Trips, etc.)
-├── test_manifest_and_setup.py  # Setup & Entity-Erstellung
-├── test_sensor_countdown.py    # Countdown-Berechnungen
-└── test_simple_setup.py        # Basis-Setup Tests
+├── conftest.py                  # Fixtures für alle Tests
+├── custom_components/           # Kopie für pytest-Plugin (muss synchron sein!)
+│   └── whenhub/                 # Synchronisieren mit: cp -r custom_components/whenhub/* tests/custom_components/whenhub/
+├── test_basic_logic.py          # Basis-Logik ohne HA (4 Tests)
+├── test_binary_today.py         # Binary Sensor Tests (7 Tests)
+├── test_calculations.py         # Pure calculation functions (131 Tests)
+├── test_config_flow.py          # ConfigFlow Tests (19 Tests)
+├── test_debug_path.py           # Debug/Pfad-Tests (1 Test)
+├── test_edge_cases.py           # Edge Cases (12 Tests)
+├── test_edge_cases_extended.py  # Erweiterte Edge Cases (14 Tests)
+├── test_language_entity_ids.py  # Sprache/Entity-ID Tests (2 Tests)
+├── test_manifest_and_setup.py   # Setup & Entity-Erstellung (4 Tests)
+├── test_sensor_countdown.py     # Countdown-Berechnungen (6 Tests)
+├── test_simple_setup.py         # Basis-Setup Tests (3 Tests)
+└── test_special_events.py       # Special Events Tests (15 Tests)
 ```
+
+**Gesamt: 223 Tests**
 
 ## Nächste Schritte
 
