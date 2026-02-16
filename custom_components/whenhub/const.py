@@ -166,17 +166,17 @@ TRIP_BINARY_SENSOR_TYPES = {
     "trip_starts_today": {
         "name": "Trip Starts Today",
         "icon": "mdi:calendar-start",
-        "device_class": "occurrence",
+        "device_class": None,
     },
     "trip_active_today": {
         "name": "Trip Active Today",
         "icon": "mdi:calendar-check",
-        "device_class": "occurrence",
+        "device_class": None,
     },
     "trip_ends_today": {
         "name": "Trip Ends Today",
         "icon": "mdi:calendar-end",
-        "device_class": "occurrence",
+        "device_class": None,
     },
 }
 
@@ -185,7 +185,7 @@ MILESTONE_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
         "icon": "mdi:calendar-today",
-        "device_class": "occurrence",
+        "device_class": None,
     },
 }
 
@@ -194,7 +194,7 @@ ANNIVERSARY_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
         "icon": "mdi:calendar-today",
-        "device_class": "occurrence",
+        "device_class": None,
     },
 }
 
@@ -237,7 +237,7 @@ SPECIAL_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
         "icon": "mdi:calendar-today",
-        "device_class": "occurrence",
+        "device_class": None,
     },
 }
 
@@ -246,7 +246,7 @@ DST_BINARY_SENSOR_TYPES = {
     "is_today": {
         "name": "Is Today",
         "icon": "mdi:calendar-today",
-        "device_class": "occurrence",
+        "device_class": None,
     },
     "is_dst_active": {
         "name": "DST Active",
