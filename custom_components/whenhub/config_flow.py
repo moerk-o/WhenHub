@@ -349,20 +349,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Default DST type is "next_change"
         default_dst_type = "next_change"
-
-        # Generate default event name based on DST type (without region for simplicity)
-        # Maps: next_change -> "Zeitumstellung", next_summer -> "Sommerzeit", next_winter -> "Winterzeit"
-        dst_default_names = {
-            "next_change": "Zeitumstellung",
-            "next_summer": "Sommerzeit",
-            "next_winter": "Winterzeit",
-        }
-        default_name = dst_default_names.get(default_dst_type, "Zeitumstellung")
+        default_name = ""
 
         if user_input is not None:
             default_region = user_input.get(CONF_DST_REGION, default_region)
             default_dst_type = user_input.get(CONF_DST_TYPE, default_dst_type)
-            default_name = user_input.get(CONF_EVENT_NAME, default_name)
+            default_name = user_input.get(CONF_EVENT_NAME, "")
 
         data_schema = vol.Schema({
             vol.Required(CONF_DST_REGION, default=default_region): SelectSelector(
