@@ -19,6 +19,15 @@ A Home Assistant integration for tracking various events and important dates. Wh
 
 ## Installation
 
+### HACS (Recommended)
+
+1. Open HACS in your Home Assistant instance
+2. Search for "WhenHub"
+3. Click **Download**
+4. Restart Home Assistant
+5. Go to **Settings** → **Devices & Services** → **Add Integration**
+6. Search for "WhenHub" and follow the configuration wizard
+
 ### Manual Installation
 
 1. Download the latest version from the [Releases page](https://github.com/moerk-o/WhenHub/releases)
