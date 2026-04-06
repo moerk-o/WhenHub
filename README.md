@@ -271,6 +271,8 @@ The predefined holidays cover common events, but many recurring dates follow wee
 | 8 | **Medication reminder** | Every 3 days |
 | 9 | **Quarterly review** | First Monday of every 3rd month |
 
+→ [See example configurations below](#example-configurations)
+
 ##### Configuration Flow
 
 Custom Pattern uses a guided multi-step setup. The steps you see depend on the frequency you choose:
