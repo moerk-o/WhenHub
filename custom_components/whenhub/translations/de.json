@@ -128,7 +128,6 @@
       },
       "cp_weekday_nth": {
         "title": "Bestimmtes Wochentag-Vorkommen",
-        "description": "z.B. 4. Donnerstag = Thanksgiving, 1. Montag = Memorial Day",
         "data": {
           "cp_byday_pos": "Vorkommen",
           "cp_byday_weekday": "Wochentag"
@@ -252,7 +251,6 @@
       },
       "cp_weekday_nth": {
         "title": "Bestimmtes Wochentag-Vorkommen",
-        "description": "z.B. 4. Donnerstag = Thanksgiving, 1. Montag = Memorial Day",
         "data": {
           "cp_byday_pos": "Vorkommen",
           "cp_byday_weekday": "Wochentag"

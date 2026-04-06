@@ -128,7 +128,6 @@
       },
       "cp_weekday_nth": {
         "title": "Specific weekday occurrence",
-        "description": "e.g. 4th Thursday = Thanksgiving, 1st Monday = Memorial Day",
         "data": {
           "cp_byday_pos": "Occurrence",
           "cp_byday_weekday": "Weekday"
@@ -252,7 +251,6 @@
       },
       "cp_weekday_nth": {
         "title": "Specific weekday occurrence",
-        "description": "e.g. 4th Thursday = Thanksgiving, 1st Monday = Memorial Day",
         "data": {
           "cp_byday_pos": "Occurrence",
           "cp_byday_weekday": "Weekday"
