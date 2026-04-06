@@ -36,3 +36,6 @@ assets_local/
 
 # Project documentation (local only)
 TESTKONZEPT.md
+prompt.md
+docs/
+bugs/
