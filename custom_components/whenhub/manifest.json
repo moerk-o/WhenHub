@@ -3,7 +3,7 @@
   "name": "WhenHub",
   "codeowners": ["@moerk-o"],
   "config_flow": true,
-  "dependencies": [],
+  "dependencies": ["file_upload"],
   "documentation": "https://github.com/moerk-o/WhenHub",
   "integration_type": "device",
   "iot_class": "calculated",
