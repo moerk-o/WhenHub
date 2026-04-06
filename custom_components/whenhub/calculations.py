@@ -1,5 +1,9 @@
 """Pure calculation functions for WhenHub integration.
 
+# Note: dateutil is a dependency of Home Assistant itself and does not need
+# to be listed separately in manifest.json.
+
+
 This module contains all date calculation logic separated from Home Assistant
 integration code. Functions here are pure Python with no HA dependencies,
 making them easy to test and reuse.
@@ -9,8 +13,11 @@ internally, which makes them deterministic and testable with freezegun.
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
+
+from dateutil.rrule import rrule, rruleset, YEARLY, MONTHLY, WEEKLY, DAILY
+from dateutil.rrule import MO, TU, WE, TH, FR, SA, SU
 
 
 # =============================================================================
@@ -685,3 +692,142 @@ def is_dst_active(region_info: dict, today: date) -> bool:
     # If summer time was last -> summer time active
     # If winter time was last -> winter time active
     return last_summer > last_winter
+
+
+# =============================================================================
+# Custom Pattern Calculations (FR09)
+# =============================================================================
+
+_WEEKDAY_OBJECTS = [MO, TU, WE, TH, FR, SA, SU]
+_FREQ_MAP = {
+    "yearly": YEARLY,
+    "monthly": MONTHLY,
+    "weekly": WEEKLY,
+    "daily": DAILY,
+}
+
+
+def _to_dt(d: date) -> datetime:
+    """Convert a date to a naive datetime at midnight."""
+    return datetime(d.year, d.month, d.day)
+
+
+def _apply_day_rule(kwargs: dict, config: dict) -> None:
+    """Apply BYDAY or BYMONTHDAY kwargs based on cp_day_rule."""
+    day_rule = config.get("cp_day_rule")
+    if day_rule == "nth_weekday":
+        wd = _WEEKDAY_OBJECTS[config["cp_byday_weekday"]]
+        kwargs["byweekday"] = wd(config["cp_byday_pos"])
+    elif day_rule == "last_weekday":
+        wd = _WEEKDAY_OBJECTS[config["cp_byday_weekday"]]
+        kwargs["byweekday"] = wd(-1)
+    elif day_rule == "fixed_day":
+        kwargs["bymonthday"] = config["cp_bymonthday"]
+
+
+def build_rrule_from_config(config: dict) -> rrule | rruleset:
+    """Build a dateutil rrule (or rruleset for EXDATE) from a Custom Pattern config dict.
+
+    Args:
+        config: entry.data dict containing cp_* keys
+
+    Returns:
+        A dateutil rrule or rruleset instance
+    """
+    freq = _FREQ_MAP[config["cp_freq"]]
+    interval = config.get("cp_interval", 1)
+    dtstart = _to_dt(parse_date(config["cp_dtstart"]))
+
+    kwargs: dict = {"freq": freq, "interval": interval, "dtstart": dtstart}
+
+    # End condition
+    if config.get("cp_count"):
+        kwargs["count"] = config["cp_count"]
+    elif config.get("cp_until"):
+        kwargs["until"] = _to_dt(parse_date(config["cp_until"]))
+
+    # Frequency-specific day rules
+    if freq == YEARLY:
+        kwargs["bymonth"] = config["cp_bymonth"]
+        _apply_day_rule(kwargs, config)
+    elif freq == MONTHLY:
+        _apply_day_rule(kwargs, config)
+    elif freq == WEEKLY:
+        byday_list = config.get("cp_byday_list", [])
+        kwargs["byweekday"] = [_WEEKDAY_OBJECTS[d] for d in byday_list]
+    # DAILY: freq + interval + dtstart are sufficient
+
+    rule = rrule(**kwargs)
+
+    # Wrap in rruleset if EXDATE entries exist
+    exdates = config.get("cp_exdates", [])
+    if exdates:
+        ruleset = rruleset()
+        ruleset.rrule(rule)
+        for d_str in exdates:
+            ruleset.exdate(_to_dt(parse_date(d_str)))
+        return ruleset
+
+    return rule
+
+
+def next_custom_pattern(config: dict, today: date) -> Optional[date]:
+    """Next occurrence on or after today.
+
+    Args:
+        config: entry.data dict with cp_* keys
+        today: Current date
+
+    Returns:
+        Date of the next occurrence, or None if the rule is exhausted
+    """
+    rule = build_rrule_from_config(config)
+    result = rule.after(_to_dt(today), inc=True)
+    return result.date() if result else None
+
+
+def last_custom_pattern(config: dict, today: date) -> Optional[date]:
+    """Last occurrence on or before today.
+
+    Args:
+        config: entry.data dict with cp_* keys
+        today: Current date
+
+    Returns:
+        Date of the last occurrence, or None if no occurrence has happened yet
+    """
+    rule = build_rrule_from_config(config)
+    result = rule.before(_to_dt(today), inc=True)
+    return result.date() if result else None
+
+
+def occurrence_count_custom_pattern(config: dict, today: date) -> int:
+    """Count all occurrences from dtstart up to and including today.
+
+    Args:
+        config: entry.data dict with cp_* keys
+        today: Current date
+
+    Returns:
+        Number of occurrences that have happened (including today if applicable)
+    """
+    rule = build_rrule_from_config(config)
+    dtstart = parse_date(config["cp_dtstart"])
+    return len(rule.between(_to_dt(dtstart), _to_dt(today), inc=True))
+
+
+def custom_pattern_occurrences(config: dict, start: date, end: date) -> list[date]:
+    """All occurrences within a date range, inclusive.
+
+    Used by the Calendar entity to populate events.
+
+    Args:
+        config: entry.data dict with cp_* keys
+        start: Start of the range
+        end: End of the range
+
+    Returns:
+        List of occurrence dates within [start, end]
+    """
+    rule = build_rrule_from_config(config)
+    return [dt.date() for dt in rule.between(_to_dt(start), _to_dt(end), inc=True)]

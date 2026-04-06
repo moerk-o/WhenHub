@@ -21,6 +21,7 @@ from .calculations import (
     next_dst_event,
     is_date_today,
     is_trip_active,
+    custom_pattern_occurrences,
 )
 from .const import (
     DOMAIN,
@@ -161,6 +162,9 @@ def _get_calendar_events(event_data: dict, start: date, end: date, name: str) ->
     if event_type == EVENT_TYPE_ANNIVERSARY:
         return _anniversary_events(event_data, start, end, name)
     if event_type == EVENT_TYPE_SPECIAL:
+        special_category = event_data.get(CONF_SPECIAL_CATEGORY)
+        if special_category == "custom_pattern":
+            return _custom_pattern_events(event_data, start, end, name)
         return _special_events(event_data, start, end, name)
     return []
 
@@ -215,6 +219,14 @@ def _get_current_event(event_data: dict, today: date, name: str) -> CalendarEven
                     start=today,
                     end=today + timedelta(days=1),
                     description="DST",
+                )
+        elif special_category == "custom_pattern":
+            if custom_pattern_occurrences(event_data, today, today):
+                return CalendarEvent(
+                    summary=name,
+                    start=today,
+                    end=today + timedelta(days=1),
+                    description="Custom Pattern",
                 )
         else:
             special_type = event_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
@@ -280,11 +292,25 @@ def _anniversary_events(data: dict, start: date, end: date, name: str) -> list[C
     return events
 
 
+def _custom_pattern_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
+    """Return all custom pattern occurrences within [start, end]."""
+    return [
+        CalendarEvent(
+            summary=name,
+            start=occ,
+            end=occ + timedelta(days=1),
+            description="Custom Pattern",
+        )
+        for occ in custom_pattern_occurrences(data, start, end)
+    ]
+
+
 def _special_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return all special event occurrences within [start, end].
 
     Iterates over each year in the range and calls the appropriate calculation
     function (next_special_event or next_dst_event) once per year.
+    Custom Pattern is handled separately by _custom_pattern_events.
     """
     special_category = data.get(CONF_SPECIAL_CATEGORY)
     events = []

@@ -99,6 +99,76 @@
         "data": {
           "calendar_event_ids": "Events"
         }
+      },
+      "cp_freq": {
+        "title": "Set up repeating pattern",
+        "description": "Define how often the pattern repeats",
+        "data": {
+          "cp_freq": "Frequency",
+          "cp_dtstart": "Anchor date",
+          "cp_interval": "Repeat every N times"
+        },
+        "data_description": {
+          "cp_dtstart": "First occurrence is calculated from this date",
+          "cp_interval": "1 = every year/month/week/day; 2 = every other; etc."
+        }
+      },
+      "cp_yearly": {
+        "title": "Yearly pattern — month and rule",
+        "data": {
+          "cp_bymonth": "Month",
+          "cp_day_rule": "Day rule"
+        }
+      },
+      "cp_monthly": {
+        "title": "Monthly pattern — day rule",
+        "data": {
+          "cp_day_rule": "Day rule"
+        }
+      },
+      "cp_weekday_nth": {
+        "title": "Specific weekday occurrence",
+        "description": "e.g. 4th Thursday = Thanksgiving, 1st Monday = Memorial Day",
+        "data": {
+          "cp_byday_pos": "Occurrence",
+          "cp_byday_weekday": "Weekday"
+        }
+      },
+      "cp_weekday_last": {
+        "title": "Last weekday of period",
+        "data": {
+          "cp_byday_weekday": "Weekday"
+        }
+      },
+      "cp_fixed_day": {
+        "title": "Fixed day of month",
+        "data": {
+          "cp_bymonthday": "Day of month"
+        }
+      },
+      "cp_weekly": {
+        "title": "Weekly pattern — weekdays",
+        "data": {
+          "cp_byday_list": "Days of the week"
+        }
+      },
+      "cp_end": {
+        "title": "End condition",
+        "data": {
+          "cp_end_type": "When does the pattern end?"
+        }
+      },
+      "cp_end_until": {
+        "title": "Repeat until date",
+        "data": {
+          "cp_until": "Last date"
+        }
+      },
+      "cp_end_count": {
+        "title": "Number of occurrences",
+        "data": {
+          "cp_count": "Total occurrences"
+        }
       }
     },
     "error": {
@@ -153,6 +223,76 @@
         "data": {
           "calendar_event_ids": "Events"
         }
+      },
+      "cp_freq": {
+        "title": "Edit repeating pattern",
+        "description": "Change frequency, anchor date or interval",
+        "data": {
+          "cp_freq": "Frequency",
+          "cp_dtstart": "Anchor date",
+          "cp_interval": "Repeat every N times"
+        },
+        "data_description": {
+          "cp_dtstart": "First occurrence is calculated from this date",
+          "cp_interval": "1 = every year/month/week/day; 2 = every other; etc."
+        }
+      },
+      "cp_yearly": {
+        "title": "Yearly pattern — month and rule",
+        "data": {
+          "cp_bymonth": "Month",
+          "cp_day_rule": "Day rule"
+        }
+      },
+      "cp_monthly": {
+        "title": "Monthly pattern — day rule",
+        "data": {
+          "cp_day_rule": "Day rule"
+        }
+      },
+      "cp_weekday_nth": {
+        "title": "Specific weekday occurrence",
+        "description": "e.g. 4th Thursday = Thanksgiving, 1st Monday = Memorial Day",
+        "data": {
+          "cp_byday_pos": "Occurrence",
+          "cp_byday_weekday": "Weekday"
+        }
+      },
+      "cp_weekday_last": {
+        "title": "Last weekday of period",
+        "data": {
+          "cp_byday_weekday": "Weekday"
+        }
+      },
+      "cp_fixed_day": {
+        "title": "Fixed day of month",
+        "data": {
+          "cp_bymonthday": "Day of month"
+        }
+      },
+      "cp_weekly": {
+        "title": "Weekly pattern — weekdays",
+        "data": {
+          "cp_byday_list": "Days of the week"
+        }
+      },
+      "cp_end": {
+        "title": "End condition",
+        "data": {
+          "cp_end_type": "When does the pattern end?"
+        }
+      },
+      "cp_end_until": {
+        "title": "Repeat until date",
+        "data": {
+          "cp_until": "Last date"
+        }
+      },
+      "cp_end_count": {
+        "title": "Number of occurrences",
+        "data": {
+          "cp_count": "Total occurrences"
+        }
       }
     }
   },
@@ -194,7 +334,65 @@
       "options": {
         "traditional": "Traditional Holidays",
         "calendar": "Calendar Holidays",
-        "dst": "Daylight Saving Time"
+        "dst": "Daylight Saving Time",
+        "custom_pattern": "Custom Pattern"
+      }
+    },
+    "cp_freq": {
+      "options": {
+        "yearly": "Yearly",
+        "monthly": "Monthly",
+        "weekly": "Weekly",
+        "daily": "Daily"
+      }
+    },
+    "cp_day_rule": {
+      "options": {
+        "nth_weekday": "Nth weekday (e.g. 1st Monday)",
+        "last_weekday": "Last weekday (e.g. last Friday)",
+        "fixed_day": "Fixed day of month (e.g. 15th)"
+      }
+    },
+    "cp_bymonth": {
+      "options": {
+        "1": "January",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September",
+        "10": "October",
+        "11": "November",
+        "12": "December"
+      }
+    },
+    "cp_byday_pos": {
+      "options": {
+        "1": "1st",
+        "2": "2nd",
+        "3": "3rd",
+        "4": "4th"
+      }
+    },
+    "cp_byday_weekday": {
+      "options": {
+        "0": "Monday",
+        "1": "Tuesday",
+        "2": "Wednesday",
+        "3": "Thursday",
+        "4": "Friday",
+        "5": "Saturday",
+        "6": "Sunday"
+      }
+    },
+    "cp_end_type": {
+      "options": {
+        "none": "No end (repeats forever)",
+        "until": "Until a specific date",
+        "count": "After a number of occurrences"
       }
     },
     "dst_type": {
@@ -238,6 +436,9 @@
       },
       "occurrences_count": {
         "name": "Occurrences count"
+      },
+      "occurrence_count": {
+        "name": "Occurrence count"
       },
       "next_date": {
         "name": "Next date"

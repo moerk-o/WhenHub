@@ -271,7 +271,12 @@ SPECIAL_EVENT_CATEGORIES = {
         "name": "Zeitumstellung",
         "description": "Sommer- und Winterzeitwechsel",
         "icon": "mdi:clock-time-four"
-    }
+    },
+    "custom_pattern": {
+        "name": "Custom Pattern",
+        "description": "Benutzerdefiniertes Wiederholungsmuster",
+        "icon": "mdi:repeat"
+    },
 }
 
 # Special Event Definitions (German - see prompt.md for rationale)
@@ -460,6 +465,70 @@ TIMEZONE_TO_DST_REGION = {
 
 # Legacy compatibility - replaced by TRIP_SENSOR_TYPES
 SENSOR_TYPES = TRIP_SENSOR_TYPES
+
+# FR09: Custom Pattern configuration keys
+CONF_CP_FREQ = "cp_freq"                   # "yearly" | "monthly" | "weekly" | "daily"
+CONF_CP_INTERVAL = "cp_interval"           # int >= 1
+CONF_CP_DTSTART = "cp_dtstart"             # ISO date string — anchor date (always required)
+CONF_CP_DAY_RULE = "cp_day_rule"           # "nth_weekday" | "last_weekday" | "fixed_day"
+CONF_CP_BYMONTH = "cp_bymonth"             # 1–12 (yearly only)
+CONF_CP_BYDAY_POS = "cp_byday_pos"         # 1–4 (nth weekday)
+CONF_CP_BYDAY_WEEKDAY = "cp_byday_weekday" # 0=Mo … 6=So
+CONF_CP_BYMONTHDAY = "cp_bymonthday"       # 1–31 (fixed day)
+CONF_CP_BYDAY_LIST = "cp_byday_list"       # list[int] weekday indices (weekly only)
+CONF_CP_END_TYPE = "cp_end_type"           # "none" | "until" | "count"
+CONF_CP_UNTIL = "cp_until"                 # ISO date string | None
+CONF_CP_COUNT = "cp_count"                 # int | None
+CONF_CP_EXDATES = "cp_exdates"             # list[str] ISO dates — no UI in v1
+
+# FR09: Custom Pattern sensor types
+CUSTOM_PATTERN_SENSOR_TYPES = {
+    "days_until": {
+        "name": "Days Until",
+        "icon": "mdi:calendar-clock",
+        "unit": "d",
+        "device_class": "duration",
+    },
+    "days_since_last": {
+        "name": "Days Since Last",
+        "icon": "mdi:calendar-minus",
+        "unit": "d",
+        "device_class": "duration",
+    },
+    "event_date": {
+        "name": "Event Date",
+        "icon": "mdi:calendar",
+        "unit": None,
+        "device_class": "timestamp",
+    },
+    "next_date": {
+        "name": "Next Date",
+        "icon": "mdi:calendar-arrow-right",
+        "unit": None,
+        "device_class": "timestamp",
+    },
+    "last_date": {
+        "name": "Last Date",
+        "icon": "mdi:calendar-arrow-left",
+        "unit": None,
+        "device_class": "timestamp",
+    },
+    "occurrence_count": {
+        "name": "Occurrence Count",
+        "icon": "mdi:counter",
+        "unit": None,
+        "device_class": None,
+    },
+}
+
+# FR09: Custom Pattern binary sensor types
+CUSTOM_PATTERN_BINARY_SENSOR_TYPES = {
+    "is_today": {
+        "name": "Is Today",
+        "icon": "mdi:calendar-today",
+        "device_class": None,
+    },
+}
 
 # FR08: Calendar Entry type marker
 CONF_ENTRY_TYPE = "entry_type"
