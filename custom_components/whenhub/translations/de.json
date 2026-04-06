@@ -12,13 +12,11 @@
         "title": "Trip einrichten",
         "description": "Richte einen neuen Trip bei WhenHub ein",
         "data": {
-          "event_name": "Name des Trips",
           "start_date": "Startdatum",
           "end_date": "Enddatum",
           "image_path": "Bildpfad (optional)"
         },
         "data_description": {
-          "event_name": "z.B. 'Dänemarkurlaub 2025' oder 'Geschäftsreise Berlin'",
           "start_date": "Das Datum, an dem der Trip beginnt",
           "end_date": "Das Datum, an dem der Trip endet",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg"
@@ -28,12 +26,10 @@
         "title": "Milestone einrichten",
         "description": "Richte einen neuen Milestone bei WhenHub ein",
         "data": {
-          "event_name": "Name des Milestones",
           "target_date": "Zieldatum",
           "image_path": "Bildpfad (optional)"
         },
         "data_description": {
-          "event_name": "z.B. 'Geburtstag Max' oder 'Projektabgabe'",
           "target_date": "Das Datum des wichtigen Termins",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg"
         }
@@ -42,12 +38,10 @@
         "title": "Anniversary einrichten",
         "description": "Richte ein neues Anniversary bei WhenHub ein",
         "data": {
-          "event_name": "Name des Anniversarys",
           "target_date": "Ursprüngliches Datum",
           "image_path": "Bildpfad (optional)"
         },
         "data_description": {
-          "event_name": "z.B. 'Hochzeitstag' oder 'Firmenjubiläum'",
           "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg"
         }
@@ -63,12 +57,10 @@
         "title": "Special Event einrichten",
         "description": "Richte dein Special Event ein",
         "data": {
-          "event_name": "Name des Special Events",
           "special_type": "Special Event",
           "image_path": "Bildpfad (optional)"
         },
         "data_description": {
-          "event_name": "z.B. 'Weihnachts-Countdown' oder 'Oster-Countdown'",
           "special_type": "Wähle das spezifische Event aus der Kategorie",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg"
         }
@@ -79,13 +71,11 @@
         "data": {
           "dst_region": "Region",
           "dst_type": "Event-Typ",
-          "event_name": "Event-Name",
           "image_path": "Bildpfad (optional)"
         },
         "data_description": {
           "dst_region": "Für welche Region soll die Zeitumstellung berechnet werden?",
           "dst_type": "Welches Zeitumstellungs-Event möchtest du tracken?",
-          "event_name": "z.B. 'Zeitumstellung' oder 'Sommerzeit'",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg"
         }
       },
@@ -109,22 +99,12 @@
         "data": {
           "calendar_event_ids": "Events"
         }
-      },
-      "calendar_name": {
-        "title": "Kalendername",
-        "description": "Gib diesem Kalender einen Namen.",
-        "data": {
-          "event_name": "Kalendername"
-        }
       }
     },
     "error": {
       "invalid_dates": "Das Enddatum muss nach dem Startdatum liegen",
       "invalid_date_format": "Ungültiges Datumsformat. Verwende YYYY-MM-DD",
       "image_upload_failed": "Fehler beim Hochladen des Bildes"
-    },
-    "abort": {
-      "already_configured": "Ein Event mit diesem Namen ist bereits konfiguriert"
     }
   },
   "options": {
@@ -172,13 +152,6 @@
         "description": "Wähle die konkreten Events, die im Kalender erscheinen sollen.",
         "data": {
           "calendar_event_ids": "Events"
-        }
-      },
-      "calendar_name_options": {
-        "title": "Kalendername",
-        "description": "Bearbeite den Namen dieses Kalenders.",
-        "data": {
-          "event_name": "Kalendername"
         }
       }
     }

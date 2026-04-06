@@ -25,7 +25,6 @@ from .const import (
     EVENT_TYPE_ANNIVERSARY,
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
     CONF_IMAGE_PATH,
     CONF_SPECIAL_TYPE,
     SPECIAL_EVENTS,
@@ -144,8 +143,8 @@ class WhenHubImage(ImageEntity):
                 try:
                     return base64.b64decode(self._image_data)
                 except Exception as err:
-                    _LOGGER.warning("Error decoding Base64 image for %s: %s", 
-                                   self._event_data[CONF_EVENT_NAME], err)
+                    _LOGGER.warning("Error decoding Base64 image for %s: %s",
+                                   self._config_entry.title, err)
             
             # Priority 2: Try user-provided file path
             if self._image_path:
@@ -157,8 +156,8 @@ class WhenHubImage(ImageEntity):
             return self._get_default_image()
                 
         except Exception as err:
-            _LOGGER.warning("Error loading image for %s: %s", 
-                           self._event_data[CONF_EVENT_NAME], err)
+            _LOGGER.warning("Error loading image for %s: %s",
+                           self._config_entry.title, err)
             return self._get_default_image()
 
     def _load_image_from_path(self, path: str) -> bytes | None:

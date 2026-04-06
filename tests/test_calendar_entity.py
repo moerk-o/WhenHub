@@ -31,7 +31,7 @@ CONF_CALENDAR_SCOPE = "calendar_scope"
 CONF_CALENDAR_TYPES = "calendar_types"
 CONF_CALENDAR_EVENT_IDS = "calendar_event_ids"
 
-CALENDAR_ENTITY_ID = "calendar.whenhub"
+CALENDAR_ENTITY_ID = "calendar.whenhub_calendar"
 
 
 # =============================================================================
@@ -142,6 +142,7 @@ def trip_2026():
             "end_date": "2026-07-26",
             "image_path": "",
         },
+        title="Dänemark 2026",
         unique_id="whenhub_cal_trip_2026",
         version=1,
     )
@@ -158,6 +159,7 @@ def milestone_march():
             "target_date": "2026-03-15",
             "image_path": "",
         },
+        title="Projektabgabe",
         unique_id="whenhub_cal_milestone",
         version=1,
     )
@@ -174,6 +176,7 @@ def anniversary_2010():
             "target_date": "2010-05-20",
             "image_path": "",
         },
+        title="Geburtstag Max",
         unique_id="whenhub_cal_anniversary",
         version=1,
     )
@@ -190,6 +193,7 @@ def anniversary_40th():
             "target_date": "1986-06-10",
             "image_path": "",
         },
+        title="Hochzeitstag",
         unique_id="whenhub_cal_anniversary_40",
         version=1,
     )
@@ -206,6 +210,7 @@ def anniversary_leap():
             "target_date": "2020-02-29",
             "image_path": "",
         },
+        title="Schaltjahr Geburtstag",
         unique_id="whenhub_cal_anniversary_leap",
         version=1,
     )
@@ -223,6 +228,7 @@ def christmas_entry():
             "special_category": "traditional",
             "image_path": "",
         },
+        title="Heilig Abend",
         unique_id="whenhub_cal_christmas",
         version=1,
     )
@@ -242,6 +248,7 @@ def dst_eu_entry():
             "dst_region": "eu",
             "image_path": "",
         },
+        title="Zeitumstellung",
         unique_id="whenhub_cal_dst",
         version=1,
     )
@@ -381,7 +388,7 @@ class TestCalendarConfigFlow:
 
     @pytest.mark.asyncio
     async def test_calendar_scope_all_creates_entry(self, hass: HomeAssistant):
-        """Selecting scope 'all' shows name step, then creates calendar config entry."""
+        """Selecting scope 'all' creates calendar config entry directly."""
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -390,11 +397,6 @@ class TestCalendarConfigFlow:
         )
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
-        )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"event_name": "WhenHub Calendar"}
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"][CONF_ENTRY_TYPE] == ENTRY_TYPE_CALENDAR
@@ -417,7 +419,7 @@ class TestCalendarConfigFlow:
 
     @pytest.mark.asyncio
     async def test_calendar_scope_by_type_creates_entry(self, hass: HomeAssistant):
-        """Scope 'by_type' with types selected shows name step, then creates entry."""
+        """Scope 'by_type' with types selected creates entry directly."""
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -429,11 +431,6 @@ class TestCalendarConfigFlow:
         )
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_TYPES: ["trip", "anniversary"]}
-        )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"event_name": "Trips & Anniversaries"}
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"][CONF_CALENDAR_SCOPE] == "by_type"
@@ -481,8 +478,9 @@ class TestCalendarConfigFlow:
         assert result["step_id"] == "calendar"
 
     @pytest.mark.asyncio
-    async def test_calendar_entry_title_from_name_step(self, hass: HomeAssistant):
-        """Calendar entry title comes from the name step."""
+    async def test_calendar_entry_title_is_auto_generated(self, hass: HomeAssistant):
+        """Calendar entry title is auto-generated (e.g. 'WhenHub Calendar')."""
+        hass.config.language = "en"
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -492,11 +490,8 @@ class TestCalendarConfigFlow:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"event_name": "My Custom Calendar"}
-        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert result["title"] == "My Custom Calendar"
+        assert result["title"] == "WhenHub Calendar"
 
 
 # =============================================================================
@@ -539,12 +534,6 @@ class TestCalendarOptionsFlow:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {CONF_CALENDAR_TYPES: ["milestone"]}
         )
-        # Name step at the end
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name_options"
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"event_name": "WhenHub Calendar"}
-        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
@@ -569,8 +558,8 @@ class TestMultipleCalendars:
     """Tests for multiple-calendar support and the name step."""
 
     @pytest.mark.asyncio
-    async def test_name_step_appears_for_scope_all(self, hass: HomeAssistant):
-        """Name step appears after selecting scope 'all'."""
+    async def test_scope_all_creates_entry_directly(self, hass: HomeAssistant):
+        """Scope 'all' creates entry directly without a name step."""
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -580,12 +569,11 @@ class TestMultipleCalendars:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
+        assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
-    async def test_name_step_appears_for_scope_by_type(self, hass: HomeAssistant):
-        """Name step appears after selecting scope 'by_type' and types."""
+    async def test_scope_by_type_creates_entry_directly(self, hass: HomeAssistant):
+        """Scope 'by_type' creates entry directly without a name step."""
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -598,14 +586,13 @@ class TestMultipleCalendars:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_TYPES: ["trip"]}
         )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
+        assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
-    async def test_name_step_appears_for_scope_specific(
+    async def test_scope_specific_creates_entry_directly(
         self, hass: HomeAssistant, trip_2026
     ):
-        """Name step appears after selecting scope 'specific' and events."""
+        """Scope 'specific' creates entry directly without a name step."""
         trip_2026.add_to_hass(hass)
         assert await hass.config_entries.async_setup(trip_2026.entry_id)
         await hass.async_block_till_done()
@@ -622,31 +609,11 @@ class TestMultipleCalendars:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_EVENT_IDS: [trip_2026.entry_id]}
         )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
-
-    @pytest.mark.asyncio
-    async def test_custom_name_stored_in_entry_data(self, hass: HomeAssistant):
-        """Custom name from the name step is stored in entry.data."""
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": "user"}
-        )
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"event_type": "calendar"}
-        )
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
-        )
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], {"event_name": "My Trip Calendar"}
-        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert result["data"]["event_name"] == "My Trip Calendar"
-        assert result["title"] == "My Trip Calendar"
 
     @pytest.mark.asyncio
-    async def test_default_name_suggestion_english(self, hass: HomeAssistant):
-        """Default name suggestion is 'WhenHub Calendar' for English locale."""
+    async def test_auto_generated_title_not_stored_in_data(self, hass: HomeAssistant):
+        """Auto-generated title is stored as entry.title, not in entry.data."""
         hass.config.language = "en"
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
@@ -657,16 +624,29 @@ class TestMultipleCalendars:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
-        # Default value in the schema should be "WhenHub Calendar"
-        schema_keys = list(result["data_schema"].schema.keys())
-        default_val = schema_keys[0].default()
-        assert default_val == "WhenHub Calendar"
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["title"] == "WhenHub Calendar"
+        assert "event_name" not in result["data"]
 
     @pytest.mark.asyncio
-    async def test_default_name_suggestion_german(self, hass: HomeAssistant):
-        """Default name suggestion is 'WhenHub Kalender' for German locale."""
+    async def test_default_title_english(self, hass: HomeAssistant):
+        """Default title is 'WhenHub Calendar' for English locale."""
+        hass.config.language = "en"
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": "user"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"event_type": "calendar"}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["title"] == "WhenHub Calendar"
+
+    @pytest.mark.asyncio
+    async def test_default_title_german(self, hass: HomeAssistant):
+        """Default title is 'WhenHub Kalender' for German locale."""
         hass.config.language = "de"
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
@@ -677,15 +657,12 @@ class TestMultipleCalendars:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name"
-        schema_keys = list(result["data_schema"].schema.keys())
-        default_val = schema_keys[0].default()
-        assert default_val == "WhenHub Kalender"
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["title"] == "WhenHub Kalender"
 
     @pytest.mark.asyncio
-    async def test_auto_increment_name_when_first_exists(self, hass: HomeAssistant):
-        """When 'WhenHub Calendar' exists, suggestion is 'WhenHub Calendar 2'."""
+    async def test_auto_increment_title_when_first_exists(self, hass: HomeAssistant):
+        """When 'WhenHub Calendar' exists, second calendar gets title 'WhenHub Calendar 2'."""
         hass.config.language = "en"
         # Create first calendar via flow
         r = await hass.config_entries.flow.async_init(
@@ -697,12 +674,11 @@ class TestMultipleCalendars:
         r = await hass.config_entries.flow.async_configure(
             r["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        await hass.config_entries.flow.async_configure(
-            r["flow_id"], {"event_name": "WhenHub Calendar"}
-        )
+        assert r["type"] == FlowResultType.CREATE_ENTRY
+        assert r["title"] == "WhenHub Calendar"
         await hass.async_block_till_done()
 
-        # Start second calendar flow — name should be auto-incremented
+        # Second calendar flow — title should be auto-incremented
         r2 = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -712,17 +688,14 @@ class TestMultipleCalendars:
         r2 = await hass.config_entries.flow.async_configure(
             r2["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        assert r2["type"] == FlowResultType.FORM
-        assert r2["step_id"] == "calendar_name"
-        schema_keys = list(r2["data_schema"].schema.keys())
-        default_val = schema_keys[0].default()
-        assert default_val == "WhenHub Calendar 2"
+        assert r2["type"] == FlowResultType.CREATE_ENTRY
+        assert r2["title"] == "WhenHub Calendar 2"
 
     @pytest.mark.asyncio
     async def test_auto_increment_skips_taken_numbers(self, hass: HomeAssistant):
-        """When 'WhenHub Calendar' and 'WhenHub Calendar 2' exist, suggest '3'."""
+        """When 'WhenHub Calendar' and 'WhenHub Calendar 2' exist, third gets '3'."""
         hass.config.language = "en"
-        for name in ["WhenHub Calendar", "WhenHub Calendar 2"]:
+        for expected_title in ["WhenHub Calendar", "WhenHub Calendar 2"]:
             r = await hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": "user"}
             )
@@ -732,12 +705,11 @@ class TestMultipleCalendars:
             r = await hass.config_entries.flow.async_configure(
                 r["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
             )
-            await hass.config_entries.flow.async_configure(
-                r["flow_id"], {"event_name": name}
-            )
+            assert r["type"] == FlowResultType.CREATE_ENTRY
+            assert r["title"] == expected_title
             await hass.async_block_till_done()
 
-        # Third calendar flow
+        # Third calendar
         r3 = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": "user"}
         )
@@ -747,10 +719,8 @@ class TestMultipleCalendars:
         r3 = await hass.config_entries.flow.async_configure(
             r3["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        assert r3["type"] == FlowResultType.FORM
-        schema_keys = list(r3["data_schema"].schema.keys())
-        default_val = schema_keys[0].default()
-        assert default_val == "WhenHub Calendar 3"
+        assert r3["type"] == FlowResultType.CREATE_ENTRY
+        assert r3["title"] == "WhenHub Calendar 3"
 
     @pytest.mark.asyncio
     async def test_two_calendars_can_coexist(self, hass: HomeAssistant, trip_2026):
@@ -765,7 +735,6 @@ class TestMultipleCalendars:
             data={
                 CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
                 CONF_CALENDAR_SCOPE: "all",
-                "event_name": "Calendar 1",
             },
             title="Calendar 1",
             unique_id="whenhub_cal1",
@@ -782,7 +751,6 @@ class TestMultipleCalendars:
                 CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
                 CONF_CALENDAR_SCOPE: "by_type",
                 CONF_CALENDAR_TYPES: ["trip"],
-                "event_name": "Calendar 2",
             },
             title="Calendar 2",
             unique_id="whenhub_cal2",
@@ -799,16 +767,15 @@ class TestMultipleCalendars:
         assert state2 is not None
 
     @pytest.mark.asyncio
-    async def test_options_flow_shows_name_step(
+    async def test_options_flow_completes_without_name_step(
         self, hass: HomeAssistant
     ):
-        """Options flow for calendar entry ends with name step."""
+        """Options flow for calendar entry completes without a name step."""
         cal = MockConfigEntry(
             domain=DOMAIN,
             data={
                 CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
                 CONF_CALENDAR_SCOPE: "all",
-                "event_name": "My Calendar",
             },
             title="My Calendar",
             unique_id="whenhub_cal_named",
@@ -822,20 +789,18 @@ class TestMultipleCalendars:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "calendar_name_options"
+        assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
-    async def test_options_flow_name_shows_current_value(
+    async def test_options_flow_scope_change_persists(
         self, hass: HomeAssistant
     ):
-        """Name step in options flow shows current name as default."""
+        """Changing scope in options flow updates entry data."""
         cal = MockConfigEntry(
             domain=DOMAIN,
             data={
                 CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
                 CONF_CALENDAR_SCOPE: "all",
-                "event_name": "My Special Calendar",
             },
             title="My Special Calendar",
             unique_id="whenhub_cal_named2",
@@ -847,24 +812,23 @@ class TestMultipleCalendars:
 
         result = await hass.config_entries.options.async_init(cal.entry_id)
         result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
+            result["flow_id"], {CONF_CALENDAR_SCOPE: "by_type"}
         )
-        assert result["step_id"] == "calendar_name_options"
-        schema_keys = list(result["data_schema"].schema.keys())
-        default_val = schema_keys[0].default()
-        assert default_val == "My Special Calendar"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {CONF_CALENDAR_TYPES: ["trip"]}
+        )
+        assert result["type"] == FlowResultType.CREATE_ENTRY
 
     @pytest.mark.asyncio
-    async def test_options_flow_name_can_be_changed(
+    async def test_options_flow_calendar_creates_entry(
         self, hass: HomeAssistant
     ):
-        """Changing name in options flow updates entry title."""
+        """Options flow for calendar entry creates updated entry."""
         cal = MockConfigEntry(
             domain=DOMAIN,
             data={
                 CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
                 CONF_CALENDAR_SCOPE: "all",
-                "event_name": "Old Name",
             },
             title="Old Name",
             unique_id="whenhub_cal_rename",
@@ -878,12 +842,7 @@ class TestMultipleCalendars:
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {CONF_CALENDAR_SCOPE: "all"}
         )
-        result = await hass.config_entries.options.async_configure(
-            result["flow_id"], {"event_name": "New Name"}
-        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
-        assert cal.title == "New Name"
-        assert cal.data["event_name"] == "New Name"
 
 
 # =============================================================================
@@ -1058,6 +1017,7 @@ class TestCalendarEventsTrip:
                 "end_date": "2026-07-05",
                 "image_path": "",
             },
+            title="Frühurlaub",
             unique_id="whenhub_trip_overlap_start",
             version=1,
         )
@@ -1090,6 +1050,7 @@ class TestCalendarEventsTrip:
                 "end_date": "2026-08-05",
                 "image_path": "",
             },
+            title="Späturlaub",
             unique_id="whenhub_trip_overlap_end",
             version=1,
         )
@@ -1121,6 +1082,7 @@ class TestCalendarEventsTrip:
                 "end_date": "2026-12-31",
                 "image_path": "",
             },
+            title="Monatelanger Urlaub",
             unique_id="whenhub_trip_spans_all",
             version=1,
         )
@@ -1187,12 +1149,14 @@ class TestCalendarEventsTrip:
             domain=DOMAIN,
             data={"event_name": "Trip A", "event_type": "trip",
                   "start_date": "2026-07-01", "end_date": "2026-07-07", "image_path": ""},
+            title="Trip A",
             unique_id="whenhub_trip_a", version=1,
         )
         trip_b = MockConfigEntry(
             domain=DOMAIN,
             data={"event_name": "Trip B", "event_type": "trip",
                   "start_date": "2026-07-15", "end_date": "2026-07-20", "image_path": ""},
+            title="Trip B",
             unique_id="whenhub_trip_b", version=1,
         )
         trip_a.add_to_hass(hass)
@@ -1271,6 +1235,7 @@ class TestCalendarEventsMilestone:
             domain=DOMAIN,
             data={"event_name": "Boundary Test", "event_type": "milestone",
                   "target_date": "2026-07-01", "image_path": ""},
+            title="Boundary Test",
             unique_id="whenhub_boundary_ms", version=1,
         )
         milestone.add_to_hass(hass)
@@ -1318,6 +1283,7 @@ class TestCalendarEventsMilestone:
             domain=DOMAIN,
             data={"event_name": "Vergangenes Meilenstein", "event_type": "milestone",
                   "target_date": "2024-01-15", "image_path": ""},
+            title="Vergangenes Meilenstein",
             unique_id="whenhub_past_ms", version=1,
         )
         past_milestone.add_to_hass(hass)
@@ -1905,12 +1871,14 @@ class TestCalendarEdgeCases:
             domain=DOMAIN,
             data={"event_name": "Urlaub am Geburtstag", "event_type": "trip",
                   "start_date": "2026-05-20", "end_date": "2026-05-27", "image_path": ""},
+            title="Urlaub am Geburtstag",
             unique_id="whenhub_same_date_trip", version=1,
         )
         ann = MockConfigEntry(
             domain=DOMAIN,
             data={"event_name": "Geburtstag", "event_type": "anniversary",
                   "target_date": "2010-05-20", "image_path": ""},
+            title="Geburtstag",
             unique_id="whenhub_same_date_ann", version=1,
         )
         for entry in [trip, ann, calendar_entry_all]:
@@ -1937,6 +1905,7 @@ class TestCalendarEdgeCases:
             domain=DOMAIN,
             data={"event_name": "Jahrestag", "event_type": "anniversary",
                   "target_date": "2026-06-15", "image_path": ""},
+            title="Jahrestag",
             unique_id="whenhub_ann_same_year", version=1,
         )
         ann.add_to_hass(hass)
