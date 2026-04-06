@@ -47,10 +47,7 @@ When setting up a Trip event, you configure:
 
 - **Start Date**: When the trip begins (Format: YYYY-MM-DD)
 - **End Date**: When the trip ends (Format: YYYY-MM-DD)
-- **Image Path** *(optional)*:
-  - Leave empty = Automatically generated default image (blue airplane icon)
-  - File path = e.g., `/local/images/denmark.jpg` for custom images
-  - Base64 string = Directly embedded encoded image
+- **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: blue airplane icon.
 
 ### Available Entities
 
@@ -76,10 +73,7 @@ When setting up a Trip event, you configure:
 - **Trip Ends Today** - `true` when the trip ends today
 
 #### Image
-- **Event Image** - Shows the configured image or default image
-  - **Attributes**: 
-    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
-    - `image_path` - Path to image, "base64_data" or "default_svg"
+- **Event Image** — [→ Image Management](#image-management)
 
 ## Milestone Events
 
@@ -90,10 +84,7 @@ Milestone events have a single **target date** and focus on the countdown to thi
 When setting up a Milestone event, you configure:
 
 - **Target Date**: The important date (Format: YYYY-MM-DD)
-- **Image Path** *(optional)*:
-  - Leave empty = Automatically generated default image (red flag icon)
-  - File path = e.g., `/local/images/birthday.jpg` for custom images
-  - Base64 string = Directly embedded encoded image
+- **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: red flag icon.
 
 ### Available Entities
 
@@ -112,10 +103,7 @@ When setting up a Milestone event, you configure:
 - **Is Today** - `true` when today is the milestone day
 
 #### Image
-- **Event Image** - Shows the configured image or default image
-  - **Attributes**: 
-    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
-    - `image_path` - Path to image, "base64_data" or "default_svg"
+- **Event Image** — [→ Image Management](#image-management)
 
 ## Anniversary Events
 
@@ -126,10 +114,7 @@ Anniversary events repeat annually based on an **original date** and provide bot
 When setting up an Anniversary event, you configure:
 
 - **Original Date**: The date of the first event (Format: YYYY-MM-DD)
-- **Image Path** *(optional)*:
-  - Leave empty = Automatically generated default image (pink heart icon)
-  - File path = e.g., `/local/images/wedding.jpg` for custom images
-  - Base64 string = Directly embedded encoded image
+- **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: pink heart icon.
 
 ### Available Entities
 
@@ -154,10 +139,7 @@ When setting up an Anniversary event, you configure:
 - **Is Today** - `true` when today is an anniversary day
 
 #### Image
-- **Event Image** - Shows the configured image or default image
-  - **Attributes**: 
-    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
-    - `image_path` - Path to image, "base64_data" or "default_svg"
+- **Event Image** — [→ Image Management](#image-management)
 
 ### Leap Year Handling
 Anniversary events handle leap years intelligently: When the original date is February 29th, non-leap years automatically use February 28th.
@@ -172,10 +154,7 @@ When setting up a Special Event, you configure:
 
 - **Event Category**: Choose from 4 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time, Custom Pattern)
 - **Special Event Type**: Choose from 13 predefined holidays — or define your own Custom Pattern
-- **Image Path** *(optional)*:
-  - Leave empty = Automatically generated default image (purple star icon)
-  - File path = e.g., `/local/images/christmas.jpg` for custom images
-  - Base64 string = Directly embedded encoded image
+- **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: purple star icon.
 
 ### Available Entities
 
@@ -200,10 +179,7 @@ When setting up a Special Event, you configure:
 - **DST Active** - `true` when summer time (DST) is currently active (only for DST events)
 
 #### Image
-- **Event Image** - Shows the configured image or default purple star icon
-  - **Attributes**: 
-    - `image_type` - "user_defined" (custom image) or "system_defined" (default icon)
-    - `image_path` - Path to image, "base64_data" or "default_svg"
+- **Event Image** — [→ Image Management](#image-management)
 
 ### Available Special Events
 
@@ -471,17 +447,44 @@ After saving, the calendar reloads automatically and the description in the inte
 
 ### Image Management
 
-WhenHub supports various types of images for your events:
+Every WhenHub event has an **Event Image** entity. When no image is configured, a default SVG icon is generated automatically.
 
-1. **Custom Images**: Use `/local/images/my-event.jpg` for your own images
-2. **Auto-generated Icons**: 
-   - **Trip**: Blue airplane icon
-   - **Milestone**: Red flag
-   - **Anniversary**: Pink heart
-   - **Special Event**: Purple star icon
-3. **Supported Formats**: JPEG, PNG, WebP, GIF, SVG
+#### Default Icons
 
-Images are stored in Home Assistant's `www/` directory and referenced via `/local/` paths.
+| Event Type | Default Icon |
+|---|---|
+| Trip | Blue airplane |
+| Milestone | Red flag |
+| Anniversary | Pink heart |
+| Special Event / Custom Pattern | Purple star |
+
+#### Adding an Image
+
+In the configuration form, two options are available — use one or both:
+
+1. **Upload** — Drag & drop or click to select a file directly in the HA config flow. The image is stored inside the config entry — no files to manage on the server. Supported: JPEG, PNG, WebP, GIF.
+2. **Path** — Enter a path to an image already on your HA server, e.g. `/local/images/trip.jpg` (files placed in the `www/` directory of your HA config).
+
+**Priority:** If both are provided, the upload takes precedence over the path.
+
+#### Changing or Removing an Image
+
+Go to **Settings → Devices & Services → WhenHub**, click **Configure** on the event, and:
+
+- Upload a new file to replace the current image
+- Check **Remove current image** to delete it and fall back to the default icon
+- Leave both fields empty to keep the current image unchanged
+
+#### Image Entity
+
+The `Event Image` entity appears in every event's device and can be used in dashboards, picture-entity cards, or automations.
+
+**Attributes:**
+
+| Attribute | Description |
+|---|---|
+| `image_type` | `"user_defined"` (custom) or `"system_defined"` (default icon) |
+| `image_path` | File path for path-based images, `"base64_data"` for uploads, or `"default_svg"` |
 
 ### Countdown Breakdown Attributes
 
