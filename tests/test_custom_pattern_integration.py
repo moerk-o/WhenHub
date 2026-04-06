@@ -137,6 +137,11 @@ class TestConfigFlowCustomPattern:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"cp_end_type": "none"}
         )
+        # cp_image step (image + URL/Memo optional)
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
         # Entry created
         assert result["type"] == FlowResultType.CREATE_ENTRY
         data = result["data"]
@@ -170,6 +175,10 @@ class TestConfigFlowCustomPattern:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"cp_end_type": "none"}
         )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"]["cp_day_rule"] == "last_weekday"
         assert result["data"]["cp_byday_weekday"] == 0
@@ -197,6 +206,10 @@ class TestConfigFlowCustomPattern:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"cp_end_type": "none"}
         )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"]["cp_bymonthday"] == 15
 
@@ -221,6 +234,10 @@ class TestConfigFlowCustomPattern:
         assert result["step_id"] == "cp_end"
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"cp_end_type": "none"}
+        )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"]["cp_byday_list"] == [0, 2]
@@ -264,6 +281,10 @@ class TestConfigFlowCustomPattern:
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"cp_until": "2025-12-31"}
         )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"]["cp_until"] == "2025-12-31"
 
@@ -285,6 +306,10 @@ class TestConfigFlowCustomPattern:
         assert result["step_id"] == "cp_end_count"
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"], {"cp_count": 5}
+        )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["data"]["cp_count"] == 5
@@ -313,6 +338,10 @@ class TestConfigFlowCustomPattern:
             result = await hass.config_entries.flow.async_configure(
                 result["flow_id"], step_data
             )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert result["title"] == "Daily Pattern 2"
 
@@ -382,6 +411,10 @@ class TestOptionsFlowCustomPattern:
         assert result["step_id"] == "cp_end"
         result = await hass.config_entries.options.async_configure(
             result["flow_id"], {"cp_end_type": "none"}
+        )
+        assert result["step_id"] == "cp_image"
+        result = await hass.config_entries.options.async_configure(
+            result["flow_id"], {}
         )
         assert result["type"] == FlowResultType.CREATE_ENTRY
         assert entry.data["cp_freq"] == "daily"

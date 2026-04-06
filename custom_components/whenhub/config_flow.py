@@ -25,6 +25,9 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
     SelectOptionDict,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
 )
 
 from .const import (
@@ -68,6 +71,8 @@ from .const import (
     CONF_CP_END_TYPE,
     CONF_CP_UNTIL,
     CONF_CP_COUNT,
+    CONF_URL,
+    CONF_MEMO,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -135,6 +140,21 @@ def _schema_image(current: dict, show_delete: bool = False) -> dict:
     if show_delete:
         fields[vol.Optional(CONF_IMAGE_DELETE, default=False)] = BooleanSelector()
     return fields
+
+
+def _schema_url_memo(current: dict) -> dict:
+    """Return voluptuous field dict for URL and Memo fields.
+
+    Intended to be spread into a larger vol.Schema dict.
+    """
+    return {
+        vol.Optional(CONF_URL, default=current.get(CONF_URL, "")): TextSelector(
+            TextSelectorConfig(type=TextSelectorType.URL)
+        ),
+        vol.Optional(CONF_MEMO, default=current.get(CONF_MEMO, "")): TextSelector(
+            TextSelectorConfig(multiline=True)
+        ),
+    }
 
 
 # ── Custom Pattern schema helpers ─────────────────────────────────────────────
@@ -271,8 +291,11 @@ def _schema_cp_end_count(current: dict) -> vol.Schema:
 
 
 def _schema_cp_image(current: dict, show_delete: bool = False) -> vol.Schema:
-    """Schema for the final cp_image step: optional image upload and/or path."""
-    return vol.Schema(_schema_image(current, show_delete=show_delete))
+    """Schema for the final cp_image step: optional image upload and/or path, plus URL and Memo."""
+    return vol.Schema({
+        **_schema_image(current, show_delete=show_delete),
+        **_schema_url_memo(current),
+    })
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -494,6 +517,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_START_DATE, default=current.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
             vol.Required(CONF_END_DATE, default=current.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current),
+            **_schema_url_memo(current),
         })
 
         return self.async_show_form(
@@ -525,6 +549,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current),
+            **_schema_url_memo(current),
         })
 
         return self.async_show_form(
@@ -556,6 +581,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current),
+            **_schema_url_memo(current),
         })
 
         return self.async_show_form(
@@ -639,6 +665,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             ),
             **_schema_image(current),
+            **_schema_url_memo(current),
         })
 
         return self.async_show_form(
@@ -704,6 +731,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
             ),
             **_schema_image(current),
+            **_schema_url_memo(current),
         })
 
         return self.async_show_form(
@@ -872,6 +900,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
         if user_input.get(CONF_IMAGE_UPLOAD):
             self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
+        self._cp_data[CONF_URL] = user_input.get(CONF_URL, "")
+        self._cp_data[CONF_MEMO] = user_input.get(CONF_MEMO, "")
         return self._cp_create_entry()
 
     def _cp_create_entry(self) -> FlowResult:
@@ -971,6 +1001,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
             vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(self.config_entry.data, show_delete=has_image),
+            **_schema_url_memo(self.config_entry.data),
         })
 
         return self.async_show_form(
@@ -1003,6 +1034,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current_data, show_delete=has_image),
+            **_schema_url_memo(current_data),
         })
 
         return self.async_show_form(
@@ -1034,6 +1066,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current_data, show_delete=has_image),
+            **_schema_url_memo(current_data),
         })
 
         return self.async_show_form(
@@ -1089,6 +1122,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 )
             ),
             **_schema_image(current_data, show_delete=has_image),
+            **_schema_url_memo(current_data),
         })
 
         return self.async_show_form(
@@ -1137,6 +1171,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 )
             ),
             **_schema_image(current_data, show_delete=has_image),
+            **_schema_url_memo(current_data),
         })
 
         return self.async_show_form(
@@ -1400,6 +1435,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
         if user_input.get(CONF_IMAGE_DELETE):
             self._cp_data[CONF_IMAGE_DELETE] = True
+        self._cp_data[CONF_URL] = user_input.get(CONF_URL, "")
+        self._cp_data[CONF_MEMO] = user_input.get(CONF_MEMO, "")
         return self._cp_save_options()
 
     def _cp_save_options(self) -> FlowResult:

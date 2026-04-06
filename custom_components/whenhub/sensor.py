@@ -27,9 +27,11 @@ from .const import (
     ANNIVERSARY_SENSOR_TYPES,
     SPECIAL_SENSOR_TYPES,
     CUSTOM_PATTERN_SENSOR_TYPES,
+    CONF_URL,
+    CONF_MEMO,
 )
 from .coordinator import WhenHubCoordinator
-from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor
+from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor, WhenHubUrlSensor, WhenHubMemoSensor
 from .sensors.custom_pattern import CustomPatternSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,6 +82,8 @@ async def async_setup_entry(
             # Fallback for unknown event types - use trip sensors as default
             _LOGGER.warning("Unknown event_type: %s, falling back to TRIP", event_type)
             sensors.extend(_create_trip_sensors(coordinator, config_entry, event_data))
+
+        sensors.extend(_create_url_memo_sensors(coordinator, config_entry, event_data))
 
         _LOGGER.info("Created %d sensors for %s (%s)",
                     len(sensors), config_entry.title, event_type)
@@ -182,6 +186,24 @@ def _create_custom_pattern_sensors(
         CustomPatternSensor(coordinator, config_entry, event_data, sensor_type)
         for sensor_type in CUSTOM_PATTERN_SENSOR_TYPES
     ]
+
+
+def _create_url_memo_sensors(
+    coordinator: WhenHubCoordinator,
+    config_entry: ConfigEntry,
+    event_data: dict,
+) -> list:
+    """Create URL and Memo sensor entities (FR11) for any event type.
+
+    Sensors are only created when the corresponding field is non-empty,
+    so they appear immediately without a disabled→enabled transition delay.
+    """
+    sensors = []
+    if event_data.get(CONF_URL, ""):
+        sensors.append(WhenHubUrlSensor(coordinator, config_entry, event_data))
+    if event_data.get(CONF_MEMO, ""):
+        sensors.append(WhenHubMemoSensor(coordinator, config_entry, event_data))
+    return sensors
 
 
 def _create_special_sensors(

@@ -60,6 +60,10 @@ CONF_IMAGE_UPLOAD = "image_upload"
 CONF_IMAGE_MIME = "image_mime"      # Stored MIME type of uploaded image (e.g. "image/png")
 CONF_IMAGE_DELETE = "image_delete"  # UI-only checkbox: remove existing image in OptionsFlow
 
+# FR11: URL and Memo fields
+CONF_URL = "url"
+CONF_MEMO = "memo"
+
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"
 
