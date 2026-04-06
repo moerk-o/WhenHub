@@ -1,7 +1,9 @@
 """Config flow for WhenHub integration."""
 from __future__ import annotations
 
+import json
 import logging
+import pathlib
 from typing import Any
 import voluptuous as vol
 from datetime import date
@@ -126,6 +128,27 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         while f"{base} {counter}" in existing:
             counter += 1
         return f"{base} {counter}"
+
+    def _get_translated_selector_option(self, selector: str, key: str) -> str:
+        """Look up a translated selector option from the translation file."""
+        lang = (self.hass.config.language or "en").split("-")[0]
+        translations_dir = pathlib.Path(__file__).parent / "translations"
+        for try_lang in [lang, "en"]:
+            trans_file = translations_dir / f"{try_lang}.json"
+            if trans_file.exists():
+                try:
+                    data = json.loads(trans_file.read_text(encoding="utf-8"))
+                    name = (
+                        data.get("selector", {})
+                        .get(selector, {})
+                        .get("options", {})
+                        .get(key, "")
+                    )
+                    if name:
+                        return name
+                except Exception:
+                    pass
+        return key.replace("_", " ").title()
 
     async def async_step_calendar(
         self, user_input: dict[str, Any] | None = None
@@ -339,7 +362,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        return self.async_create_entry(title=self._suggest_event_name("Special Event"), data=user_input)
+        special_type = user_input.get(CONF_SPECIAL_TYPE, "special_event")
+        base_name = self._get_translated_selector_option("special_type", special_type)
+        return self.async_create_entry(title=self._suggest_event_name(base_name), data=user_input)
 
     async def _show_special_event_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
