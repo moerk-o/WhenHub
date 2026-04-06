@@ -14,6 +14,8 @@ from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import (
     DateSelector,
+    NumberSelector,
+    NumberSelectorConfig,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -46,9 +48,154 @@ from .const import (
     CONF_CALENDAR_SCOPE,
     CONF_CALENDAR_TYPES,
     CONF_CALENDAR_EVENT_IDS,
+    CONF_CP_FREQ,
+    CONF_CP_INTERVAL,
+    CONF_CP_DTSTART,
+    CONF_CP_DAY_RULE,
+    CONF_CP_BYMONTH,
+    CONF_CP_BYDAY_POS,
+    CONF_CP_BYDAY_WEEKDAY,
+    CONF_CP_BYMONTHDAY,
+    CONF_CP_BYDAY_LIST,
+    CONF_CP_END_TYPE,
+    CONF_CP_UNTIL,
+    CONF_CP_COUNT,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+# ── Custom Pattern schema helpers ─────────────────────────────────────────────
+# These module-level functions build voluptuous schemas for each CP step.
+# Both ConfigFlow and OptionsFlowHandler call them with a `current` dict that
+# provides default values (empty dict for new entries, entry.data for edits).
+
+def _schema_cp_freq(current: dict) -> vol.Schema:
+    """Schema for step cp_freq: frequency, anchor date, interval."""
+    return vol.Schema({
+        vol.Required(CONF_CP_FREQ, default=current.get(CONF_CP_FREQ, "yearly")): SelectSelector(
+            SelectSelectorConfig(
+                options=["yearly", "monthly", "weekly", "daily"],
+                translation_key="cp_freq",
+            )
+        ),
+        vol.Required(CONF_CP_DTSTART, default=current.get(CONF_CP_DTSTART, date.today().isoformat())): DateSelector(),
+        vol.Required(CONF_CP_INTERVAL, default=int(current.get(CONF_CP_INTERVAL, 1))): NumberSelector(
+            NumberSelectorConfig(min=1, max=99, step=1, mode="box")
+        ),
+    })
+
+
+def _schema_cp_yearly(current: dict) -> vol.Schema:
+    """Schema for step cp_yearly: target month + day rule."""
+    return vol.Schema({
+        vol.Required(CONF_CP_BYMONTH, default=str(current.get(CONF_CP_BYMONTH, 1))): SelectSelector(
+            SelectSelectorConfig(
+                options=[str(i) for i in range(1, 13)],
+                translation_key="cp_bymonth",
+            )
+        ),
+        vol.Required(CONF_CP_DAY_RULE, default=current.get(CONF_CP_DAY_RULE, "nth_weekday")): SelectSelector(
+            SelectSelectorConfig(
+                options=["nth_weekday", "last_weekday", "fixed_day"],
+                translation_key="cp_day_rule",
+            )
+        ),
+    })
+
+
+def _schema_cp_monthly(current: dict) -> vol.Schema:
+    """Schema for step cp_monthly: day rule."""
+    return vol.Schema({
+        vol.Required(CONF_CP_DAY_RULE, default=current.get(CONF_CP_DAY_RULE, "nth_weekday")): SelectSelector(
+            SelectSelectorConfig(
+                options=["nth_weekday", "last_weekday", "fixed_day"],
+                translation_key="cp_day_rule",
+            )
+        ),
+    })
+
+
+def _schema_cp_weekday_nth(current: dict) -> vol.Schema:
+    """Schema for step cp_weekday_nth: position (1st/2nd/…) + weekday."""
+    return vol.Schema({
+        vol.Required(CONF_CP_BYDAY_POS, default=str(current.get(CONF_CP_BYDAY_POS, 1))): SelectSelector(
+            SelectSelectorConfig(
+                options=["1", "2", "3", "4"],
+                translation_key="cp_byday_pos",
+            )
+        ),
+        vol.Required(CONF_CP_BYDAY_WEEKDAY, default=str(current.get(CONF_CP_BYDAY_WEEKDAY, 0))): SelectSelector(
+            SelectSelectorConfig(
+                options=["0", "1", "2", "3", "4", "5", "6"],
+                translation_key="cp_byday_weekday",
+            )
+        ),
+    })
+
+
+def _schema_cp_weekday_last(current: dict) -> vol.Schema:
+    """Schema for step cp_weekday_last: last occurrence of weekday."""
+    return vol.Schema({
+        vol.Required(CONF_CP_BYDAY_WEEKDAY, default=str(current.get(CONF_CP_BYDAY_WEEKDAY, 0))): SelectSelector(
+            SelectSelectorConfig(
+                options=["0", "1", "2", "3", "4", "5", "6"],
+                translation_key="cp_byday_weekday",
+            )
+        ),
+    })
+
+
+def _schema_cp_fixed_day(current: dict) -> vol.Schema:
+    """Schema for step cp_fixed_day: fixed day-of-month number."""
+    return vol.Schema({
+        vol.Required(CONF_CP_BYMONTHDAY, default=int(current.get(CONF_CP_BYMONTHDAY, 1))): NumberSelector(
+            NumberSelectorConfig(min=1, max=31, step=1, mode="box")
+        ),
+    })
+
+
+def _schema_cp_weekly(current: dict) -> vol.Schema:
+    """Schema for step cp_weekly: set of weekdays."""
+    raw = current.get(CONF_CP_BYDAY_LIST, [0])
+    default_list = [str(d) for d in raw] if isinstance(raw, list) else ["0"]
+    return vol.Schema({
+        vol.Required(CONF_CP_BYDAY_LIST, default=default_list): SelectSelector(
+            SelectSelectorConfig(
+                options=["0", "1", "2", "3", "4", "5", "6"],
+                multiple=True,
+                translation_key="cp_byday_weekday",
+            )
+        ),
+    })
+
+
+def _schema_cp_end(current: dict) -> vol.Schema:
+    """Schema for step cp_end: end condition type."""
+    return vol.Schema({
+        vol.Required(CONF_CP_END_TYPE, default=current.get(CONF_CP_END_TYPE, "none")): SelectSelector(
+            SelectSelectorConfig(
+                options=["none", "until", "count"],
+                translation_key="cp_end_type",
+            )
+        ),
+    })
+
+
+def _schema_cp_end_until(current: dict) -> vol.Schema:
+    """Schema for step cp_end_until: repeat-until date."""
+    return vol.Schema({
+        vol.Required(CONF_CP_UNTIL, default=current.get(CONF_CP_UNTIL, date.today().isoformat())): DateSelector(),
+    })
+
+
+def _schema_cp_end_count(current: dict) -> vol.Schema:
+    """Schema for step cp_end_count: maximum number of occurrences."""
+    return vol.Schema({
+        vol.Required(CONF_CP_COUNT, default=int(current.get(CONF_CP_COUNT, 10))): NumberSelector(
+            NumberSelectorConfig(min=1, max=9999, step=1, mode="box")
+        ),
+    })
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -61,6 +208,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._event_type: str | None = None
         self._special_category: str | None = None
         self._calendar_data: dict = {}
+        self._cp_data: dict = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -332,6 +480,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if self._special_category == "dst":
             return await self.async_step_dst_event()
+        if self._special_category == "custom_pattern":
+            return await self.async_step_cp_freq()
 
         return await self.async_step_special_event()
 
@@ -455,6 +605,168 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors or {},
         )
 
+    # ── Custom Pattern steps ──────────────────────────────────────────────────
+
+    async def async_step_cp_freq(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 1: frequency, anchor date, interval."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_freq",
+                data_schema=_schema_cp_freq(self._cp_data),
+            )
+        self._cp_data[CONF_CP_FREQ] = user_input[CONF_CP_FREQ]
+        self._cp_data[CONF_CP_DTSTART] = user_input[CONF_CP_DTSTART]
+        self._cp_data[CONF_CP_INTERVAL] = int(user_input[CONF_CP_INTERVAL])
+
+        freq = user_input[CONF_CP_FREQ]
+        if freq == "yearly":
+            return await self.async_step_cp_yearly()
+        if freq == "monthly":
+            return await self.async_step_cp_monthly()
+        if freq == "weekly":
+            return await self.async_step_cp_weekly()
+        # daily: no further config needed beyond end condition
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_yearly(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2a (yearly): which month + day rule."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_yearly",
+                data_schema=_schema_cp_yearly(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYMONTH] = int(user_input[CONF_CP_BYMONTH])
+        self._cp_data[CONF_CP_DAY_RULE] = user_input[CONF_CP_DAY_RULE]
+        return await self._cp_branch_day_rule(user_input[CONF_CP_DAY_RULE])
+
+    async def async_step_cp_monthly(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2b (monthly): day rule."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_monthly",
+                data_schema=_schema_cp_monthly(self._cp_data),
+            )
+        self._cp_data[CONF_CP_DAY_RULE] = user_input[CONF_CP_DAY_RULE]
+        return await self._cp_branch_day_rule(user_input[CONF_CP_DAY_RULE])
+
+    async def _cp_branch_day_rule(self, day_rule: str) -> FlowResult:
+        """Route to the correct day-rule detail step."""
+        if day_rule == "nth_weekday":
+            return await self.async_step_cp_weekday_nth()
+        if day_rule == "last_weekday":
+            return await self.async_step_cp_weekday_last()
+        return await self.async_step_cp_fixed_day()
+
+    async def async_step_cp_weekday_nth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3a: Nth weekday — position + weekday."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_weekday_nth",
+                data_schema=_schema_cp_weekday_nth(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYDAY_POS] = int(user_input[CONF_CP_BYDAY_POS])
+        self._cp_data[CONF_CP_BYDAY_WEEKDAY] = int(user_input[CONF_CP_BYDAY_WEEKDAY])
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_weekday_last(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3b: Last weekday of period."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_weekday_last",
+                data_schema=_schema_cp_weekday_last(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYDAY_WEEKDAY] = int(user_input[CONF_CP_BYDAY_WEEKDAY])
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_fixed_day(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3c: Fixed day of month."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_fixed_day",
+                data_schema=_schema_cp_fixed_day(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYMONTHDAY] = int(user_input[CONF_CP_BYMONTHDAY])
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_weekly(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2c (weekly): weekday selection."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_weekly",
+                data_schema=_schema_cp_weekly(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYDAY_LIST] = [int(d) for d in user_input[CONF_CP_BYDAY_LIST]]
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_end(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Final step: end condition (none / until / count)."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_end",
+                data_schema=_schema_cp_end(self._cp_data),
+            )
+        self._cp_data[CONF_CP_END_TYPE] = user_input[CONF_CP_END_TYPE]
+        end_type = user_input[CONF_CP_END_TYPE]
+        if end_type == "until":
+            return await self.async_step_cp_end_until()
+        if end_type == "count":
+            return await self.async_step_cp_end_count()
+        return self._cp_create_entry()
+
+    async def async_step_cp_end_until(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """End detail: repeat until a specific date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_end_until",
+                data_schema=_schema_cp_end_until(self._cp_data),
+            )
+        self._cp_data[CONF_CP_UNTIL] = user_input[CONF_CP_UNTIL]
+        return self._cp_create_entry()
+
+    async def async_step_cp_end_count(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """End detail: limited number of occurrences."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_end_count",
+                data_schema=_schema_cp_end_count(self._cp_data),
+            )
+        self._cp_data[CONF_CP_COUNT] = int(user_input[CONF_CP_COUNT])
+        return self._cp_create_entry()
+
+    def _cp_create_entry(self) -> FlowResult:
+        """Assemble entry data and create the config entry."""
+        data = {
+            CONF_EVENT_TYPE: self._event_type,
+            CONF_SPECIAL_CATEGORY: "custom_pattern",
+        }
+        data.update(self._cp_data)
+        freq = self._cp_data.get(CONF_CP_FREQ, "monthly")
+        base_name = f"{freq.capitalize()} Pattern"
+        return self.async_create_entry(
+            title=self._suggest_event_name(base_name),
+            data=data,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
@@ -472,6 +784,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     def __init__(self) -> None:
         """Initialize the options flow."""
         self._calendar_data: dict = {}
+        self._cp_data: dict = {}
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -492,6 +805,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             special_category = self.config_entry.data.get(CONF_SPECIAL_CATEGORY)
             if special_category == "dst":
                 return await self.async_step_dst_options(user_input)
+            if special_category == "custom_pattern":
+                if not self._cp_data:
+                    self._cp_data = dict(self.config_entry.data)
+                return await self.async_step_cp_freq(user_input)
             return await self.async_step_special_options(user_input)
 
     async def async_step_trip_options(
@@ -778,4 +1095,168 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.config_entry,
             data=new_data,
         )
+        return self.async_create_entry(title="", data={})
+
+    # ── Custom Pattern options steps ──────────────────────────────────────────
+    # Step methods reuse the same step_ids and schema helpers as ConfigFlow.
+    # self._cp_data is pre-populated from config_entry.data in async_step_init.
+
+    async def async_step_cp_freq(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 1: frequency, anchor date, interval."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_freq",
+                data_schema=_schema_cp_freq(self._cp_data),
+            )
+        self._cp_data[CONF_CP_FREQ] = user_input[CONF_CP_FREQ]
+        self._cp_data[CONF_CP_DTSTART] = user_input[CONF_CP_DTSTART]
+        self._cp_data[CONF_CP_INTERVAL] = int(user_input[CONF_CP_INTERVAL])
+
+        freq = user_input[CONF_CP_FREQ]
+        if freq == "yearly":
+            return await self.async_step_cp_yearly()
+        if freq == "monthly":
+            return await self.async_step_cp_monthly()
+        if freq == "weekly":
+            return await self.async_step_cp_weekly()
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_yearly(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2a (yearly): which month + day rule."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_yearly",
+                data_schema=_schema_cp_yearly(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYMONTH] = int(user_input[CONF_CP_BYMONTH])
+        self._cp_data[CONF_CP_DAY_RULE] = user_input[CONF_CP_DAY_RULE]
+        return await self._cp_branch_day_rule(user_input[CONF_CP_DAY_RULE])
+
+    async def async_step_cp_monthly(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2b (monthly): day rule."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_monthly",
+                data_schema=_schema_cp_monthly(self._cp_data),
+            )
+        self._cp_data[CONF_CP_DAY_RULE] = user_input[CONF_CP_DAY_RULE]
+        return await self._cp_branch_day_rule(user_input[CONF_CP_DAY_RULE])
+
+    async def _cp_branch_day_rule(self, day_rule: str) -> FlowResult:
+        """Route to the correct day-rule detail step."""
+        if day_rule == "nth_weekday":
+            return await self.async_step_cp_weekday_nth()
+        if day_rule == "last_weekday":
+            return await self.async_step_cp_weekday_last()
+        return await self.async_step_cp_fixed_day()
+
+    async def async_step_cp_weekday_nth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3a: Nth weekday — position + weekday."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_weekday_nth",
+                data_schema=_schema_cp_weekday_nth(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYDAY_POS] = int(user_input[CONF_CP_BYDAY_POS])
+        self._cp_data[CONF_CP_BYDAY_WEEKDAY] = int(user_input[CONF_CP_BYDAY_WEEKDAY])
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_weekday_last(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3b: Last weekday of period."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_weekday_last",
+                data_schema=_schema_cp_weekday_last(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYDAY_WEEKDAY] = int(user_input[CONF_CP_BYDAY_WEEKDAY])
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_fixed_day(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 3c: Fixed day of month."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_fixed_day",
+                data_schema=_schema_cp_fixed_day(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYMONTHDAY] = int(user_input[CONF_CP_BYMONTHDAY])
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_weekly(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Step 2c (weekly): weekday selection."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_weekly",
+                data_schema=_schema_cp_weekly(self._cp_data),
+            )
+        self._cp_data[CONF_CP_BYDAY_LIST] = [int(d) for d in user_input[CONF_CP_BYDAY_LIST]]
+        return await self.async_step_cp_end()
+
+    async def async_step_cp_end(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Final step: end condition (none / until / count)."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_end",
+                data_schema=_schema_cp_end(self._cp_data),
+            )
+        self._cp_data[CONF_CP_END_TYPE] = user_input[CONF_CP_END_TYPE]
+        end_type = user_input[CONF_CP_END_TYPE]
+        if end_type == "until":
+            return await self.async_step_cp_end_until()
+        if end_type == "count":
+            return await self.async_step_cp_end_count()
+        return self._cp_save_options()
+
+    async def async_step_cp_end_until(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """End detail: repeat until a specific date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_end_until",
+                data_schema=_schema_cp_end_until(self._cp_data),
+            )
+        self._cp_data[CONF_CP_UNTIL] = user_input[CONF_CP_UNTIL]
+        return self._cp_save_options()
+
+    async def async_step_cp_end_count(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """End detail: limited number of occurrences."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_end_count",
+                data_schema=_schema_cp_end_count(self._cp_data),
+            )
+        self._cp_data[CONF_CP_COUNT] = int(user_input[CONF_CP_COUNT])
+        return self._cp_save_options()
+
+    def _cp_save_options(self) -> FlowResult:
+        """Merge updated CP fields into the config entry and close options flow."""
+        new_data = dict(self.config_entry.data)
+        new_data.update(self._cp_data)
+        # Ensure fixed keys are always present
+        new_data[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
+        new_data[CONF_SPECIAL_CATEGORY] = "custom_pattern"
+
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data=new_data,
+        )
+        self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
         return self.async_create_entry(title="", data={})

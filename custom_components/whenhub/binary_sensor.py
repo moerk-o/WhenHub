@@ -35,6 +35,7 @@ from .const import (
     ANNIVERSARY_BINARY_SENSOR_TYPES,
     SPECIAL_BINARY_SENSOR_TYPES,
     DST_BINARY_SENSOR_TYPES,
+    CUSTOM_PATTERN_BINARY_SENSOR_TYPES,
     DEFAULT_IMAGE,
     BINARY_UNIQUE_ID_PATTERN,
 )
@@ -118,12 +119,16 @@ async def async_setup_entry(
                 )
 
         elif event_type == EVENT_TYPE_SPECIAL:
-            # Check if this is a DST event
             special_category = event_data.get(CONF_SPECIAL_CATEGORY)
             if special_category == "dst":
                 for sensor_type in DST_BINARY_SENSOR_TYPES:
                     binary_sensors.append(
                         DSTBinarySensor(coordinator, config_entry, event_data, sensor_type)
+                    )
+            elif special_category == "custom_pattern":
+                for sensor_type in CUSTOM_PATTERN_BINARY_SENSOR_TYPES:
+                    binary_sensors.append(
+                        CustomPatternBinarySensor(coordinator, config_entry, event_data, sensor_type)
                     )
             else:
                 for sensor_type in SPECIAL_BINARY_SENSOR_TYPES:
@@ -494,4 +499,39 @@ class DSTBinarySensor(BaseBinarySensor):
         else:
             attributes["image_path"] = DEFAULT_IMAGE
 
+        return attributes
+
+
+class CustomPatternBinarySensor(BaseBinarySensor):
+    """Binary sensor for custom pattern events (FR09).
+
+    Provides:
+    - is_today: True if today is an occurrence of the custom pattern
+    """
+
+    def __init__(
+        self,
+        coordinator: "WhenHubCoordinator",
+        config_entry: ConfigEntry,
+        event_data: dict,
+        sensor_type: str,
+    ) -> None:
+        super().__init__(
+            coordinator, config_entry, event_data, sensor_type, CUSTOM_PATTERN_BINARY_SENSOR_TYPES
+        )
+
+    def _get_value_from_coordinator(self, data: dict[str, Any]) -> bool:
+        if self._sensor_type == "is_today":
+            return data.get("is_today", False)
+        return False
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        data = self.coordinator.data
+        attributes = {
+            "event_name": self._config_entry.title,
+            "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
+        }
+        if data:
+            attributes["occurrence_count"] = data.get("occurrence_count", 0)
         return attributes

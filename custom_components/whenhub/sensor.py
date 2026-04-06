@@ -21,13 +21,16 @@ from .const import (
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_EVENT_NAME,
+    CONF_SPECIAL_CATEGORY,
     TRIP_SENSOR_TYPES,
     MILESTONE_SENSOR_TYPES,
     ANNIVERSARY_SENSOR_TYPES,
     SPECIAL_SENSOR_TYPES,
+    CUSTOM_PATTERN_SENSOR_TYPES,
 )
 from .coordinator import WhenHubCoordinator
 from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor
+from .sensors.custom_pattern import CustomPatternSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -67,7 +70,11 @@ async def async_setup_entry(
             sensors.extend(_create_anniversary_sensors(coordinator, config_entry, event_data))
 
         elif event_type == EVENT_TYPE_SPECIAL:
-            sensors.extend(_create_special_sensors(coordinator, config_entry, event_data))
+            special_category = event_data.get(CONF_SPECIAL_CATEGORY)
+            if special_category == "custom_pattern":
+                sensors.extend(_create_custom_pattern_sensors(coordinator, config_entry, event_data))
+            else:
+                sensors.extend(_create_special_sensors(coordinator, config_entry, event_data))
 
         else:
             # Fallback for unknown event types - use trip sensors as default
@@ -75,12 +82,11 @@ async def async_setup_entry(
             sensors.extend(_create_trip_sensors(coordinator, config_entry, event_data))
 
         _LOGGER.info("Created %d sensors for %s (%s)",
-                    len(sensors), event_data[CONF_EVENT_NAME], event_type)
+                    len(sensors), config_entry.title, event_type)
         async_add_entities(sensors)
 
     except Exception as err:
-        _LOGGER.error("Error setting up sensors for %s: %s",
-                     event_data.get(CONF_EVENT_NAME, "unknown"), err)
+        _LOGGER.error("Error setting up sensors for %s: %s", config_entry.title, err)
         async_add_entities([])
 
 
@@ -163,6 +169,18 @@ def _create_anniversary_sensors(
     return [
         AnniversarySensor(coordinator, config_entry, event_data, sensor_type)
         for sensor_type in ANNIVERSARY_SENSOR_TYPES
+    ]
+
+
+def _create_custom_pattern_sensors(
+    coordinator: WhenHubCoordinator,
+    config_entry: ConfigEntry,
+    event_data: dict,
+) -> list[CustomPatternSensor]:
+    """Create sensor entities for Custom Pattern events (FR09)."""
+    return [
+        CustomPatternSensor(coordinator, config_entry, event_data, sensor_type)
+        for sensor_type in CUSTOM_PATTERN_SENSOR_TYPES
     ]
 
 

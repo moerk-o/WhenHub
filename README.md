@@ -15,7 +15,7 @@ A Home Assistant integration for tracking various events and important dates. Wh
 **Trip** - Multi-day events like vacations or visiting grandma
 **Milestone** - One-time important dates like school events or 'when is the new pet coming'
 **Anniversary** - Yearly recurring events like birthdays or holidays
-**Special Event** - Predefined holidays like Christmas, Easter, or DST changes
+**Special Event** - Predefined holidays like Christmas, Easter, DST changes — and your own **Custom Patterns**
 **WhenHub Calendar** - Not an event type per se, but a companion feature: aggregates your WhenHub events into Home Assistant's built-in calendar view
 
 ## Installation
@@ -170,8 +170,8 @@ Special events track holidays that repeat annually. These include both fixed-dat
 
 When setting up a Special Event, you configure:
 
-- **Event Category**: Choose from 3 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time)
-- **Special Event Type**: Choose from 13 predefined holidays
+- **Event Category**: Choose from 4 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time, Custom Pattern)
+- **Special Event Type**: Choose from 13 predefined holidays — or define your own Custom Pattern
 - **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (purple star icon)
   - File path = e.g., `/local/images/christmas.jpg` for custom images
@@ -207,7 +207,7 @@ When setting up a Special Event, you configure:
 
 ### Available Special Events
 
-Special Events are organized into 3 categories:
+Special Events are organized into 4 categories:
 
 #### Traditional Holidays (11 Events)
 Fixed and calculated events celebrating traditional holidays:
@@ -250,6 +250,153 @@ Track when clocks change for summer and winter time. Supports multiple regions w
 
 **Additional Sensors for DST:**
 - **DST Active** - Binary sensor showing if summer time is currently active (dynamic icon changes with state)
+
+#### Custom Pattern
+
+Custom Pattern lets you define your own repeating rule — from simple "every Monday" to complex "4th Thursday of November every year". The pattern is based on the [RFC 5545 iCalendar RRULE standard](https://www.rfc-editor.org/rfc/rfc5545), the same standard used by Google Calendar, Outlook, and Apple Calendar.
+
+##### Why Custom Pattern?
+
+The predefined holidays cover common events, but many recurring dates follow weekday-based rules that shift every year. Without Custom Pattern you would have to update those dates manually each year. Examples (sorted by calendar date):
+
+| # | Event | Rule |
+|---|-------|------|
+| 1 | **Early May Bank Holiday** (UK) | 1st Monday in May |
+| 2 | **Mother's Day** (DE/AT/CH/UK/...) | 2nd Sunday in May |
+| 3 | **Memorial Day** (US) | Last Monday in May |
+| 4 | **Tag der Deutschen Einheit** (DE) | 3rd October (fixed) |
+| 5 | **Väterdag** (Sweden) | 2nd Sunday in November |
+| 6 | **Thanksgiving** (US) | 4th Thursday in November |
+| 7 | **Your team meeting** | Every Monday |
+| 8 | **Medication reminder** | Every 3 days |
+| 9 | **Quarterly review** | First Monday of every 3rd month |
+
+→ [See example configurations below](#example-configurations)
+
+##### Configuration Flow
+
+Custom Pattern uses a guided multi-step setup. The steps you see depend on the frequency you choose:
+
+**Step 1 — Frequency, Anchor Date, Interval**
+
+| Field | Description |
+|-------|-------------|
+| Frequency | Yearly / Monthly / Weekly / Daily |
+| Anchor Date | The starting point for the pattern (e.g. `2020-01-01`). The first occurrence is calculated from here — past dates are fine. |
+| Interval | Repeat every N periods. `1` = every year/month/week/day. `2` = every other. |
+
+**Step 2 — Period-specific rules**
+
+Depending on the frequency, you then define how the day within the period is selected:
+
+*Yearly:* Choose the **month** and then the day rule.
+*Monthly:* Choose the day rule directly.
+*Weekly:* Choose one or more **weekdays** (multi-select, e.g. Mon + Wed + Fri).
+*Daily:* No extra step — goes directly to the end condition.
+
+**Day rules (Yearly and Monthly):**
+
+| Rule | Meaning | Example |
+|------|---------|---------|
+| Nth weekday | Nth occurrence of a specific weekday | 2nd Sunday in May → Mother's Day |
+| Last weekday | Last occurrence of a specific weekday in the period | Last Monday in May → Memorial Day |
+| Fixed day | A fixed calendar day of the month | 15th of each month |
+
+**Step 3 — End Condition**
+
+| Option | Meaning |
+|--------|---------|
+| No end | Repeats forever |
+| Until a date | Repeats until a specific date (inclusive) |
+| After N occurrences | Stops after exactly N occurrences |
+
+##### Example Configurations
+
+**1 — Early May Bank Holiday** (1st Monday in May, UK):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: May
+- Day rule: Nth weekday → 1st → Monday
+- End: No end
+- 2026: **May 4**
+
+**2 — Mother's Day** (2nd Sunday in May, DE/AT/CH/UK and many others):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: May
+- Day rule: Nth weekday → 2nd → Sunday
+- End: No end
+- 2026: **May 10**
+
+**3 — Memorial Day** (Last Monday in May, US):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: May
+- Day rule: Last weekday → Monday
+- End: No end
+- 2026: **May 25**
+
+**4 — Tag der Deutschen Einheit** (3rd October, fixed date):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: October
+- Day rule: Fixed day → 3
+- End: No end
+- 2026: **October 3**
+
+**5 — Väterdag** (2nd Sunday in November, Sweden):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: November
+- Day rule: Nth weekday → 2nd → Sunday
+- End: No end
+- 2026: **November 8**
+
+**6 — Thanksgiving** (4th Thursday in November, US):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: November
+- Day rule: Nth weekday → 4th → Thursday
+- End: No end
+- 2026: **November 26**
+
+**7 — Your team meeting** (every Monday):
+- Frequency: Weekly, Interval: 1, Anchor: any Monday
+- Weekdays: Monday
+- End: No end
+
+**8 — Medication reminder** (every 3 days):
+- Frequency: Daily, Interval: 3, Anchor: first intake date
+- End: No end (or after N occurrences if the course is finite)
+
+**9 — Quarterly review** (first Monday of every 3rd month):
+- Frequency: Monthly, Interval: 3, Anchor: 2026-01-01
+- Day rule: Nth weekday → 1st → Monday
+- End: No end
+- Next after 2026-04-06: **July 6, 2026**
+
+##### Available Entities
+
+###### Sensors
+- **Days Until Start** — Days until the next occurrence (0 on occurrence day, 1 = tomorrow, etc.)
+- **Days Since Last** — Days since the most recent past occurrence
+- **Event Date** — Timestamp of the next occurrence (ISO 8601)
+  - **Attributes**: `cp_freq`, `occurrence_count`
+- **Next Date** — Timestamp of the next *future* occurrence (never today, even when today is an occurrence)
+- **Last Date** — Timestamp of the most recent occurrence (including today)
+- **Occurrence Count** — How many times the pattern has fired since the anchor date (counting today)
+
+###### Binary Sensors
+- **Is Today** — `true` when today is an occurrence day
+
+##### The Anchor Date
+
+The anchor date is important: it defines where counting starts. For Yearly and Monthly patterns it influences which day is selected; for Weekly it determines the phase (i.e. which weeks are "on" when using an interval > 1); for Daily it sets the starting point of the interval.
+
+**Tip:** For patterns like "every other Monday", set the anchor date to a Monday you want to be an occurrence — the pattern then fires on every second Monday counting from there.
+
+##### Occurrence Count vs. Days Until
+
+On an occurrence day:
+- `is_today` = `on`
+- `last_date` = today
+- `next_date` = tomorrow (or the next future occurrence)
+- `days_until` = days to the next *future* occurrence (not 0)
+- `occurrence_count` = total occurrences so far including today
 
 ### Date Calculation Details
 
@@ -308,6 +455,7 @@ Each calendar appears as a separate entry in the Home Assistant calendar view an
 | Milestone | Shown as a one-day event on the target date |
 | Anniversary | Shown annually — e.g., "Birthday Jon (16.)" for the 16th occurrence |
 | Special Event | Shown annually on the calculated holiday date |
+| Custom Pattern | All occurrences within the calendar's view range are shown as one-day events |
 
 ### Options Flow
 

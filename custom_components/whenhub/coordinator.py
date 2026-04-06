@@ -51,6 +51,9 @@ from .calculations import (
     next_dst_event,
     last_dst_event,
     is_dst_active,
+    next_custom_pattern,
+    last_custom_pattern,
+    occurrence_count_custom_pattern,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -234,10 +237,12 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             Dictionary with special event sensor values
         """
-        # Check if this is a DST event
+        # Check if this is a DST or Custom Pattern event
         special_category = self.event_data.get(CONF_SPECIAL_CATEGORY)
         if special_category == "dst":
             return self._calculate_dst_data(today)
+        if special_category == "custom_pattern":
+            return self._calculate_custom_pattern_data(today)
 
         special_type = self.event_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
         special_info = SPECIAL_EVENTS.get(special_type, SPECIAL_EVENTS["christmas_eve"])
@@ -295,4 +300,42 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Binary sensor values
             "is_today": is_date_today(next_event, today) if next_event else False,
             "is_dst_active": is_dst_active(region_info, today),
+        }
+
+    def _calculate_custom_pattern_data(self, today: date) -> dict[str, Any]:
+        """Calculate all custom pattern event values.
+
+        Args:
+            today: Current date for calculations
+
+        Returns:
+            Dictionary with custom pattern sensor values
+        """
+        next_event = next_custom_pattern(self.event_data, today)
+        last_event = last_custom_pattern(self.event_data, today)
+        occ_count = occurrence_count_custom_pattern(self.event_data, today)
+
+        is_today_val = (next_event == today) if next_event else False
+
+        # For display, show the next *future* occurrence (not today even when today is an
+        # occurrence). This avoids next_date == last_date == today on occurrence days.
+        if is_today_val:
+            next_display = next_custom_pattern(self.event_data, today + timedelta(days=1))
+        else:
+            next_display = next_event
+
+        days_to_next = days_until(next_display, today) if next_display else 0
+        countdown = countdown_breakdown(next_display, today) if next_display and days_to_next > 0 else {}
+
+        return {
+            # Datetime objects for sensors with device_class: timestamp
+            "next_date": _date_to_datetime(next_display),
+            "last_date": _date_to_datetime(last_event),
+            "days_until": days_to_next,
+            "days_since_last": (today - last_event).days if last_event else None,
+            "countdown_text": format_countdown_text(next_display, today) if next_display and days_to_next > 0 else "0 Tage",
+            "countdown_breakdown": countdown,
+            "occurrence_count": occ_count,
+            # Binary sensor values
+            "is_today": is_today_val,
         }

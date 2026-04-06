@@ -99,6 +99,75 @@
         "data": {
           "calendar_event_ids": "Events"
         }
+      },
+      "cp_freq": {
+        "title": "Wiederholungsmuster einrichten",
+        "description": "Lege fest, wie oft das Muster wiederholt wird",
+        "data": {
+          "cp_freq": "Häufigkeit",
+          "cp_dtstart": "Ankerdatum",
+          "cp_interval": "Alle N Mal wiederholen"
+        },
+        "data_description": {
+          "cp_dtstart": "Das erste Vorkommen wird von diesem Datum aus berechnet",
+          "cp_interval": "1 = jedes Jahr/Monat/Woche/Tag; 2 = jedes zweite; usw."
+        }
+      },
+      "cp_yearly": {
+        "title": "Jährliches Muster — Monat und Regel",
+        "data": {
+          "cp_bymonth": "Monat",
+          "cp_day_rule": "Tagesregel"
+        }
+      },
+      "cp_monthly": {
+        "title": "Monatliches Muster — Tagesregel",
+        "data": {
+          "cp_day_rule": "Tagesregel"
+        }
+      },
+      "cp_weekday_nth": {
+        "title": "Bestimmtes Wochentag-Vorkommen",
+        "data": {
+          "cp_byday_pos": "Vorkommen",
+          "cp_byday_weekday": "Wochentag"
+        }
+      },
+      "cp_weekday_last": {
+        "title": "Letzter Wochentag der Periode",
+        "data": {
+          "cp_byday_weekday": "Wochentag"
+        }
+      },
+      "cp_fixed_day": {
+        "title": "Fester Tag im Monat",
+        "data": {
+          "cp_bymonthday": "Tag des Monats"
+        }
+      },
+      "cp_weekly": {
+        "title": "Wöchentliches Muster — Wochentage",
+        "data": {
+          "cp_byday_list": "Wochentage"
+        }
+      },
+      "cp_end": {
+        "title": "Endbedingung",
+        "data": {
+          "cp_end_type": "Wann endet das Muster?"
+        }
+      },
+      "cp_end_until": {
+        "title": "Wiederholen bis Datum",
+        "data": {
+          "cp_until": "Letztes Datum"
+        }
+      },
+      "cp_end_count": {
+        "title": "Anzahl Vorkommen",
+        "data": {
+          "cp_count": "Gesamte Vorkommen"
+        }
       }
     },
     "error": {
@@ -153,6 +222,75 @@
         "data": {
           "calendar_event_ids": "Events"
         }
+      },
+      "cp_freq": {
+        "title": "Wiederholungsmuster bearbeiten",
+        "description": "Häufigkeit, Ankerdatum oder Intervall ändern",
+        "data": {
+          "cp_freq": "Häufigkeit",
+          "cp_dtstart": "Ankerdatum",
+          "cp_interval": "Alle N Mal wiederholen"
+        },
+        "data_description": {
+          "cp_dtstart": "Das erste Vorkommen wird von diesem Datum aus berechnet",
+          "cp_interval": "1 = jedes Jahr/Monat/Woche/Tag; 2 = jedes zweite; usw."
+        }
+      },
+      "cp_yearly": {
+        "title": "Jährliches Muster — Monat und Regel",
+        "data": {
+          "cp_bymonth": "Monat",
+          "cp_day_rule": "Tagesregel"
+        }
+      },
+      "cp_monthly": {
+        "title": "Monatliches Muster — Tagesregel",
+        "data": {
+          "cp_day_rule": "Tagesregel"
+        }
+      },
+      "cp_weekday_nth": {
+        "title": "Bestimmtes Wochentag-Vorkommen",
+        "data": {
+          "cp_byday_pos": "Vorkommen",
+          "cp_byday_weekday": "Wochentag"
+        }
+      },
+      "cp_weekday_last": {
+        "title": "Letzter Wochentag der Periode",
+        "data": {
+          "cp_byday_weekday": "Wochentag"
+        }
+      },
+      "cp_fixed_day": {
+        "title": "Fester Tag im Monat",
+        "data": {
+          "cp_bymonthday": "Tag des Monats"
+        }
+      },
+      "cp_weekly": {
+        "title": "Wöchentliches Muster — Wochentage",
+        "data": {
+          "cp_byday_list": "Wochentage"
+        }
+      },
+      "cp_end": {
+        "title": "Endbedingung",
+        "data": {
+          "cp_end_type": "Wann endet das Muster?"
+        }
+      },
+      "cp_end_until": {
+        "title": "Wiederholen bis Datum",
+        "data": {
+          "cp_until": "Letztes Datum"
+        }
+      },
+      "cp_end_count": {
+        "title": "Anzahl Vorkommen",
+        "data": {
+          "cp_count": "Gesamte Vorkommen"
+        }
       }
     }
   },
@@ -194,7 +332,65 @@
       "options": {
         "traditional": "Traditionelle Feiertage",
         "calendar": "Kalendarische Feiertage",
-        "dst": "Zeitumstellung"
+        "dst": "Zeitumstellung",
+        "custom_pattern": "Benutzerdefiniertes Muster"
+      }
+    },
+    "cp_freq": {
+      "options": {
+        "yearly": "Jährlich",
+        "monthly": "Monatlich",
+        "weekly": "Wöchentlich",
+        "daily": "Täglich"
+      }
+    },
+    "cp_day_rule": {
+      "options": {
+        "nth_weekday": "N-ter Wochentag (z.B. 1. Montag)",
+        "last_weekday": "Letzter Wochentag (z.B. letzter Freitag)",
+        "fixed_day": "Fester Tag im Monat (z.B. der 15.)"
+      }
+    },
+    "cp_bymonth": {
+      "options": {
+        "1": "Januar",
+        "2": "Februar",
+        "3": "März",
+        "4": "April",
+        "5": "Mai",
+        "6": "Juni",
+        "7": "Juli",
+        "8": "August",
+        "9": "September",
+        "10": "Oktober",
+        "11": "November",
+        "12": "Dezember"
+      }
+    },
+    "cp_byday_pos": {
+      "options": {
+        "1": "1.",
+        "2": "2.",
+        "3": "3.",
+        "4": "4."
+      }
+    },
+    "cp_byday_weekday": {
+      "options": {
+        "0": "Montag",
+        "1": "Dienstag",
+        "2": "Mittwoch",
+        "3": "Donnerstag",
+        "4": "Freitag",
+        "5": "Samstag",
+        "6": "Sonntag"
+      }
+    },
+    "cp_end_type": {
+      "options": {
+        "none": "Kein Ende (wiederholt sich unbegrenzt)",
+        "until": "Bis zu einem bestimmten Datum",
+        "count": "Nach einer bestimmten Anzahl von Vorkommen"
       }
     },
     "dst_type": {
@@ -238,6 +434,9 @@
       },
       "occurrences_count": {
         "name": "Anzahl Vorkommen"
+      },
+      "occurrence_count": {
+        "name": "Vorkommen-Zähler"
       },
       "next_date": {
         "name": "Nächstes Datum"
