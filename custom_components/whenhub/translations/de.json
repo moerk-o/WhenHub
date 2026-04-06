@@ -109,6 +109,13 @@
         "data": {
           "calendar_event_ids": "Events"
         }
+      },
+      "calendar_name": {
+        "title": "Kalendername",
+        "description": "Gib diesem Kalender einen Namen.",
+        "data": {
+          "event_name": "Kalendername"
+        }
       }
     },
     "error": {
@@ -117,8 +124,7 @@
       "image_upload_failed": "Fehler beim Hochladen des Bildes"
     },
     "abort": {
-      "already_configured": "Ein Event mit diesem Namen ist bereits konfiguriert",
-      "calendar_already_configured": "Der WhenHub Kalender ist bereits eingerichtet. Es wird nur ein Kalender pro Instanz unterstützt."
+      "already_configured": "Ein Event mit diesem Namen ist bereits konfiguriert"
     }
   },
   "options": {
@@ -166,6 +172,13 @@
         "description": "Wähle die konkreten Events, die im Kalender erscheinen sollen.",
         "data": {
           "calendar_event_ids": "Events"
+        }
+      },
+      "calendar_name_options": {
+        "title": "Kalendername",
+        "description": "Bearbeite den Namen dieses Kalenders.",
+        "data": {
+          "event_name": "Kalendername"
         }
       }
     }

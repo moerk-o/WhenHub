@@ -12,10 +12,11 @@ A Home Assistant integration for tracking various events and important dates. Wh
 
 ### Event Types
 
-**Trip** - Multi-day events like vacations or visiting grandma  
-**Milestone** - One-time important dates like school events or 'when is the new pet coming'  
-**Anniversary** - Yearly recurring events like birthdays or holidays  
-**Special Event** - Predefined holidays like Christmas, Easter, or DST changes  
+**Trip** - Multi-day events like vacations or visiting grandma
+**Milestone** - One-time important dates like school events or 'when is the new pet coming'
+**Anniversary** - Yearly recurring events like birthdays or holidays
+**Special Event** - Predefined holidays like Christmas, Easter, or DST changes
+**WhenHub Calendar** - Not an event type per se, but a companion feature: aggregates your WhenHub events into Home Assistant's built-in calendar view
 
 ## Installation
 
@@ -270,6 +271,59 @@ Advent Sundays are calculated by:
 3. Calculating backwards to find the 4th, 3rd, 2nd, and 1st Sundays before
 4. Special handling when Christmas Eve itself falls on a Sunday
 
+## WhenHub Calendar
+
+The WhenHub Calendar integrates your WhenHub events into Home Assistant's built-in calendar view. Instead of creating sensors and binary sensors, it creates a **calendar entity** that makes your events visible in HA's calendar dashboard — just like any other calendar integration (Google Calendar, iCloud, etc.).
+
+### Configuration
+
+When setting up a WhenHub Calendar, you configure:
+
+1. **Scope** — Which events should appear in this calendar:
+   - **All Events** — Every configured WhenHub event (Trips, Milestones, Anniversaries, Special Events)
+   - **Filter by Type** — Only show selected event types (e.g. Trips and Anniversaries only)
+   - **Select Specific Events** — Cherry-pick individual events by name
+
+2. **Calendar Name** — A custom name for this calendar (e.g., "Family Calendar" or "Trips Only"). Suggested automatically based on your HA language setting ("WhenHub Calendar" / "WhenHub Kalender"), auto-incremented if a name is already taken.
+
+### Multiple Calendars
+
+For most users, **a single WhenHub Calendar showing all events is all you need** — just set the scope to "All Events" and you're done.
+
+If you want more control, you can create additional WhenHub Calendars with different scopes. For example:
+- One calendar showing all events
+- One calendar showing only trips
+- One calendar showing only anniversaries
+
+Each calendar appears as a separate entry in the Home Assistant calendar view and the integrations UI. Multiple calendars are an optional advanced feature — there's no requirement to create more than one.
+
+### Available Entities
+
+#### Calendar
+- **Calendar entity** — The calendar itself. Appears in HA's calendar dashboard and shows all scoped events.
+  - **State `on`**: An event is currently active today (trip is running, milestone/anniversary/special is today)
+  - **State `off`**: No active event today
+
+### How Events Appear in the Calendar
+
+| WhenHub Type | In HA Calendar |
+|---|---|
+| Trip | Shown as a multi-day event spanning the full trip duration |
+| Milestone | Shown as a one-day event on the target date |
+| Anniversary | Shown annually — e.g., "Birthday Jon (16.)" for the 16th occurrence |
+| Special Event | Shown annually on the calculated holiday date |
+
+### Options Flow
+
+The calendar configuration can be changed at any time:
+
+1. Go to **Settings** → **Devices & Services** → **WhenHub**
+2. Click **Configure** on the desired calendar entry
+3. Adjust the scope, type filter, or event selection
+4. Set or change the calendar name in the final step
+
+After saving, the calendar reloads automatically and the description in the integrations UI updates to reflect the new configuration.
+
 ## Advanced Features
 
 ### Image Management
@@ -314,7 +368,7 @@ All sensors are automatically updated with the new data.
 |----------|-------|
 | Update Interval | Once per day (at midnight) |
 | IoT Class | `calculated` |
-| Platforms | Sensor, Binary Sensor, Image |
+| Platforms | Sensor, Binary Sensor, Image, Calendar |
 | Config Flow | Full UI configuration |
 
 ## Localization

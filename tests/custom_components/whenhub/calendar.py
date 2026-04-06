@@ -11,6 +11,7 @@ from typing import Any
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .calculations import (
@@ -69,7 +70,31 @@ class WhenHubCalendar(CalendarEntity):
         self._hass = hass
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_calendar"
-        self._attr_name = "WhenHub"
+        self._attr_name = None  # Entity is the main feature of the device; name = device name
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info with scope-based model description."""
+        scope = self._entry.data.get(CONF_CALENDAR_SCOPE, "all")
+        if scope == "by_type":
+            types = self._entry.data.get(CONF_CALENDAR_TYPES, [])
+            model = ", ".join(t.capitalize() for t in types) if types else "All Types"
+        elif scope == "specific":
+            ids = self._entry.data.get(CONF_CALENDAR_EVENT_IDS, [])
+            titles = [
+                e.title
+                for entry_id in ids
+                if (e := self._hass.config_entries.async_get_entry(entry_id))
+            ]
+            model = ", ".join(titles) if titles else "Specific Events"
+        else:
+            model = "All Events"
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._entry.entry_id)},
+            name=self._entry.data.get(CONF_EVENT_NAME, "WhenHub"),
+            manufacturer="WhenHub",
+            model=model,
+        )
 
     @property
     def event(self) -> CalendarEvent | None:

@@ -109,6 +109,13 @@
         "data": {
           "calendar_event_ids": "Events"
         }
+      },
+      "calendar_name": {
+        "title": "Calendar name",
+        "description": "Give this calendar a name.",
+        "data": {
+          "event_name": "Calendar name"
+        }
       }
     },
     "error": {
@@ -117,8 +124,7 @@
       "image_upload_failed": "Error uploading image"
     },
     "abort": {
-      "already_configured": "An event with this name is already configured",
-      "calendar_already_configured": "WhenHub Calendar is already set up. Only one calendar per instance is supported."
+      "already_configured": "An event with this name is already configured"
     }
   },
   "options": {
@@ -166,6 +172,13 @@
         "description": "Select the specific events to include in the calendar.",
         "data": {
           "calendar_event_ids": "Events"
+        }
+      },
+      "calendar_name_options": {
+        "title": "Calendar name",
+        "description": "Edit the name of this calendar.",
+        "data": {
+          "event_name": "Calendar name"
         }
       }
     }

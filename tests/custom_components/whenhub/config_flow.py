@@ -101,18 +101,26 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=data_schema,
         )
 
+    def _suggest_calendar_name(self) -> str:
+        """Return a localized, auto-incremented calendar name suggestion."""
+        lang = self.hass.config.language or ""
+        base = "WhenHub Kalender" if lang.startswith("de") else "WhenHub Calendar"
+        existing = {
+            e.data.get(CONF_EVENT_NAME, "")
+            for e in self.hass.config_entries.async_entries(DOMAIN)
+            if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR
+        }
+        if base not in existing:
+            return base
+        counter = 2
+        while f"{base} {counter}" in existing:
+            counter += 1
+        return f"{base} {counter}"
+
     async def async_step_calendar(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle calendar scope selection. Also checks for duplicate calendar entries."""
-        # Only one calendar entry allowed
-        existing = [
-            e for e in self.hass.config_entries.async_entries(DOMAIN)
-            if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR
-        ]
-        if existing:
-            return self.async_abort(reason="calendar_already_configured")
-
+        """Handle calendar scope selection."""
         if user_input is None:
             return self.async_show_form(
                 step_id="calendar",
@@ -135,7 +143,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_calendar_by_type()
         if scope == "specific":
             return await self.async_step_calendar_specific()
-        return self.async_create_entry(title="WhenHub Calendar", data=self._calendar_data)
+        return await self.async_step_calendar_name()
 
     async def async_step_calendar_by_type(
         self, user_input: dict[str, Any] | None = None
@@ -156,7 +164,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._calendar_data[CONF_CALENDAR_TYPES] = user_input[CONF_CALENDAR_TYPES]
-        return self.async_create_entry(title="WhenHub Calendar", data=self._calendar_data)
+        return await self.async_step_calendar_name()
 
     async def async_step_calendar_specific(
         self, user_input: dict[str, Any] | None = None
@@ -182,7 +190,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._calendar_data[CONF_CALENDAR_EVENT_IDS] = user_input[CONF_CALENDAR_EVENT_IDS]
-        return self.async_create_entry(title="WhenHub Calendar", data=self._calendar_data)
+        return await self.async_step_calendar_name()
+
+    async def async_step_calendar_name(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Last step: confirm or change the calendar name."""
+        if user_input is None:
+            suggested = self._suggest_calendar_name()
+            return self.async_show_form(
+                step_id="calendar_name",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_EVENT_NAME, default=suggested): str,
+                }),
+            )
+        name = user_input[CONF_EVENT_NAME].strip()
+        self._calendar_data[CONF_EVENT_NAME] = name
+        return self.async_create_entry(title=name, data=self._calendar_data)
 
     async def async_step_trip(
         self, user_input: dict[str, Any] | None = None
@@ -761,10 +785,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if scope == "specific":
             return await self.async_step_calendar_specific_options()
 
-        new_data = dict(self.config_entry.data)
-        new_data.update(self._calendar_data)
-        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
-        return self.async_create_entry(title="", data={})
+        return await self.async_step_calendar_name_options()
 
     async def async_step_calendar_by_type_options(
         self, user_input: dict[str, Any] | None = None
@@ -786,10 +807,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         self._calendar_data[CONF_CALENDAR_TYPES] = user_input[CONF_CALENDAR_TYPES]
-        new_data = dict(self.config_entry.data)
-        new_data.update(self._calendar_data)
-        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
-        return self.async_create_entry(title="", data={})
+        return await self.async_step_calendar_name_options()
 
     async def async_step_calendar_specific_options(
         self, user_input: dict[str, Any] | None = None
@@ -816,7 +834,27 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         self._calendar_data[CONF_CALENDAR_EVENT_IDS] = user_input[CONF_CALENDAR_EVENT_IDS]
+        return await self.async_step_calendar_name_options()
+
+    async def async_step_calendar_name_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Last options step: edit the calendar name."""
+        if user_input is None:
+            current_name = self.config_entry.data.get(CONF_EVENT_NAME, "WhenHub Calendar")
+            return self.async_show_form(
+                step_id="calendar_name_options",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_EVENT_NAME, default=current_name): str,
+                }),
+            )
+        name = user_input[CONF_EVENT_NAME].strip()
+        self._calendar_data[CONF_EVENT_NAME] = name
         new_data = dict(self.config_entry.data)
         new_data.update(self._calendar_data)
-        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data=new_data,
+            title=name,
+        )
         return self.async_create_entry(title="", data={})
