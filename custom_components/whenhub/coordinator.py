@@ -315,18 +315,27 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         last_event = last_custom_pattern(self.event_data, today)
         occ_count = occurrence_count_custom_pattern(self.event_data, today)
 
-        days_to_next = days_until(next_event, today) if next_event else 0
-        countdown = countdown_breakdown(next_event, today) if next_event and days_to_next > 0 else {}
+        is_today_val = (next_event == today) if next_event else False
+
+        # For display, show the next *future* occurrence (not today even when today is an
+        # occurrence). This avoids next_date == last_date == today on occurrence days.
+        if is_today_val:
+            next_display = next_custom_pattern(self.event_data, today + timedelta(days=1))
+        else:
+            next_display = next_event
+
+        days_to_next = days_until(next_display, today) if next_display else 0
+        countdown = countdown_breakdown(next_display, today) if next_display and days_to_next > 0 else {}
 
         return {
             # Datetime objects for sensors with device_class: timestamp
-            "next_date": _date_to_datetime(next_event),
+            "next_date": _date_to_datetime(next_display),
             "last_date": _date_to_datetime(last_event),
             "days_until": days_to_next,
             "days_since_last": (today - last_event).days if last_event else None,
-            "countdown_text": format_countdown_text(next_event, today) if next_event and days_to_next > 0 else "0 Tage",
+            "countdown_text": format_countdown_text(next_display, today) if next_display and days_to_next > 0 else "0 Tage",
             "countdown_breakdown": countdown,
             "occurrence_count": occ_count,
             # Binary sensor values
-            "is_today": next_event == today if next_event else False,
+            "is_today": is_today_val,
         }

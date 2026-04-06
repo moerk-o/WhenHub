@@ -411,13 +411,13 @@ class TestCustomPatternSensors:
         # days_until translates to "Days until start" → entity_id ends with days_until_start
         state = hass.states.get("sensor.every_day_days_until_start")
         assert state is not None
-        # Today IS an occurrence → days_until == 0
-        assert state.state == "0"
+        # Today IS an occurrence → days_until shows days to NEXT future occurrence = 1
+        assert state.state == "1"
 
     @pytest.mark.asyncio
     @freeze_time("2026-04-06")  # Monday
     async def test_weekly_days_until_next_wednesday(self, hass: HomeAssistant):
-        """Weekly Mon+Wed pattern: on Monday, days_until == 0."""
+        """Weekly Mon+Wed pattern: on Monday, days_until == 2 (next is Wednesday)."""
         entry = MockConfigEntry(
             domain=DOMAIN,
             data=_cp_weekly_mon_wed(dtstart="2024-01-01"),
@@ -429,8 +429,8 @@ class TestCustomPatternSensors:
 
         state = hass.states.get("sensor.mon_wed_days_until_start")
         assert state is not None
-        # Monday is in byday_list → today IS occurrence → days_until == 0
-        assert state.state == "0"
+        # Monday IS occurrence → next_display = Wed Apr 8 → days_until == 2
+        assert state.state == "2"
 
     @pytest.mark.asyncio
     @freeze_time("2026-04-06")  # Monday
@@ -454,7 +454,7 @@ class TestCustomPatternSensors:
     @pytest.mark.asyncio
     @freeze_time("2026-04-06")  # Monday
     async def test_next_date_sensor_daily(self, hass: HomeAssistant):
-        """next_date sensor for daily pattern reflects today."""
+        """next_date sensor for daily pattern shows tomorrow when today is occurrence."""
         entry = MockConfigEntry(
             domain=DOMAIN,
             data=_cp_daily(dtstart="2024-01-01"),
@@ -466,12 +466,13 @@ class TestCustomPatternSensors:
 
         state = hass.states.get("sensor.daily_next_next_date")
         assert state is not None
-        assert "2026-04-06" in state.state
+        # Today IS occurrence → next_display = tomorrow
+        assert "2026-04-07" in state.state
 
     @pytest.mark.asyncio
     @freeze_time("2026-11-26")  # 4th Thursday of November 2026 = Thanksgiving
     async def test_yearly_thanksgiving_is_today(self, hass: HomeAssistant):
-        """On Thanksgiving day, yearly 4th Thu Nov pattern shows days_until=0."""
+        """On Thanksgiving day, is_today binary sensor is on; days_until points to next year."""
         entry = MockConfigEntry(
             domain=DOMAIN,
             data=_cp_yearly_nth(dtstart="2020-01-01"),
@@ -481,9 +482,14 @@ class TestCustomPatternSensors:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
+        # is_today must be on
+        bs = hass.states.get("binary_sensor.thanksgiving_is_today")
+        assert bs is not None
+        assert bs.state == "on"
+        # days_until shows days to next Thanksgiving (2027-11-25 = 364 days away)
         state = hass.states.get("sensor.thanksgiving_days_until_start")
         assert state is not None
-        assert state.state == "0"
+        assert state.state == "364"
 
     @pytest.mark.asyncio
     @freeze_time("2026-04-06")  # Monday, not Thanksgiving
