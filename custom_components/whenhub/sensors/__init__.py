@@ -13,5 +13,6 @@ from .trip import TripSensor
 from .milestone import MilestoneSensor
 from .anniversary import AnniversarySensor
 from .special import SpecialEventSensor
+from .url_memo import WhenHubUrlSensor, WhenHubMemoSensor
 
-__all__ = ["TripSensor", "MilestoneSensor", "AnniversarySensor", "SpecialEventSensor"]
+__all__ = ["TripSensor", "MilestoneSensor", "AnniversarySensor", "SpecialEventSensor", "WhenHubUrlSensor", "WhenHubMemoSensor"]

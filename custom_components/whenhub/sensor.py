@@ -29,7 +29,7 @@ from .const import (
     CUSTOM_PATTERN_SENSOR_TYPES,
 )
 from .coordinator import WhenHubCoordinator
-from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor
+from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor, WhenHubUrlSensor, WhenHubMemoSensor
 from .sensors.custom_pattern import CustomPatternSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,6 +80,8 @@ async def async_setup_entry(
             # Fallback for unknown event types - use trip sensors as default
             _LOGGER.warning("Unknown event_type: %s, falling back to TRIP", event_type)
             sensors.extend(_create_trip_sensors(coordinator, config_entry, event_data))
+
+        sensors.extend(_create_url_memo_sensors(coordinator, config_entry, event_data))
 
         _LOGGER.info("Created %d sensors for %s (%s)",
                     len(sensors), config_entry.title, event_type)
@@ -181,6 +183,18 @@ def _create_custom_pattern_sensors(
     return [
         CustomPatternSensor(coordinator, config_entry, event_data, sensor_type)
         for sensor_type in CUSTOM_PATTERN_SENSOR_TYPES
+    ]
+
+
+def _create_url_memo_sensors(
+    coordinator: WhenHubCoordinator,
+    config_entry: ConfigEntry,
+    event_data: dict,
+) -> list:
+    """Create URL and Memo sensor entities (FR11) for any event type."""
+    return [
+        WhenHubUrlSensor(coordinator, config_entry, event_data),
+        WhenHubMemoSensor(coordinator, config_entry, event_data),
     ]
 
 

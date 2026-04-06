@@ -15,13 +15,17 @@
           "start_date": "Startdatum",
           "end_date": "Enddatum",
           "image_upload": "Bild hochladen (optional)",
-          "image_path": "Oder Bildpfad eingeben (optional)"
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "start_date": "Das Datum, an dem der Trip beginnt",
           "end_date": "Das Datum, an dem der Trip endet",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
+          "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "milestone": {
@@ -30,12 +34,16 @@
         "data": {
           "target_date": "Zieldatum",
           "image_upload": "Bild hochladen (optional)",
-          "image_path": "Oder Bildpfad eingeben (optional)"
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "target_date": "Das Datum des wichtigen Termins",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "anniversary": {
@@ -44,12 +52,16 @@
         "data": {
           "target_date": "Ursprüngliches Datum",
           "image_upload": "Bild hochladen (optional)",
-          "image_path": "Oder Bildpfad eingeben (optional)"
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "special_category": {
@@ -65,12 +77,16 @@
         "data": {
           "special_type": "Special Event",
           "image_upload": "Bild hochladen (optional)",
-          "image_path": "Oder Bildpfad eingeben (optional)"
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "special_type": "Wähle das spezifische Event aus der Kategorie",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "dst_event": {
@@ -80,13 +96,17 @@
           "dst_region": "Region",
           "dst_type": "Event-Typ",
           "image_upload": "Bild hochladen (optional)",
-          "image_path": "Oder Bildpfad eingeben (optional)"
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "dst_region": "Für welche Region soll die Zeitumstellung berechnet werden?",
           "dst_type": "Welches Zeitumstellungs-Event möchtest du tracken?",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "calendar": {
@@ -180,15 +200,19 @@
         }
       },
       "cp_image": {
-        "title": "Bild (optional)",
-        "description": "Optional ein Bild für dieses Wiederholungsmuster festlegen",
+        "title": "Bild, URL und Memo (optional)",
+        "description": "Optional ein Bild, Link oder Notizen für dieses Wiederholungsmuster festlegen",
         "data": {
           "image_upload": "Bild hochladen",
-          "image_path": "Oder Bildpfad eingeben"
+          "image_path": "Oder Bildpfad eingeben",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       }
     },
@@ -210,11 +234,15 @@
         "data": {
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
-          "image_delete": "Aktuelles Bild entfernen"
+          "image_delete": "Aktuelles Bild entfernen",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
+          "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "milestone_options": {
@@ -223,11 +251,15 @@
         "data": {
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
-          "image_delete": "Aktuelles Bild entfernen"
+          "image_delete": "Aktuelles Bild entfernen",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "anniversary_options": {
@@ -236,11 +268,15 @@
         "data": {
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
-          "image_delete": "Aktuelles Bild entfernen"
+          "image_delete": "Aktuelles Bild entfernen",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "special_options": {
@@ -249,11 +285,15 @@
         "data": {
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
-          "image_delete": "Aktuelles Bild entfernen"
+          "image_delete": "Aktuelles Bild entfernen",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "dst_options": {
@@ -262,11 +302,15 @@
         "data": {
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
-          "image_delete": "Aktuelles Bild entfernen"
+          "image_delete": "Aktuelles Bild entfernen",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       },
       "calendar_options": {
@@ -360,16 +404,20 @@
         }
       },
       "cp_image": {
-        "title": "Bild (optional)",
-        "description": "Optional ein Bild für dieses Wiederholungsmuster ändern oder entfernen",
+        "title": "Bild, URL und Memo (optional)",
+        "description": "Optional Bild, Link oder Notizen für dieses Wiederholungsmuster ändern",
         "data": {
           "image_upload": "Neues Bild hochladen",
           "image_path": "Oder Bildpfad eingeben",
-          "image_delete": "Aktuelles Bild entfernen"
+          "image_delete": "Aktuelles Bild entfernen",
+          "url": "URL (optional)",
+          "memo": "Memo (optional)"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang"
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang",
+          "url": "Link zu einer Website oder einer anderen relevanten URL",
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
         }
       }
     }
@@ -523,6 +571,12 @@
       },
       "last_date": {
         "name": "Letztes Datum"
+      },
+      "url": {
+        "name": "URL"
+      },
+      "memo": {
+        "name": "Memo"
       }
     },
     "binary_sensor": {
