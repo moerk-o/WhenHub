@@ -14,12 +14,14 @@
         "data": {
           "start_date": "Start date",
           "end_date": "End date",
-          "image_path": "Image path (optional)"
+          "image_upload": "Upload image (optional)",
+          "image_path": "Or enter image path (optional)"
         },
         "data_description": {
           "start_date": "The date when the trip begins",
           "end_date": "The date when the trip ends",
-          "image_path": "Path to an image, e.g. /local/images/trip.jpg"
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority"
         }
       },
       "milestone": {
@@ -27,11 +29,13 @@
         "description": "Set up a new milestone in WhenHub",
         "data": {
           "target_date": "Target date",
-          "image_path": "Image path (optional)"
+          "image_upload": "Upload image (optional)",
+          "image_path": "Or enter image path (optional)"
         },
         "data_description": {
           "target_date": "The date of the important event",
-          "image_path": "Path to an image, e.g. /local/images/milestone.jpg"
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority"
         }
       },
       "anniversary": {
@@ -39,11 +43,13 @@
         "description": "Set up a new anniversary in WhenHub",
         "data": {
           "target_date": "Original date",
-          "image_path": "Image path (optional)"
+          "image_upload": "Upload image (optional)",
+          "image_path": "Or enter image path (optional)"
         },
         "data_description": {
           "target_date": "The original date (will repeat yearly)",
-          "image_path": "Path to an image, e.g. /local/images/anniversary.jpg"
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/anniversary.jpg — upload above takes priority"
         }
       },
       "special_category": {
@@ -58,11 +64,13 @@
         "description": "Set up your special event",
         "data": {
           "special_type": "Special event",
-          "image_path": "Image path (optional)"
+          "image_upload": "Upload image (optional)",
+          "image_path": "Or enter image path (optional)"
         },
         "data_description": {
           "special_type": "Select the specific event from the category",
-          "image_path": "Path to an image, e.g. /local/images/special.jpg"
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/special.jpg — upload above takes priority"
         }
       },
       "dst_event": {
@@ -71,12 +79,14 @@
         "data": {
           "dst_region": "Region",
           "dst_type": "Event type",
-          "image_path": "Image path (optional)"
+          "image_upload": "Upload image (optional)",
+          "image_path": "Or enter image path (optional)"
         },
         "data_description": {
           "dst_region": "For which region should DST be calculated?",
           "dst_type": "Which DST event do you want to track?",
-          "image_path": "Path to an image, e.g. /local/images/dst.jpg"
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/dst.jpg — upload above takes priority"
         }
       },
       "calendar": {
@@ -168,6 +178,18 @@
         "data": {
           "cp_count": "Total occurrences"
         }
+      },
+      "cp_image": {
+        "title": "Image (optional)",
+        "description": "Optionally add an image to this repeating event",
+        "data": {
+          "image_upload": "Upload image",
+          "image_path": "Or enter image path"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/event.jpg — upload above takes priority"
+        }
       }
     },
     "error": {
@@ -184,23 +206,68 @@
       },
       "trip_options": {
         "title": "Trip Options",
-        "description": "Edit the settings for this trip"
+        "description": "Edit the settings for this trip",
+        "data": {
+          "image_upload": "Upload new image (optional)",
+          "image_path": "Or enter image path (optional)",
+          "image_delete": "Remove current image"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority"
+        }
       },
       "milestone_options": {
         "title": "Milestone Options",
-        "description": "Edit the settings for this milestone"
+        "description": "Edit the settings for this milestone",
+        "data": {
+          "image_upload": "Upload new image (optional)",
+          "image_path": "Or enter image path (optional)",
+          "image_delete": "Remove current image"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority"
+        }
       },
       "anniversary_options": {
         "title": "Anniversary Options",
-        "description": "Edit the settings for this anniversary"
+        "description": "Edit the settings for this anniversary",
+        "data": {
+          "image_upload": "Upload new image (optional)",
+          "image_path": "Or enter image path (optional)",
+          "image_delete": "Remove current image"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/anniversary.jpg — upload above takes priority"
+        }
       },
       "special_options": {
         "title": "Special Event Options",
-        "description": "Edit the settings for this special event"
+        "description": "Edit the settings for this special event",
+        "data": {
+          "image_upload": "Upload new image (optional)",
+          "image_path": "Or enter image path (optional)",
+          "image_delete": "Remove current image"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/special.jpg — upload above takes priority"
+        }
       },
       "dst_options": {
         "title": "Daylight Saving Time Options",
-        "description": "Edit the settings for this DST event"
+        "description": "Edit the settings for this DST event",
+        "data": {
+          "image_upload": "Upload new image (optional)",
+          "image_path": "Or enter image path (optional)",
+          "image_delete": "Remove current image"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/dst.jpg — upload above takes priority"
+        }
       },
       "calendar_options": {
         "title": "Calendar Options",
@@ -290,6 +357,19 @@
         "title": "Number of occurrences",
         "data": {
           "cp_count": "Total occurrences"
+        }
+      },
+      "cp_image": {
+        "title": "Image (optional)",
+        "description": "Optionally add or change the image for this repeating event",
+        "data": {
+          "image_upload": "Upload new image",
+          "image_path": "Or enter image path",
+          "image_delete": "Remove current image"
+        },
+        "data_description": {
+          "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
+          "image_path": "Path to an image, e.g. /local/images/event.jpg — upload above takes priority"
         }
       }
     }
