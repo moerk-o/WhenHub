@@ -257,14 +257,19 @@ Custom Pattern lets you define your own repeating rule — from simple "every Mo
 
 ##### Why Custom Pattern?
 
-The predefined holidays cover common events, but many recurring dates follow weekday-based rules that shift every year. Without Custom Pattern you would have to update those dates manually each year. Examples:
+The predefined holidays cover common events, but many recurring dates follow weekday-based rules that shift every year. Without Custom Pattern you would have to update those dates manually each year. Examples (sorted by calendar date):
 
-- **Thanksgiving** — 4th Thursday in November (shifts every year)
-- **Mother's Day** — 2nd Sunday in May
-- **Memorial Day** — Last Monday in May
-- **Your team meeting** — Every other Monday
-- **Medication reminder** — Every 3 days
-- **Quarterly review** — First Monday of every 3rd month
+| # | Event | Rule |
+|---|-------|------|
+| 1 | **Early May Bank Holiday** (UK) | 1st Monday in May |
+| 2 | **Mother's Day** (DE/AT/CH/UK/...) | 2nd Sunday in May |
+| 3 | **Memorial Day** (US) | Last Monday in May |
+| 4 | **Tag der Deutschen Einheit** (DE) | 3rd October (fixed) |
+| 5 | **Väterdag** (Sweden) | 2nd Sunday in November |
+| 6 | **Thanksgiving** (US) | 4th Thursday in November |
+| 7 | **Your team meeting** | Every Monday |
+| 8 | **Medication reminder** | Every 3 days |
+| 9 | **Quarterly review** | First Monday of every 3rd month |
 
 ##### Configuration Flow
 
@@ -291,7 +296,7 @@ Depending on the frequency, you then define how the day within the period is sel
 
 | Rule | Meaning | Example |
 |------|---------|---------|
-| Nth weekday | Nth occurrence of a specific weekday | 4th Thursday → Thanksgiving |
+| Nth weekday | Nth occurrence of a specific weekday | 2nd Sunday in May → Mother's Day |
 | Last weekday | Last occurrence of a specific weekday in the period | Last Monday in May → Memorial Day |
 | Fixed day | A fixed calendar day of the month | 15th of each month |
 
@@ -305,25 +310,62 @@ Depending on the frequency, you then define how the day within the period is sel
 
 ##### Example Configurations
 
-**Thanksgiving** (4th Thursday in November, every year):
+**1 — Early May Bank Holiday** (1st Monday in May, UK):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: May
+- Day rule: Nth weekday → 1st → Monday
+- End: No end
+- 2026: **May 4**
+
+**2 — Mother's Day** (2nd Sunday in May, DE/AT/CH/UK and many others):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: May
+- Day rule: Nth weekday → 2nd → Sunday
+- End: No end
+- 2026: **May 10**
+
+**3 — Memorial Day** (Last Monday in May, US):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: May
+- Day rule: Last weekday → Monday
+- End: No end
+- 2026: **May 25**
+
+**4 — Tag der Deutschen Einheit** (3rd October, fixed date):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: October
+- Day rule: Fixed day → 3
+- End: No end
+- 2026: **October 3**
+
+**5 — Väterdag** (2nd Sunday in November, Sweden):
+- Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
+- Month: November
+- Day rule: Nth weekday → 2nd → Sunday
+- End: No end
+- 2026: **November 8**
+
+**6 — Thanksgiving** (4th Thursday in November, US):
 - Frequency: Yearly, Interval: 1, Anchor: 2020-01-01
 - Month: November
 - Day rule: Nth weekday → 4th → Thursday
 - End: No end
+- 2026: **November 26**
 
-**Every other Monday** (biweekly):
-- Frequency: Weekly, Interval: 2, Anchor: any Monday
+**7 — Your team meeting** (every Monday):
+- Frequency: Weekly, Interval: 1, Anchor: any Monday
 - Weekdays: Monday
 - End: No end
 
-**First Monday of every month** (e.g. team sync):
-- Frequency: Monthly, Interval: 1, Anchor: any date
+**8 — Medication reminder** (every 3 days):
+- Frequency: Daily, Interval: 3, Anchor: first intake date
+- End: No end (or after N occurrences if the course is finite)
+
+**9 — Quarterly review** (first Monday of every 3rd month):
+- Frequency: Monthly, Interval: 3, Anchor: 2026-01-01
 - Day rule: Nth weekday → 1st → Monday
 - End: No end
-
-**Every 3 days for 30 occurrences**:
-- Frequency: Daily, Interval: 3, Anchor: start date
-- End: After 30 occurrences
+- Next after 2026-04-06: **July 6, 2026**
 
 ##### Available Entities
 
