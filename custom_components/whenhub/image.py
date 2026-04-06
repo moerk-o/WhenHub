@@ -26,6 +26,7 @@ from .const import (
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
     CONF_IMAGE_PATH,
+    CONF_IMAGE_MIME,
     CONF_SPECIAL_TYPE,
     SPECIAL_EVENTS,
 )
@@ -90,6 +91,7 @@ class WhenHubImage(ImageEntity):
         # Extract image configuration
         self._image_path = event_data.get(CONF_IMAGE_PATH)
         self._image_data = event_data.get("image_data")  # Base64 encoded image data
+        self._image_mime = event_data.get(CONF_IMAGE_MIME)  # Stored MIME type for uploads
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -260,8 +262,12 @@ class WhenHubImage(ImageEntity):
         # Default SVG content type for auto-generated images
         if not self._image_path and not self._image_data:
             return "image/svg+xml"
-        
-        # Detect content type from file extension for user images
+
+        # Use stored MIME type for uploaded base64 images
+        if self._image_data and self._image_mime:
+            return self._image_mime
+
+        # Detect content type from file extension for path-based images
         if self._image_path:
             lower_path = self._image_path.lower()
             if lower_path.endswith('.png'):
@@ -272,6 +278,6 @@ class WhenHubImage(ImageEntity):
                 return "image/gif"
             elif lower_path.endswith('.svg'):
                 return "image/svg+xml"
-        
-        # Default to JPEG for base64 data and unknown extensions
+
+        # Default to JPEG for base64 data without stored MIME or unknown extensions
         return "image/jpeg"

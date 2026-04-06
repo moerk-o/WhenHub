@@ -57,6 +57,8 @@ CONF_DST_TYPE = "dst_type"  # For DST Events
 CONF_DST_REGION = "dst_region"  # For DST Events
 CONF_IMAGE_PATH = "image_path"
 CONF_IMAGE_UPLOAD = "image_upload"
+CONF_IMAGE_MIME = "image_mime"      # Stored MIME type of uploaded image (e.g. "image/png")
+CONF_IMAGE_DELETE = "image_delete"  # UI-only checkbox: remove existing image in OptionsFlow
 
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"

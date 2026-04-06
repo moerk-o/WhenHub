@@ -14,12 +14,14 @@
         "data": {
           "start_date": "Startdatum",
           "end_date": "Enddatum",
-          "image_path": "Bildpfad (optional)"
+          "image_upload": "Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)"
         },
         "data_description": {
           "start_date": "Das Datum, an dem der Trip beginnt",
           "end_date": "Das Datum, an dem der Trip endet",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg"
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang"
         }
       },
       "milestone": {
@@ -27,11 +29,13 @@
         "description": "Richte einen neuen Milestone bei WhenHub ein",
         "data": {
           "target_date": "Zieldatum",
-          "image_path": "Bildpfad (optional)"
+          "image_upload": "Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)"
         },
         "data_description": {
           "target_date": "Das Datum des wichtigen Termins",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg"
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang"
         }
       },
       "anniversary": {
@@ -39,11 +43,13 @@
         "description": "Richte ein neues Anniversary bei WhenHub ein",
         "data": {
           "target_date": "Ursprüngliches Datum",
-          "image_path": "Bildpfad (optional)"
+          "image_upload": "Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)"
         },
         "data_description": {
           "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg"
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang"
         }
       },
       "special_category": {
@@ -58,11 +64,13 @@
         "description": "Richte dein Special Event ein",
         "data": {
           "special_type": "Special Event",
-          "image_path": "Bildpfad (optional)"
+          "image_upload": "Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)"
         },
         "data_description": {
           "special_type": "Wähle das spezifische Event aus der Kategorie",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg"
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg — Upload hat Vorrang"
         }
       },
       "dst_event": {
@@ -71,12 +79,14 @@
         "data": {
           "dst_region": "Region",
           "dst_type": "Event-Typ",
-          "image_path": "Bildpfad (optional)"
+          "image_upload": "Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)"
         },
         "data_description": {
           "dst_region": "Für welche Region soll die Zeitumstellung berechnet werden?",
           "dst_type": "Welches Zeitumstellungs-Event möchtest du tracken?",
-          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg"
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg — Upload hat Vorrang"
         }
       },
       "calendar": {
@@ -168,6 +178,18 @@
         "data": {
           "cp_count": "Gesamte Vorkommen"
         }
+      },
+      "cp_image": {
+        "title": "Bild (optional)",
+        "description": "Optional ein Bild für dieses Wiederholungsmuster festlegen",
+        "data": {
+          "image_upload": "Bild hochladen",
+          "image_path": "Oder Bildpfad eingeben"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang"
+        }
       }
     },
     "error": {
@@ -184,23 +206,68 @@
       },
       "trip_options": {
         "title": "Trip Optionen",
-        "description": "Bearbeite die Einstellungen für diesen Trip"
+        "description": "Bearbeite die Einstellungen für diesen Trip",
+        "data": {
+          "image_upload": "Neues Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "image_delete": "Aktuelles Bild entfernen"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang"
+        }
       },
       "milestone_options": {
         "title": "Milestone Optionen",
-        "description": "Bearbeite die Einstellungen für diesen Milestone"
+        "description": "Bearbeite die Einstellungen für diesen Milestone",
+        "data": {
+          "image_upload": "Neues Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "image_delete": "Aktuelles Bild entfernen"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang"
+        }
       },
       "anniversary_options": {
         "title": "Anniversary Optionen",
-        "description": "Bearbeite die Einstellungen für dieses Anniversary"
+        "description": "Bearbeite die Einstellungen für dieses Anniversary",
+        "data": {
+          "image_upload": "Neues Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "image_delete": "Aktuelles Bild entfernen"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang"
+        }
       },
       "special_options": {
         "title": "Special Event Optionen",
-        "description": "Bearbeite die Einstellungen für dieses Special Event"
+        "description": "Bearbeite die Einstellungen für dieses Special Event",
+        "data": {
+          "image_upload": "Neues Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "image_delete": "Aktuelles Bild entfernen"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/special.jpg — Upload hat Vorrang"
+        }
       },
       "dst_options": {
         "title": "Zeitumstellung Optionen",
-        "description": "Bearbeite die Einstellungen für diese Zeitumstellung"
+        "description": "Bearbeite die Einstellungen für diese Zeitumstellung",
+        "data": {
+          "image_upload": "Neues Bild hochladen (optional)",
+          "image_path": "Oder Bildpfad eingeben (optional)",
+          "image_delete": "Aktuelles Bild entfernen"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/dst.jpg — Upload hat Vorrang"
+        }
       },
       "calendar_options": {
         "title": "Kalender Optionen",
@@ -290,6 +357,19 @@
         "title": "Anzahl Vorkommen",
         "data": {
           "cp_count": "Gesamte Vorkommen"
+        }
+      },
+      "cp_image": {
+        "title": "Bild (optional)",
+        "description": "Optional ein Bild für dieses Wiederholungsmuster ändern oder entfernen",
+        "data": {
+          "image_upload": "Neues Bild hochladen",
+          "image_path": "Oder Bildpfad eingeben",
+          "image_delete": "Aktuelles Bild entfernen"
+        },
+        "data_description": {
+          "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
+          "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang"
         }
       }
     }

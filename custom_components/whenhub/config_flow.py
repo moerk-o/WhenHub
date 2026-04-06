@@ -1,6 +1,7 @@
 """Config flow for WhenHub integration."""
 from __future__ import annotations
 
+import base64
 import json
 import logging
 import pathlib
@@ -9,11 +10,15 @@ import voluptuous as vol
 from datetime import date
 
 from homeassistant import config_entries
+from homeassistant.components.file_upload import process_uploaded_file
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     DateSelector,
+    FileSelector,
+    FileSelectorConfig,
     NumberSelector,
     NumberSelectorConfig,
     SelectSelector,
@@ -38,6 +43,9 @@ from .const import (
     CONF_DST_TYPE,
     CONF_DST_REGION,
     CONF_IMAGE_PATH,
+    CONF_IMAGE_UPLOAD,
+    CONF_IMAGE_MIME,
+    CONF_IMAGE_DELETE,
     SPECIAL_EVENTS,
     SPECIAL_EVENT_CATEGORIES,
     DST_EVENT_TYPES,
@@ -63,6 +71,70 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+_IMAGE_MIME_MAP = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
+def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None]:
+    """Process an uploaded image file from a FileSelector field.
+
+    Returns (base64_data, mime_type) if an upload was provided, (None, None) otherwise.
+    """
+    upload_id = user_input.get(CONF_IMAGE_UPLOAD)
+    if not upload_id:
+        return None, None
+    try:
+        with process_uploaded_file(hass, upload_id) as path:
+            image_bytes = path.read_bytes()
+            image_data = base64.b64encode(image_bytes).decode()
+            image_mime = _IMAGE_MIME_MAP.get(path.suffix.lower(), "image/jpeg")
+            return image_data, image_mime
+    except Exception as err:
+        _LOGGER.warning("Failed to process uploaded image: %s", err)
+        return None, None
+
+
+def _apply_image_changes(hass: HomeAssistant, new_data: dict, user_input: dict) -> None:
+    """Apply image upload / delete choices from user_input to new_data (in-place).
+
+    - If 'image_delete' is checked: clears image_data, image_mime, image_path.
+    - Else if a file was uploaded: stores base64 data and MIME type.
+    - Else: leaves existing image_data / image_mime untouched.
+    Always removes the temporary UI-only keys from new_data.
+    """
+    if user_input.get(CONF_IMAGE_DELETE):
+        new_data["image_data"] = None
+        new_data[CONF_IMAGE_MIME] = None
+        new_data[CONF_IMAGE_PATH] = ""
+    else:
+        image_data, image_mime = _process_image_upload(hass, user_input)
+        if image_data:
+            new_data["image_data"] = image_data
+            new_data[CONF_IMAGE_MIME] = image_mime
+    new_data.pop(CONF_IMAGE_UPLOAD, None)
+    new_data.pop(CONF_IMAGE_DELETE, None)
+
+
+def _schema_image(current: dict, show_delete: bool = False) -> dict:
+    """Return voluptuous field dict for the image section (upload + path + optional delete).
+
+    Intended to be spread into a larger vol.Schema dict.
+    """
+    fields: dict = {
+        vol.Optional(CONF_IMAGE_UPLOAD): FileSelector(
+            FileSelectorConfig(accept=".jpg,.jpeg,.png,.webp,.gif")
+        ),
+        vol.Optional(CONF_IMAGE_PATH, default=current.get(CONF_IMAGE_PATH, "")): str,
+    }
+    if show_delete:
+        fields[vol.Optional(CONF_IMAGE_DELETE, default=False)] = BooleanSelector()
+    return fields
 
 
 # ── Custom Pattern schema helpers ─────────────────────────────────────────────
@@ -196,6 +268,11 @@ def _schema_cp_end_count(current: dict) -> vol.Schema:
             NumberSelectorConfig(min=1, max=9999, step=1, mode="box")
         ),
     })
+
+
+def _schema_cp_image(current: dict, show_delete: bool = False) -> vol.Schema:
+    """Schema for the final cp_image step: optional image upload and/or path."""
+    return vol.Schema(_schema_image(current, show_delete=show_delete))
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -399,6 +476,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if not errors:
             user_input[CONF_EVENT_TYPE] = self._event_type
+            image_data, image_mime = _process_image_upload(self.hass, user_input)
+            if image_data:
+                user_input["image_data"] = image_data
+                user_input[CONF_IMAGE_MIME] = image_mime
+            user_input.pop(CONF_IMAGE_UPLOAD, None)
             return self.async_create_entry(title=self._suggest_event_name("Trip"), data=user_input)
 
         return await self._show_trip_form(user_input, errors)
@@ -407,10 +489,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show trip configuration form."""
+        current = user_input or {}
         data_schema = vol.Schema({
-            vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
-            vol.Required(CONF_END_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
-            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            vol.Required(CONF_START_DATE, default=current.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
+            vol.Required(CONF_END_DATE, default=current.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
+            **_schema_image(current),
         })
 
         return self.async_show_form(
@@ -427,15 +510,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_milestone_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
+        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        if image_data:
+            user_input["image_data"] = image_data
+            user_input[CONF_IMAGE_MIME] = image_mime
+        user_input.pop(CONF_IMAGE_UPLOAD, None)
         return self.async_create_entry(title=self._suggest_event_name("Milestone"), data=user_input)
 
     async def _show_milestone_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show milestone configuration form."""
+        current = user_input or {}
         data_schema = vol.Schema({
-            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
-            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
+            **_schema_image(current),
         })
 
         return self.async_show_form(
@@ -452,15 +541,21 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_anniversary_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
+        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        if image_data:
+            user_input["image_data"] = image_data
+            user_input[CONF_IMAGE_MIME] = image_mime
+        user_input.pop(CONF_IMAGE_UPLOAD, None)
         return self.async_create_entry(title=self._suggest_event_name("Anniversary"), data=user_input)
 
     async def _show_anniversary_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show anniversary configuration form."""
+        current = user_input or {}
         data_schema = vol.Schema({
-            vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
-            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
+            **_schema_image(current),
         })
 
         return self.async_show_form(
@@ -512,6 +607,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
+        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        if image_data:
+            user_input["image_data"] = image_data
+            user_input[CONF_IMAGE_MIME] = image_mime
+        user_input.pop(CONF_IMAGE_UPLOAD, None)
         special_type = user_input.get(CONF_SPECIAL_TYPE, "special_event")
         base_name = self._get_translated_selector_option("special_type", special_type)
         return self.async_create_entry(title=self._suggest_event_name(base_name), data=user_input)
@@ -530,6 +630,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             default_special_type = user_input.get(CONF_SPECIAL_TYPE, default_special_type)
 
+        current = user_input or {}
         data_schema = vol.Schema({
             vol.Required(CONF_SPECIAL_TYPE, default=default_special_type): SelectSelector(
                 SelectSelectorConfig(
@@ -537,7 +638,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     translation_key="special_type",
                 )
             ),
-            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(current),
         })
 
         return self.async_show_form(
@@ -555,6 +656,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
+        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        if image_data:
+            user_input["image_data"] = image_data
+            user_input[CONF_IMAGE_MIME] = image_mime
+        user_input.pop(CONF_IMAGE_UPLOAD, None)
         return self.async_create_entry(title=self._suggest_event_name("DST Event"), data=user_input)
 
     async def _show_dst_event_form(
@@ -577,6 +683,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         default_dst_type = "next_change"
 
+        current = user_input or {}
         if user_input is not None:
             default_region = user_input.get(CONF_DST_REGION, default_region)
             default_dst_type = user_input.get(CONF_DST_TYPE, default_dst_type)
@@ -596,7 +703,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(current),
         })
 
         return self.async_show_form(
@@ -727,7 +834,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_cp_end_until()
         if end_type == "count":
             return await self.async_step_cp_end_count()
-        return self._cp_create_entry()
+        return await self.async_step_cp_image()
 
     async def async_step_cp_end_until(
         self, user_input: dict[str, Any] | None = None
@@ -739,7 +846,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=_schema_cp_end_until(self._cp_data),
             )
         self._cp_data[CONF_CP_UNTIL] = user_input[CONF_CP_UNTIL]
-        return self._cp_create_entry()
+        return await self.async_step_cp_image()
 
     async def async_step_cp_end_count(
         self, user_input: dict[str, Any] | None = None
@@ -751,15 +858,34 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data_schema=_schema_cp_end_count(self._cp_data),
             )
         self._cp_data[CONF_CP_COUNT] = int(user_input[CONF_CP_COUNT])
+        return await self.async_step_cp_image()
+
+    async def async_step_cp_image(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Final step: optional image upload and/or path."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_image",
+                data_schema=_schema_cp_image(self._cp_data),
+            )
+        self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
+        if user_input.get(CONF_IMAGE_UPLOAD):
+            self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
         return self._cp_create_entry()
 
     def _cp_create_entry(self) -> FlowResult:
         """Assemble entry data and create the config entry."""
+        image_data, image_mime = _process_image_upload(self.hass, self._cp_data)
         data = {
             CONF_EVENT_TYPE: self._event_type,
             CONF_SPECIAL_CATEGORY: "custom_pattern",
         }
         data.update(self._cp_data)
+        if image_data:
+            data["image_data"] = image_data
+            data[CONF_IMAGE_MIME] = image_mime
+        data.pop(CONF_IMAGE_UPLOAD, None)
         freq = self._cp_data.get(CONF_CP_FREQ, "monthly")
         base_name = f"{freq.capitalize()} Pattern"
         return self.async_create_entry(
@@ -829,6 +955,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
                 new_data = dict(self.config_entry.data)
                 new_data.update(user_input)
+                _apply_image_changes(self.hass, new_data, user_input)
 
                 self.hass.config_entries.async_update_entry(
                     self.config_entry,
@@ -839,10 +966,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return self.async_create_entry(title="", data={})
 
         current_data = user_input if user_input is not None else self.config_entry.data
+        has_image = bool(self.config_entry.data.get("image_data") or self.config_entry.data.get(CONF_IMAGE_PATH))
         data_schema = vol.Schema({
             vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
             vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
-            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(self.config_entry.data, show_delete=has_image),
         })
 
         return self.async_show_form(
@@ -860,6 +988,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
+            _apply_image_changes(self.hass, new_data, user_input)
 
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
@@ -870,9 +999,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
+        has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
-            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(current_data, show_delete=has_image),
         })
 
         return self.async_show_form(
@@ -889,6 +1019,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
+            _apply_image_changes(self.hass, new_data, user_input)
 
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
@@ -899,9 +1030,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
+        has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
-            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(current_data, show_delete=has_image),
         })
 
         return self.async_show_form(
@@ -918,6 +1050,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
+            _apply_image_changes(self.hass, new_data, user_input)
 
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
@@ -946,6 +1079,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         }
 
         special_options = list(filtered_events.keys())
+        has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
 
         data_schema = vol.Schema({
             vol.Required(CONF_SPECIAL_TYPE, default=current_special_type): SelectSelector(
@@ -954,7 +1088,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     translation_key="special_type",
                 )
             ),
-            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(current_data, show_delete=has_image),
         })
 
         return self.async_show_form(
@@ -972,6 +1106,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
+            _apply_image_changes(self.hass, new_data, user_input)
 
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
@@ -984,6 +1119,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current_data = self.config_entry.data
         region_options = list(DST_REGIONS.keys())
         dst_type_options = list(DST_EVENT_TYPES.keys())
+        has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
 
         data_schema = vol.Schema({
             vol.Required(CONF_DST_REGION, default=current_data.get(CONF_DST_REGION, "eu")): SelectSelector(
@@ -1000,7 +1136,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
+            **_schema_image(current_data, show_delete=has_image),
         })
 
         return self.async_show_form(
@@ -1220,7 +1356,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             return await self.async_step_cp_end_until()
         if end_type == "count":
             return await self.async_step_cp_end_count()
-        return self._cp_save_options()
+        return await self.async_step_cp_image()
 
     async def async_step_cp_end_until(
         self, user_input: dict[str, Any] | None = None
@@ -1232,7 +1368,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=_schema_cp_end_until(self._cp_data),
             )
         self._cp_data[CONF_CP_UNTIL] = user_input[CONF_CP_UNTIL]
-        return self._cp_save_options()
+        return await self.async_step_cp_image()
 
     async def async_step_cp_end_count(
         self, user_input: dict[str, Any] | None = None
@@ -1244,6 +1380,26 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data_schema=_schema_cp_end_count(self._cp_data),
             )
         self._cp_data[CONF_CP_COUNT] = int(user_input[CONF_CP_COUNT])
+        return await self.async_step_cp_image()
+
+    async def async_step_cp_image(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Final step: optional image upload and/or path."""
+        current_data = self.config_entry.data
+        has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
+        if user_input is None:
+            return self.async_show_form(
+                step_id="cp_image",
+                data_schema=_schema_cp_image(
+                    {**current_data, **self._cp_data}, show_delete=has_image
+                ),
+            )
+        self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
+        if user_input.get(CONF_IMAGE_UPLOAD):
+            self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
+        if user_input.get(CONF_IMAGE_DELETE):
+            self._cp_data[CONF_IMAGE_DELETE] = True
         return self._cp_save_options()
 
     def _cp_save_options(self) -> FlowResult:
@@ -1253,6 +1409,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Ensure fixed keys are always present
         new_data[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
         new_data[CONF_SPECIAL_CATEGORY] = "custom_pattern"
+        _apply_image_changes(self.hass, new_data, self._cp_data)
 
         self.hass.config_entries.async_update_entry(
             self.config_entry,
