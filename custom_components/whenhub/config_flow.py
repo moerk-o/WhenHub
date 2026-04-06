@@ -114,6 +114,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             counter += 1
         return f"{base} {counter}"
 
+    def _suggest_event_name(self, base: str) -> str:
+        """Return an auto-incremented event name suggestion."""
+        existing = {
+            e.title
+            for e in self.hass.config_entries.async_entries(DOMAIN)
+        }
+        if base not in existing:
+            return base
+        counter = 2
+        while f"{base} {counter}" in existing:
+            counter += 1
+        return f"{base} {counter}"
+
     async def async_step_calendar(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -215,7 +228,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if not errors:
             user_input[CONF_EVENT_TYPE] = self._event_type
-            return self.async_create_entry(title="Trip", data=user_input)
+            return self.async_create_entry(title=self._suggest_event_name("Trip"), data=user_input)
 
         return await self._show_trip_form(user_input, errors)
 
@@ -243,7 +256,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_milestone_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
-        return self.async_create_entry(title="Milestone", data=user_input)
+        return self.async_create_entry(title=self._suggest_event_name("Milestone"), data=user_input)
 
     async def _show_milestone_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -268,7 +281,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_anniversary_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
-        return self.async_create_entry(title="Anniversary", data=user_input)
+        return self.async_create_entry(title=self._suggest_event_name("Anniversary"), data=user_input)
 
     async def _show_anniversary_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -326,7 +339,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        return self.async_create_entry(title="Special Event", data=user_input)
+        return self.async_create_entry(title=self._suggest_event_name("Special Event"), data=user_input)
 
     async def _show_special_event_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -367,7 +380,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        return self.async_create_entry(title="DST Event", data=user_input)
+        return self.async_create_entry(title=self._suggest_event_name("DST Event"), data=user_input)
 
     async def _show_dst_event_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
