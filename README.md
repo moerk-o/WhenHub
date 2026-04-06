@@ -449,15 +449,6 @@ After saving, the calendar reloads automatically and the description in the inte
 
 Every WhenHub event has an **Event Image** entity. When no image is configured, a default SVG icon is generated automatically.
 
-#### Default Icons
-
-| Event Type | Default Icon |
-|---|---|
-| Trip | Blue airplane |
-| Milestone | Red flag |
-| Anniversary | Pink heart |
-| Special Event / Custom Pattern | Purple star |
-
 #### Adding an Image
 
 In the configuration form, two options are available — use one or both:
@@ -472,7 +463,7 @@ In the configuration form, two options are available — use one or both:
 Go to **Settings → Devices & Services → WhenHub**, click **Configure** on the event, and:
 
 - Upload a new file to replace the current image
-- Check **Remove current image** to delete it and fall back to the default icon
+- Enable **Remove current image** and save — the image will be removed and replaced by the default icon
 - Leave both fields empty to keep the current image unchanged
 
 #### Image Entity
