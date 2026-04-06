@@ -460,3 +460,13 @@ TIMEZONE_TO_DST_REGION = {
 
 # Legacy compatibility - replaced by TRIP_SENSOR_TYPES
 SENSOR_TYPES = TRIP_SENSOR_TYPES
+
+# FR08: Calendar Entry type marker
+CONF_ENTRY_TYPE = "entry_type"
+ENTRY_TYPE_EVENT = "event"        # Standard - alle bestehenden Event-Entries
+ENTRY_TYPE_CALENDAR = "calendar"  # Neu - Kalender-Entry
+
+# FR08: Calendar scope configuration
+CONF_CALENDAR_SCOPE = "calendar_scope"       # "all" | "by_type" | "specific"
+CONF_CALENDAR_TYPES = "calendar_types"       # list[str] bei scope "by_type"
+CONF_CALENDAR_EVENT_IDS = "calendar_event_ids"  # list[str] bei scope "specific"

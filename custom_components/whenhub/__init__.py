@@ -13,13 +13,14 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_ENTRY_TYPE, ENTRY_TYPE_CALENDAR
 from .coordinator import WhenHubCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-# Platforms that this integration provides
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SENSOR]
+# Platforms per entry type
+EVENT_PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SENSOR]
+CALENDAR_PLATFORMS: list[Platform] = [Platform.CALENDAR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -35,23 +36,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     Returns:
         True if setup was successful, False otherwise
     """
-    # Initialize integration data storage
     hass.data.setdefault(DOMAIN, {})
 
-    # Create and initialize the data update coordinator
-    coordinator = WhenHubCoordinator(hass, entry, dict(entry.data))
-    await coordinator.async_config_entry_first_refresh()
+    if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR:
+        # Calendar entry: no coordinator, only calendar platform
+        hass.data[DOMAIN][entry.entry_id] = {}
+        await hass.config_entries.async_forward_entry_setups(entry, CALENDAR_PLATFORMS)
+    else:
+        # Event entry: existing behavior unchanged
+        coordinator = WhenHubCoordinator(hass, entry, dict(entry.data))
+        await coordinator.async_config_entry_first_refresh()
+        hass.data[DOMAIN][entry.entry_id] = {
+            "coordinator": coordinator,
+            "event_data": dict(entry.data),
+        }
+        await hass.config_entries.async_forward_entry_setups(entry, EVENT_PLATFORMS)
 
-    # Store coordinator and event data for platform access
-    hass.data[DOMAIN][entry.entry_id] = {
-        "coordinator": coordinator,
-        "event_data": dict(entry.data),
-    }
-
-    # Set up all platforms (sensors, binary sensors, images)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
-    # Register listener for configuration updates (options flow)
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
 
     _LOGGER.info("WhenHub integration loaded: %s", entry.title)
@@ -70,7 +70,6 @@ async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None
         hass: Home Assistant instance
         entry: Updated configuration entry
     """
-    # Reload the entire integration to recreate coordinator with new data
     await hass.config_entries.async_reload(entry.entry_id)
 
     _LOGGER.info("WhenHub integration updated: %s", entry.title)
@@ -78,32 +77,34 @@ async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload WhenHub integration config entry.
-    
+
     This function is called when the integration is being removed or reloaded.
     It cleanly unloads all platforms, removes entities from the registry, and
     cleans up stored data.
-    
+
     Args:
         hass: Home Assistant instance
         entry: Configuration entry being unloaded
-        
+
     Returns:
         True if unload was successful, False otherwise
     """
-    # Attempt to unload all platforms
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        # Remove stored configuration data
+    platforms = (
+        CALENDAR_PLATFORMS
+        if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR
+        else EVENT_PLATFORMS
+    )
+
+    if unload_ok := await hass.config_entries.async_unload_platforms(entry, platforms):
         hass.data[DOMAIN].pop(entry.entry_id)
-        
-        # Clean up entity registry entries for this config entry
+
         entity_registry = er.async_get(hass)
         entities = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
-        
-        # Remove all entities created by this integration instance
+
         for entity in entities:
             entity_registry.async_remove(entity.entity_id)
-        
-        _LOGGER.info("WhenHub integration unloaded: %s (%d entities removed)", 
+
+        _LOGGER.info("WhenHub integration unloaded: %s (%d entities removed)",
                     entry.title, len(entities))
     else:
         _LOGGER.error("Failed to unload WhenHub integration: %s", entry.title)

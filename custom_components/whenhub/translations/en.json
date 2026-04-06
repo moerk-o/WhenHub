@@ -6,9 +6,6 @@
         "description": "Select the type of event you want to create",
         "data": {
           "event_type": "Event type"
-        },
-        "data_description": {
-          "event_type": "Trip for multi-day events, Milestone for one-time dates, Anniversary for yearly recurring events"
         }
       },
       "trip": {
@@ -60,9 +57,6 @@
         "description": "Select a category for your special event",
         "data": {
           "special_category": "Event category"
-        },
-        "data_description": {
-          "special_category": "Choose the appropriate category for your event"
         }
       },
       "special_event": {
@@ -93,6 +87,34 @@
           "dst_type": "Which DST event do you want to track?",
           "event_name": "e.g. 'DST Change' or 'Summer Time'",
           "image_path": "Path to an image, e.g. /local/images/dst.jpg"
+        }
+      },
+      "calendar": {
+        "title": "WhenHub Calendar",
+        "description": "Choose which events should appear in the HA calendar view.",
+        "data": {
+          "calendar_scope": "Scope"
+        }
+      },
+      "calendar_by_type": {
+        "title": "Filter by Event Type",
+        "description": "Select which event types should appear in the calendar.",
+        "data": {
+          "calendar_types": "Event types"
+        }
+      },
+      "calendar_specific": {
+        "title": "Select Events",
+        "description": "Select the specific events to include in the calendar.",
+        "data": {
+          "calendar_event_ids": "Events"
+        }
+      },
+      "calendar_name": {
+        "title": "Calendar name",
+        "description": "Give this calendar a name.",
+        "data": {
+          "event_name": "Calendar name"
         }
       }
     },
@@ -130,6 +152,34 @@
       "dst_options": {
         "title": "Daylight Saving Time Options",
         "description": "Edit the settings for this DST event"
+      },
+      "calendar_options": {
+        "title": "Calendar Options",
+        "description": "Edit the scope of the WhenHub Calendar",
+        "data": {
+          "calendar_scope": "Scope"
+        }
+      },
+      "calendar_by_type_options": {
+        "title": "Filter by Event Type",
+        "description": "Select which event types should appear in the calendar.",
+        "data": {
+          "calendar_types": "Event types"
+        }
+      },
+      "calendar_specific_options": {
+        "title": "Select Events",
+        "description": "Select the specific events to include in the calendar.",
+        "data": {
+          "calendar_event_ids": "Events"
+        }
+      },
+      "calendar_name_options": {
+        "title": "Calendar name",
+        "description": "Edit the name of this calendar.",
+        "data": {
+          "event_name": "Calendar name"
+        }
       }
     }
   },
@@ -139,7 +189,15 @@
         "trip": "Trip - Multi-day trip or event",
         "milestone": "Milestone - One-time important date",
         "anniversary": "Anniversary - Recurring yearly event",
-        "special": "Special Event - Special holidays and calendar events"
+        "special": "Special Event - Special holidays and calendar events",
+        "calendar": "WhenHub Calendar - Show WhenHub events in HA calendar view"
+      }
+    },
+    "calendar_scope": {
+      "options": {
+        "all": "All events",
+        "by_type": "Filter by type",
+        "specific": "Select specific events"
       }
     },
     "special_type": {

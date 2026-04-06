@@ -15,6 +15,7 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
+    SelectOptionDict,
 )
 
 from .const import (
@@ -39,6 +40,11 @@ from .const import (
     DST_EVENT_TYPES,
     DST_REGIONS,
     TIMEZONE_TO_DST_REGION,
+    CONF_ENTRY_TYPE,
+    ENTRY_TYPE_CALENDAR,
+    CONF_CALENDAR_SCOPE,
+    CONF_CALENDAR_TYPES,
+    CONF_CALENDAR_EVENT_IDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +59,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._event_type: str | None = None
         self._special_category: str | None = None
+        self._calendar_data: dict = {}
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -62,9 +69,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_event_type_form()
 
         self._event_type = user_input[CONF_EVENT_TYPE]
-        
-        # Route to the appropriate event-specific step
-        if self._event_type == EVENT_TYPE_TRIP:
+
+        # Route to calendar flow or event-specific step
+        if self._event_type == ENTRY_TYPE_CALENDAR:
+            return await self.async_step_calendar()
+        elif self._event_type == EVENT_TYPE_TRIP:
             return await self.async_step_trip()
         elif self._event_type == EVENT_TYPE_MILESTONE:
             return await self.async_step_milestone()
@@ -75,9 +84,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_event_type_form(self) -> FlowResult:
         """Show event type selection form."""
-        # Use simple string list for options - labels come from translation_key
-        # See: https://developers.home-assistant.io/docs/internationalization/core/#selector
-        event_type_options = list(EVENT_TYPES.keys())
+        # All event types plus the calendar option
+        event_type_options = list(EVENT_TYPES.keys()) + [ENTRY_TYPE_CALENDAR]
 
         data_schema = vol.Schema({
             vol.Required(CONF_EVENT_TYPE): SelectSelector(
@@ -92,6 +100,113 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=data_schema,
         )
+
+    def _suggest_calendar_name(self) -> str:
+        """Return a localized, auto-incremented calendar name suggestion."""
+        lang = self.hass.config.language or ""
+        base = "WhenHub Kalender" if lang.startswith("de") else "WhenHub Calendar"
+        existing = {
+            e.data.get(CONF_EVENT_NAME, "")
+            for e in self.hass.config_entries.async_entries(DOMAIN)
+            if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR
+        }
+        if base not in existing:
+            return base
+        counter = 2
+        while f"{base} {counter}" in existing:
+            counter += 1
+        return f"{base} {counter}"
+
+    async def async_step_calendar(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle calendar scope selection."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="calendar",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_CALENDAR_SCOPE, default="all"): SelectSelector(
+                        SelectSelectorConfig(
+                            options=["all", "by_type", "specific"],
+                            translation_key="calendar_scope",
+                        )
+                    )
+                }),
+            )
+
+        self._calendar_data = {
+            CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
+            CONF_CALENDAR_SCOPE: user_input[CONF_CALENDAR_SCOPE],
+        }
+        scope = user_input[CONF_CALENDAR_SCOPE]
+        if scope == "by_type":
+            return await self.async_step_calendar_by_type()
+        if scope == "specific":
+            return await self.async_step_calendar_specific()
+        return await self.async_step_calendar_name()
+
+    async def async_step_calendar_by_type(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle calendar type filter selection."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="calendar_by_type",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_CALENDAR_TYPES, default=list(EVENT_TYPES.keys())): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(EVENT_TYPES.keys()),
+                            multiple=True,
+                            translation_key="event_type",
+                        )
+                    )
+                }),
+            )
+
+        self._calendar_data[CONF_CALENDAR_TYPES] = user_input[CONF_CALENDAR_TYPES]
+        return await self.async_step_calendar_name()
+
+    async def async_step_calendar_specific(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle specific event selection for calendar."""
+        event_entries = [
+            e for e in self.hass.config_entries.async_entries(DOMAIN)
+            if e.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_CALENDAR
+        ]
+        options = [
+            SelectOptionDict(value=e.entry_id, label=e.title)
+            for e in event_entries
+        ]
+
+        if user_input is None:
+            return self.async_show_form(
+                step_id="calendar_specific",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_CALENDAR_EVENT_IDS): SelectSelector(
+                        SelectSelectorConfig(options=options, multiple=True)
+                    )
+                }),
+            )
+
+        self._calendar_data[CONF_CALENDAR_EVENT_IDS] = user_input[CONF_CALENDAR_EVENT_IDS]
+        return await self.async_step_calendar_name()
+
+    async def async_step_calendar_name(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Last step: confirm or change the calendar name."""
+        if user_input is None:
+            suggested = self._suggest_calendar_name()
+            return self.async_show_form(
+                step_id="calendar_name",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_EVENT_NAME, default=suggested): str,
+                }),
+            )
+        name = user_input[CONF_EVENT_NAME].strip()
+        self._calendar_data[CONF_EVENT_NAME] = name
+        return self.async_create_entry(title=name, data=self._calendar_data)
 
     async def async_step_trip(
         self, user_input: dict[str, Any] | None = None
@@ -395,10 +510,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     as a read-only property. Do not override __init__ to set it manually.
     """
 
+    def __init__(self) -> None:
+        """Initialize the options flow."""
+        self._calendar_data: dict = {}
+
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
+        # Calendar entries get their own options flow
+        if self.config_entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR:
+            return await self.async_step_calendar_options(user_input)
+
         # Get the event type from existing config
         event_type = self.config_entry.data.get(CONF_EVENT_TYPE, EVENT_TYPE_TRIP)
 
@@ -633,3 +756,105 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             step_id="dst_options",
             data_schema=data_schema,
         )
+
+    async def async_step_calendar_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle calendar scope change."""
+        if user_input is None:
+            current_scope = self.config_entry.data.get(CONF_CALENDAR_SCOPE, "all")
+            return self.async_show_form(
+                step_id="calendar_options",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_CALENDAR_SCOPE, default=current_scope): SelectSelector(
+                        SelectSelectorConfig(
+                            options=["all", "by_type", "specific"],
+                            translation_key="calendar_scope",
+                        )
+                    )
+                }),
+            )
+
+        self._calendar_data = {
+            CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
+            CONF_CALENDAR_SCOPE: user_input[CONF_CALENDAR_SCOPE],
+        }
+        scope = user_input[CONF_CALENDAR_SCOPE]
+        if scope == "by_type":
+            return await self.async_step_calendar_by_type_options()
+        if scope == "specific":
+            return await self.async_step_calendar_specific_options()
+
+        return await self.async_step_calendar_name_options()
+
+    async def async_step_calendar_by_type_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle calendar type filter change."""
+        if user_input is None:
+            current_types = self.config_entry.data.get(CONF_CALENDAR_TYPES, list(EVENT_TYPES.keys()))
+            return self.async_show_form(
+                step_id="calendar_by_type_options",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_CALENDAR_TYPES, default=current_types): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(EVENT_TYPES.keys()),
+                            multiple=True,
+                            translation_key="event_type",
+                        )
+                    )
+                }),
+            )
+
+        self._calendar_data[CONF_CALENDAR_TYPES] = user_input[CONF_CALENDAR_TYPES]
+        return await self.async_step_calendar_name_options()
+
+    async def async_step_calendar_specific_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle specific event selection change."""
+        event_entries = [
+            e for e in self.hass.config_entries.async_entries(DOMAIN)
+            if e.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_CALENDAR
+        ]
+        options = [
+            SelectOptionDict(value=e.entry_id, label=e.title)
+            for e in event_entries
+        ]
+
+        if user_input is None:
+            current_ids = self.config_entry.data.get(CONF_CALENDAR_EVENT_IDS, [])
+            return self.async_show_form(
+                step_id="calendar_specific_options",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_CALENDAR_EVENT_IDS, default=current_ids): SelectSelector(
+                        SelectSelectorConfig(options=options, multiple=True)
+                    )
+                }),
+            )
+
+        self._calendar_data[CONF_CALENDAR_EVENT_IDS] = user_input[CONF_CALENDAR_EVENT_IDS]
+        return await self.async_step_calendar_name_options()
+
+    async def async_step_calendar_name_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Last options step: edit the calendar name."""
+        if user_input is None:
+            current_name = self.config_entry.data.get(CONF_EVENT_NAME, "WhenHub Calendar")
+            return self.async_show_form(
+                step_id="calendar_name_options",
+                data_schema=vol.Schema({
+                    vol.Required(CONF_EVENT_NAME, default=current_name): str,
+                }),
+            )
+        name = user_input[CONF_EVENT_NAME].strip()
+        self._calendar_data[CONF_EVENT_NAME] = name
+        new_data = dict(self.config_entry.data)
+        new_data.update(self._calendar_data)
+        self.hass.config_entries.async_update_entry(
+            self.config_entry,
+            data=new_data,
+            title=name,
+        )
+        return self.async_create_entry(title="", data={})
