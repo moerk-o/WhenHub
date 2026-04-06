@@ -1,7 +1,9 @@
 """Config flow for WhenHub integration."""
 from __future__ import annotations
 
+import json
 import logging
+import pathlib
 from typing import Any
 import voluptuous as vol
 from datetime import date
@@ -26,7 +28,6 @@ from .const import (
     EVENT_TYPE_ANNIVERSARY,
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
     CONF_START_DATE,
     CONF_END_DATE,
     CONF_TARGET_DATE,
@@ -64,13 +65,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step - event type selection.""" 
+        """Handle the initial step - event type selection."""
         if user_input is None:
             return await self._show_event_type_form()
 
         self._event_type = user_input[CONF_EVENT_TYPE]
 
-        # Route to calendar flow or event-specific step
         if self._event_type == ENTRY_TYPE_CALENDAR:
             return await self.async_step_calendar()
         elif self._event_type == EVENT_TYPE_TRIP:
@@ -84,7 +84,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_event_type_form(self) -> FlowResult:
         """Show event type selection form."""
-        # All event types plus the calendar option
         event_type_options = list(EVENT_TYPES.keys()) + [ENTRY_TYPE_CALENDAR]
 
         data_schema = vol.Schema({
@@ -106,7 +105,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         lang = self.hass.config.language or ""
         base = "WhenHub Kalender" if lang.startswith("de") else "WhenHub Calendar"
         existing = {
-            e.data.get(CONF_EVENT_NAME, "")
+            e.title
             for e in self.hass.config_entries.async_entries(DOMAIN)
             if e.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR
         }
@@ -116,6 +115,40 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         while f"{base} {counter}" in existing:
             counter += 1
         return f"{base} {counter}"
+
+    def _suggest_event_name(self, base: str) -> str:
+        """Return an auto-incremented event name suggestion."""
+        existing = {
+            e.title
+            for e in self.hass.config_entries.async_entries(DOMAIN)
+        }
+        if base not in existing:
+            return base
+        counter = 2
+        while f"{base} {counter}" in existing:
+            counter += 1
+        return f"{base} {counter}"
+
+    def _get_translated_selector_option(self, selector: str, key: str) -> str:
+        """Look up a translated selector option from the translation file."""
+        lang = (self.hass.config.language or "en").split("-")[0]
+        translations_dir = pathlib.Path(__file__).parent / "translations"
+        for try_lang in [lang, "en"]:
+            trans_file = translations_dir / f"{try_lang}.json"
+            if trans_file.exists():
+                try:
+                    data = json.loads(trans_file.read_text(encoding="utf-8"))
+                    name = (
+                        data.get("selector", {})
+                        .get(selector, {})
+                        .get("options", {})
+                        .get(key, "")
+                    )
+                    if name:
+                        return name
+                except Exception:
+                    pass
+        return key.replace("_", " ").title()
 
     async def async_step_calendar(
         self, user_input: dict[str, Any] | None = None
@@ -143,7 +176,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self.async_step_calendar_by_type()
         if scope == "specific":
             return await self.async_step_calendar_specific()
-        return await self.async_step_calendar_name()
+        return self.async_create_entry(
+            title=self._suggest_calendar_name(),
+            data=self._calendar_data,
+        )
 
     async def async_step_calendar_by_type(
         self, user_input: dict[str, Any] | None = None
@@ -164,7 +200,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._calendar_data[CONF_CALENDAR_TYPES] = user_input[CONF_CALENDAR_TYPES]
-        return await self.async_step_calendar_name()
+        return self.async_create_entry(
+            title=self._suggest_calendar_name(),
+            data=self._calendar_data,
+        )
 
     async def async_step_calendar_specific(
         self, user_input: dict[str, Any] | None = None
@@ -190,23 +229,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._calendar_data[CONF_CALENDAR_EVENT_IDS] = user_input[CONF_CALENDAR_EVENT_IDS]
-        return await self.async_step_calendar_name()
-
-    async def async_step_calendar_name(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Last step: confirm or change the calendar name."""
-        if user_input is None:
-            suggested = self._suggest_calendar_name()
-            return self.async_show_form(
-                step_id="calendar_name",
-                data_schema=vol.Schema({
-                    vol.Required(CONF_EVENT_NAME, default=suggested): str,
-                }),
-            )
-        name = user_input[CONF_EVENT_NAME].strip()
-        self._calendar_data[CONF_EVENT_NAME] = name
-        return self.async_create_entry(title=name, data=self._calendar_data)
+        return self.async_create_entry(
+            title=self._suggest_calendar_name(),
+            data=self._calendar_data,
+        )
 
     async def async_step_trip(
         self, user_input: dict[str, Any] | None = None
@@ -217,7 +243,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
 
-        # Validate dates for trip (DateSelector returns date objects directly)
         start_date = user_input[CONF_START_DATE]
         end_date = user_input[CONF_END_DATE]
 
@@ -225,18 +250,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "invalid_dates"
 
         if not errors:
-            # Add event type to data
             user_input[CONF_EVENT_TYPE] = self._event_type
-            
-            # Create unique ID
-            event_name = user_input[CONF_EVENT_NAME]
-            await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title=event_name,
-                data=user_input,
-            )
+            return self.async_create_entry(title=self._suggest_event_name("Trip"), data=user_input)
 
         return await self._show_trip_form(user_input, errors)
 
@@ -245,7 +260,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Show trip configuration form."""
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_START_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
             vol.Required(CONF_END_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
@@ -264,26 +278,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return await self._show_milestone_form()
 
-        # DateSelector validates date format automatically
-        # Add event type to data
         user_input[CONF_EVENT_TYPE] = self._event_type
-
-        # Create unique ID
-        event_name = user_input[CONF_EVENT_NAME]
-        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-        self._abort_if_unique_id_configured()
-
-        return self.async_create_entry(
-            title=event_name,
-            data=user_input,
-        )
+        return self.async_create_entry(title=self._suggest_event_name("Milestone"), data=user_input)
 
     async def _show_milestone_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show milestone configuration form."""
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
         })
@@ -301,26 +303,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return await self._show_anniversary_form()
 
-        # DateSelector validates date format automatically
-        # Add event type to data
         user_input[CONF_EVENT_TYPE] = self._event_type
-
-        # Create unique ID
-        event_name = user_input[CONF_EVENT_NAME]
-        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-        self._abort_if_unique_id_configured()
-
-        return self.async_create_entry(
-            title=event_name,
-            data=user_input,
-        )
+        return self.async_create_entry(title=self._suggest_event_name("Anniversary"), data=user_input)
 
     async def _show_anniversary_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show anniversary configuration form."""
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=date.today().isoformat() if user_input is None else user_input.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
         })
@@ -340,7 +330,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         self._special_category = user_input[CONF_SPECIAL_CATEGORY]
 
-        # Route to DST-specific flow if DST category selected
         if self._special_category == "dst":
             return await self.async_step_dst_event()
 
@@ -348,7 +337,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _show_special_category_form(self) -> FlowResult:
         """Show special event category selection form."""
-        # Use simple string list for options - labels come from translation_key
         category_options = list(SPECIAL_EVENT_CATEGORIES.keys())
 
         data_schema = vol.Schema({
@@ -372,40 +360,27 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return await self._show_special_event_form()
 
-        # Add event type and category to data
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        
-        # Create unique ID
-        event_name = user_input[CONF_EVENT_NAME]
-        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-        self._abort_if_unique_id_configured()
-
-        return self.async_create_entry(
-            title=event_name,
-            data=user_input,
-        )
+        special_type = user_input.get(CONF_SPECIAL_TYPE, "special_event")
+        base_name = self._get_translated_selector_option("special_type", special_type)
+        return self.async_create_entry(title=self._suggest_event_name(base_name), data=user_input)
 
     async def _show_special_event_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
     ) -> FlowResult:
         """Show special event selection and configuration form."""
-        # Filter events by selected category
         filtered_events = {
             key: info for key, info in SPECIAL_EVENTS.items()
             if info.get("category") == self._special_category
         }
 
-        # Use simple string list for options - labels come from translation_key
         special_options = list(filtered_events.keys())
-
-        # Get default value
         default_special_type = special_options[0] if special_options else ""
         if user_input is not None:
             default_special_type = user_input.get(CONF_SPECIAL_TYPE, default_special_type)
 
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default="" if user_input is None else user_input.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_SPECIAL_TYPE, default=default_special_type): SelectSelector(
                 SelectSelectorConfig(
                     options=special_options,
@@ -424,23 +399,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_dst_event(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle DST event configuration (combined type, region, and details)."""
+        """Handle DST event configuration."""
         if user_input is None:
             return await self._show_dst_event_form()
 
-        # Add event type and category to data
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-
-        # Create unique ID
-        event_name = user_input[CONF_EVENT_NAME]
-        await self.async_set_unique_id(f"{DOMAIN}_{event_name.lower().replace(' ', '_')}")
-        self._abort_if_unique_id_configured()
-
-        return self.async_create_entry(
-            title=event_name,
-            data=user_input,
-        )
+        return self.async_create_entry(title=self._suggest_event_name("DST Event"), data=user_input)
 
     async def _show_dst_event_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -449,7 +414,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         region_options = list(DST_REGIONS.keys())
         dst_type_options = list(DST_EVENT_TYPES.keys())
 
-        # Auto-detect region based on Home Assistant timezone
         default_region = None
         tz_name = self.hass.config.time_zone
         if tz_name:
@@ -458,18 +422,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     default_region = region
                     break
 
-        # Fall back to EU if no match
         if default_region is None:
             default_region = "eu"
 
-        # Default DST type is "next_change"
         default_dst_type = "next_change"
-        default_name = ""
 
         if user_input is not None:
             default_region = user_input.get(CONF_DST_REGION, default_region)
             default_dst_type = user_input.get(CONF_DST_TYPE, default_dst_type)
-            default_name = user_input.get(CONF_EVENT_NAME, "")
 
         data_schema = vol.Schema({
             vol.Required(CONF_DST_REGION, default=default_region): SelectSelector(
@@ -486,7 +446,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Required(CONF_EVENT_NAME, default=default_name): str,
             vol.Optional(CONF_IMAGE_PATH, default="" if user_input is None else user_input.get(CONF_IMAGE_PATH, "")): str,
         })
 
@@ -518,14 +477,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
-        # Calendar entries get their own options flow
         if self.config_entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR:
             return await self.async_step_calendar_options(user_input)
 
-        # Get the event type from existing config
         event_type = self.config_entry.data.get(CONF_EVENT_TYPE, EVENT_TYPE_TRIP)
 
-        # Route to appropriate options step based on event type
         if event_type == EVENT_TYPE_TRIP:
             return await self.async_step_trip_options(user_input)
         elif event_type == EVENT_TYPE_MILESTONE:
@@ -533,7 +489,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         elif event_type == EVENT_TYPE_ANNIVERSARY:
             return await self.async_step_anniversary_options(user_input)
         elif event_type == EVENT_TYPE_SPECIAL:
-            # Check if it's a DST event
             special_category = self.config_entry.data.get(CONF_SPECIAL_CATEGORY)
             if special_category == "dst":
                 return await self.async_step_dst_options(user_input)
@@ -546,7 +501,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         errors = {}
 
         if user_input is not None:
-            # DateSelector returns date objects directly
             start_date = user_input[CONF_START_DATE]
             end_date = user_input[CONF_END_DATE]
 
@@ -554,26 +508,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 errors["base"] = "invalid_dates"
 
             if not errors:
-                # Keep original event type
                 user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
-                # Update the config entry
                 new_data = dict(self.config_entry.data)
                 new_data.update(user_input)
 
                 self.hass.config_entries.async_update_entry(
                     self.config_entry,
                     data=new_data,
-                    title=user_input[CONF_EVENT_NAME]
                 )
 
                 self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
                 return self.async_create_entry(title="", data={})
 
-        # Use user_input if available (for showing errors with entered data), otherwise current data
         current_data = user_input if user_input is not None else self.config_entry.data
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
             vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
@@ -590,7 +539,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Handle milestone options."""
         if user_input is not None:
-            # DateSelector validates date format automatically
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
@@ -599,7 +547,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=new_data,
-                title=user_input[CONF_EVENT_NAME]
             )
 
             self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
@@ -607,7 +554,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         current_data = self.config_entry.data
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
         })
@@ -622,7 +568,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Handle anniversary options."""
         if user_input is not None:
-            # DateSelector validates date format automatically
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
@@ -631,7 +576,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=new_data,
-                title=user_input[CONF_EVENT_NAME]
             )
 
             self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
@@ -639,7 +583,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         current_data = self.config_entry.data
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
         })
@@ -662,7 +605,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=new_data,
-                title=user_input[CONF_EVENT_NAME]
             )
 
             self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
@@ -670,11 +612,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         current_data = self.config_entry.data
 
-        # Get current category or determine from existing special_type
         current_category = current_data.get(CONF_SPECIAL_CATEGORY)
         current_special_type = current_data.get(CONF_SPECIAL_TYPE, "christmas_eve")
 
-        # If no category is saved, try to determine it from the special_type
         if not current_category:
             for event_key, event_info in SPECIAL_EVENTS.items():
                 if event_key == current_special_type:
@@ -683,17 +623,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             if not current_category:
                 current_category = "traditional"
 
-        # Filter events by current category
         filtered_events = {
             key: info for key, info in SPECIAL_EVENTS.items()
             if info.get("category") == current_category
         }
 
-        # Use simple string list for options - labels come from translation_key
         special_options = list(filtered_events.keys())
 
         data_schema = vol.Schema({
-            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Required(CONF_SPECIAL_TYPE, default=current_special_type): SelectSelector(
                 SelectSelectorConfig(
                     options=special_options,
@@ -713,7 +650,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Handle DST event options."""
         if user_input is not None:
-            # Keep original event type and category
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
             user_input[CONF_SPECIAL_CATEGORY] = self.config_entry.data.get(CONF_SPECIAL_CATEGORY, "dst")
 
@@ -723,7 +659,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data=new_data,
-                title=user_input[CONF_EVENT_NAME]
             )
 
             self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
@@ -748,7 +683,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     mode=SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Required(CONF_EVENT_NAME, default=current_data.get(CONF_EVENT_NAME, "")): str,
             vol.Optional(CONF_IMAGE_PATH, default=current_data.get(CONF_IMAGE_PATH, "")): str,
         })
 
@@ -785,7 +719,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         if scope == "specific":
             return await self.async_step_calendar_specific_options()
 
-        return await self.async_step_calendar_name_options()
+        return self._save_calendar_options()
 
     async def async_step_calendar_by_type_options(
         self, user_input: dict[str, Any] | None = None
@@ -807,7 +741,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         self._calendar_data[CONF_CALENDAR_TYPES] = user_input[CONF_CALENDAR_TYPES]
-        return await self.async_step_calendar_name_options()
+        return self._save_calendar_options()
 
     async def async_step_calendar_specific_options(
         self, user_input: dict[str, Any] | None = None
@@ -834,27 +768,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             )
 
         self._calendar_data[CONF_CALENDAR_EVENT_IDS] = user_input[CONF_CALENDAR_EVENT_IDS]
-        return await self.async_step_calendar_name_options()
+        return self._save_calendar_options()
 
-    async def async_step_calendar_name_options(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Last options step: edit the calendar name."""
-        if user_input is None:
-            current_name = self.config_entry.data.get(CONF_EVENT_NAME, "WhenHub Calendar")
-            return self.async_show_form(
-                step_id="calendar_name_options",
-                data_schema=vol.Schema({
-                    vol.Required(CONF_EVENT_NAME, default=current_name): str,
-                }),
-            )
-        name = user_input[CONF_EVENT_NAME].strip()
-        self._calendar_data[CONF_EVENT_NAME] = name
+    def _save_calendar_options(self) -> FlowResult:
+        """Save updated calendar configuration and close options flow."""
         new_data = dict(self.config_entry.data)
         new_data.update(self._calendar_data)
         self.hass.config_entries.async_update_entry(
             self.config_entry,
             data=new_data,
-            title=name,
         )
         return self.async_create_entry(title="", data={})

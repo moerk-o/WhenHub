@@ -50,6 +50,8 @@ def trip_config_entry():
             "website_url": "",
             "notes": "Sommerurlaub"
         },
+        title="Dänemark 2026",
+
         unique_id="whenhub_daenemark_2026",
         version=1,
     )
@@ -69,6 +71,8 @@ def milestone_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Projektabgabe",
+
         unique_id="whenhub_projektabgabe",
         version=1,
     )
@@ -88,6 +92,8 @@ def anniversary_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Geburtstag Max",
+
         unique_id="whenhub_geburtstag_max",
         version=1,
     )
@@ -108,6 +114,8 @@ def special_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Weihnachts-Countdown",
+
         unique_id="whenhub_weihnachts_countdown",
         version=1,
     )
@@ -133,6 +141,8 @@ def single_day_trip_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Tagesausflug",
+
         unique_id="whenhub_tagesausflug",
         version=1,
     )
@@ -154,6 +164,8 @@ def past_trip_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Vergangener Urlaub",
+
         unique_id="whenhub_vergangener_urlaub",
         version=1,
     )
@@ -174,6 +186,8 @@ def past_milestone_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Vergangener Milestone",
+
         unique_id="whenhub_vergangener_milestone",
         version=1,
     )
@@ -195,6 +209,8 @@ def long_trip_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Weltreise",
+
         unique_id="whenhub_weltreise",
         version=1,
     )
@@ -215,6 +231,8 @@ def leap_year_anniversary_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Schaltjahr Geburtstag",
+
         unique_id="whenhub_schaltjahr_geburtstag",
         version=1,
     )
@@ -236,6 +254,8 @@ def easter_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Ostern",
+
         unique_id="whenhub_ostern",
         version=1,
     )
@@ -257,6 +277,8 @@ def advent_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="1. Advent",
+
         unique_id="whenhub_advent_1",
         version=1,
     )
@@ -284,6 +306,8 @@ def dst_eu_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Zeitumstellung EU",
+
         unique_id="whenhub_dst_eu",
         version=1,
     )
@@ -307,6 +331,8 @@ def dst_usa_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="DST USA",
+
         unique_id="whenhub_dst_usa",
         version=1,
     )
@@ -330,6 +356,8 @@ def dst_australia_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="DST Australia",
+
         unique_id="whenhub_dst_australia",
         version=1,
     )
@@ -353,6 +381,8 @@ def dst_nz_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="DST New Zealand",
+
         unique_id="whenhub_dst_nz",
         version=1,
     )
@@ -376,6 +406,8 @@ def dst_eu_summer_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Sommerzeit EU",
+
         unique_id="whenhub_dst_eu_summer",
         version=1,
     )
@@ -399,6 +431,8 @@ def dst_eu_winter_config_entry():
             "website_url": "",
             "notes": ""
         },
+        title="Winterzeit EU",
+
         unique_id="whenhub_dst_eu_winter",
         version=1,
     )
@@ -421,6 +455,8 @@ def umlaut_milestone_config_entry():
             "target_date": "2026-04-01",
             "image_path": "",
         },
+        title="Frühjahrsputz Büro",
+
         unique_id="whenhub_umlauts_test",
         version=1,
     )
@@ -439,6 +475,8 @@ def sharp_s_milestone_config_entry():
             "target_date": "2026-06-15",
             "image_path": "",
         },
+        title="Großes Straßenfest",
+
         unique_id="whenhub_sharp_s_test",
         version=1,
     )
@@ -457,6 +495,8 @@ def ampersand_milestone_config_entry():
             "target_date": "2026-05-01",
             "image_path": "",
         },
+        title="Tom & Jerry Party",
+
         unique_id="whenhub_ampersand_test",
         version=1,
     )
@@ -476,6 +516,8 @@ def emoji_trip_config_entry():
             "end_date": "2026-08-15",
             "image_path": "",
         },
+        title="Urlaub Spanien 🌴",
+
         unique_id="whenhub_emoji_test",
         version=1,
     )
@@ -494,6 +536,8 @@ def long_name_milestone_config_entry():
             "target_date": "2026-09-01",
             "image_path": "",
         },
+        title="Dieser extrem lange Event-Name testet ob die Integration auch mit sehr langen Namen korrekt umgehen kann",
+
         unique_id="whenhub_long_name_test",
         version=1,
     )
@@ -513,6 +557,8 @@ def silvester_special_config_entry():
             "special_category": "calendar",
             "image_path": "",
         },
+        title="Silvester Test",
+
         unique_id="whenhub_nye_test",
         version=1,
     )
@@ -532,6 +578,8 @@ def neujahr_special_config_entry():
             "special_category": "calendar",
             "image_path": "",
         },
+        title="Neujahr Test",
+
         unique_id="whenhub_ny_test",
         version=1,
     )
@@ -551,6 +599,8 @@ def parallel_trip_1_config_entry():
             "end_date": "2026-07-15",
             "image_path": "",
         },
+        title="Parallel Trip 1",
+
         unique_id="whenhub_parallel_1",
         version=1,
     )
@@ -570,6 +620,8 @@ def parallel_trip_2_config_entry():
             "end_date": "2026-07-20",
             "image_path": "",
         },
+        title="Parallel Trip 2",
+
         unique_id="whenhub_parallel_2",
         version=1,
     )
@@ -592,6 +644,8 @@ def cyrillic_milestone_config_entry():
             "target_date": "2026-05-01",
             "image_path": "",
         },
+        title="Поездка в Москву",
+
         unique_id="whenhub_cyrillic_test",
         version=1,
     )
@@ -610,6 +664,8 @@ def chinese_milestone_config_entry():
             "target_date": "2026-06-01",
             "image_path": "",
         },
+        title="北京之旅",
+
         unique_id="whenhub_chinese_test",
         version=1,
     )
@@ -628,6 +684,8 @@ def japanese_milestone_config_entry():
             "target_date": "2026-07-01",
             "image_path": "",
         },
+        title="東京旅行",
+
         unique_id="whenhub_japanese_test",
         version=1,
     )
@@ -646,6 +704,8 @@ def arabic_milestone_config_entry():
             "target_date": "2026-08-01",
             "image_path": "",
         },
+        title="رحلة إلى القاهرة",
+
         unique_id="whenhub_arabic_test",
         version=1,
     )
@@ -664,6 +724,8 @@ def hebrew_milestone_config_entry():
             "target_date": "2026-09-01",
             "image_path": "",
         },
+        title="טיול לתל אביב",
+
         unique_id="whenhub_hebrew_test",
         version=1,
     )

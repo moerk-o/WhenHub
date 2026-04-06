@@ -12,13 +12,11 @@
         "title": "Set up trip",
         "description": "Set up a new trip in WhenHub",
         "data": {
-          "event_name": "Trip name",
           "start_date": "Start date",
           "end_date": "End date",
           "image_path": "Image path (optional)"
         },
         "data_description": {
-          "event_name": "e.g. 'Denmark Vacation 2025' or 'Business Trip Berlin'",
           "start_date": "The date when the trip begins",
           "end_date": "The date when the trip ends",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg"
@@ -28,12 +26,10 @@
         "title": "Set up milestone",
         "description": "Set up a new milestone in WhenHub",
         "data": {
-          "event_name": "Milestone name",
           "target_date": "Target date",
           "image_path": "Image path (optional)"
         },
         "data_description": {
-          "event_name": "e.g. 'Max's Birthday' or 'Project Deadline'",
           "target_date": "The date of the important event",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg"
         }
@@ -42,12 +38,10 @@
         "title": "Set up anniversary",
         "description": "Set up a new anniversary in WhenHub",
         "data": {
-          "event_name": "Anniversary name",
           "target_date": "Original date",
           "image_path": "Image path (optional)"
         },
         "data_description": {
-          "event_name": "e.g. 'Wedding Anniversary' or 'Company Anniversary'",
           "target_date": "The original date (will repeat yearly)",
           "image_path": "Path to an image, e.g. /local/images/anniversary.jpg"
         }
@@ -63,12 +57,10 @@
         "title": "Set up special event",
         "description": "Set up your special event",
         "data": {
-          "event_name": "Special event name",
           "special_type": "Special event",
           "image_path": "Image path (optional)"
         },
         "data_description": {
-          "event_name": "e.g. 'Christmas Countdown' or 'Easter Countdown'",
           "special_type": "Select the specific event from the category",
           "image_path": "Path to an image, e.g. /local/images/special.jpg"
         }
@@ -79,13 +71,11 @@
         "data": {
           "dst_region": "Region",
           "dst_type": "Event type",
-          "event_name": "Event name",
           "image_path": "Image path (optional)"
         },
         "data_description": {
           "dst_region": "For which region should DST be calculated?",
           "dst_type": "Which DST event do you want to track?",
-          "event_name": "e.g. 'DST Change' or 'Summer Time'",
           "image_path": "Path to an image, e.g. /local/images/dst.jpg"
         }
       },
@@ -109,22 +99,12 @@
         "data": {
           "calendar_event_ids": "Events"
         }
-      },
-      "calendar_name": {
-        "title": "Calendar name",
-        "description": "Give this calendar a name.",
-        "data": {
-          "event_name": "Calendar name"
-        }
       }
     },
     "error": {
       "invalid_dates": "End date must be after start date",
       "invalid_date_format": "Invalid date format. Use YYYY-MM-DD",
       "image_upload_failed": "Error uploading image"
-    },
-    "abort": {
-      "already_configured": "An event with this name is already configured"
     }
   },
   "options": {
@@ -172,13 +152,6 @@
         "description": "Select the specific events to include in the calendar.",
         "data": {
           "calendar_event_ids": "Events"
-        }
-      },
-      "calendar_name_options": {
-        "title": "Calendar name",
-        "description": "Edit the name of this calendar.",
-        "data": {
-          "event_name": "Calendar name"
         }
       }
     }

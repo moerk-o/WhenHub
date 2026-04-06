@@ -28,7 +28,6 @@ from .const import (
     EVENT_TYPE_ANNIVERSARY,
     EVENT_TYPE_SPECIAL,
     CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
     CONF_SPECIAL_CATEGORY,
     CONF_IMAGE_PATH,
     TRIP_BINARY_SENSOR_TYPES,
@@ -133,10 +132,10 @@ async def async_setup_entry(
                     )
 
         if binary_sensors:
-            _LOGGER.info("Created %d binary sensors for %s", len(binary_sensors), event_data[CONF_EVENT_NAME])
+            _LOGGER.info("Created %d binary sensors for %s", len(binary_sensors), config_entry.title)
             async_add_entities(binary_sensors)
     except Exception as err:
-        _LOGGER.error("Error setting up binary sensors for %s: %s", event_data.get(CONF_EVENT_NAME), err)
+        _LOGGER.error("Error setting up binary sensors for %s: %s", config_entry.title, err)
         async_add_entities([])
 
 
@@ -303,7 +302,7 @@ class MilestoneBinarySensor(BaseBinarySensor):
         """Return state attributes for this sensor."""
         data = self.coordinator.data
         attributes = {
-            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_name": self._config_entry.title,
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_MILESTONE),
             "target_date": data.get("target_date") if data else None,
         }
@@ -353,7 +352,7 @@ class AnniversaryBinarySensor(BaseBinarySensor):
         """Return state attributes for this sensor."""
         data = self.coordinator.data
         attributes = {
-            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_name": self._config_entry.title,
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_ANNIVERSARY),
             "original_date": data.get("original_date") if data else None,
         }
@@ -409,7 +408,7 @@ class SpecialBinarySensor(BaseBinarySensor):
         """Return state attributes for this sensor."""
         data = self.coordinator.data
         attributes = {
-            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_name": self._config_entry.title,
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
             "special_type": data.get("special_type") if data else None,
             "special_name": data.get("special_name") if data else None,
@@ -477,7 +476,7 @@ class DSTBinarySensor(BaseBinarySensor):
         """Return state attributes for this sensor."""
         data = self.coordinator.data
         attributes = {
-            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_name": self._config_entry.title,
             "event_type": self._event_data.get(CONF_EVENT_TYPE, EVENT_TYPE_SPECIAL),
             "dst_type": data.get("dst_type") if data else None,
             "dst_region": data.get("dst_region") if data else None,

@@ -45,7 +45,6 @@ Trip events have a **start date** and **end date** and provide comprehensive tra
 
 When setting up a Trip event, you configure:
 
-- **Event Name**: e.g., "Denmark Vacation" or "Grandmas visit"
 - **Start Date**: When the trip begins (Format: YYYY-MM-DD)
 - **End Date**: When the trip ends (Format: YYYY-MM-DD)
 - **Image Path** *(optional)*:
@@ -90,7 +89,6 @@ Milestone events have a single **target date** and focus on the countdown to thi
 
 When setting up a Milestone event, you configure:
 
-- **Event Name**: e.g., "New car delivery" or "Project Deadline"
 - **Target Date**: The important date (Format: YYYY-MM-DD)
 - **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (red flag icon)
@@ -127,7 +125,6 @@ Anniversary events repeat annually based on an **original date** and provide bot
 
 When setting up an Anniversary event, you configure:
 
-- **Event Name**: e.g., "Birthday Jon" or "Company Anniversary"
 - **Original Date**: The date of the first event (Format: YYYY-MM-DD)
 - **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (pink heart icon)
@@ -174,7 +171,6 @@ Special events track holidays that repeat annually. These include both fixed-dat
 When setting up a Special Event, you configure:
 
 - **Event Category**: Choose from 3 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time)
-- **Event Name**: e.g., "Christmas Countdown" or "Easter Countdown"
 - **Special Event Type**: Choose from 13 predefined holidays
 - **Image Path** *(optional)*:
   - Leave empty = Automatically generated default image (purple star icon)
@@ -284,7 +280,7 @@ When setting up a WhenHub Calendar, you configure:
    - **Filter by Type** — Only show selected event types (e.g. Trips and Anniversaries only)
    - **Select Specific Events** — Cherry-pick individual events by name
 
-2. **Calendar Name** — A custom name for this calendar (e.g., "Family Calendar" or "Trips Only"). Suggested automatically based on your HA language setting ("WhenHub Calendar" / "WhenHub Kalender"), auto-incremented if a name is already taken.
+The calendar name is suggested automatically based on your HA language setting ("WhenHub Calendar" / "WhenHub Kalender") and auto-incremented if a name is already taken. You can change the name in HA's built-in "Device created" dialog.
 
 ### Multiple Calendars
 
@@ -320,7 +316,6 @@ The calendar configuration can be changed at any time:
 1. Go to **Settings** → **Devices & Services** → **WhenHub**
 2. Click **Configure** on the desired calendar entry
 3. Adjust the scope, type filter, or event selection
-4. Set or change the calendar name in the final step
 
 After saving, the calendar reloads automatically and the description in the integrations UI updates to reflect the new configuration.
 

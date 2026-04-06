@@ -24,7 +24,6 @@ from ..const import (
     EVENT_TYPES,
     EVENT_TYPE_TRIP,
     CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
 )
 from ..calculations import (
     parse_date,
@@ -88,7 +87,7 @@ def get_device_info(config_entry: ConfigEntry, event_data: dict) -> DeviceInfo:
 
     return DeviceInfo(
         identifiers={(DOMAIN, config_entry.entry_id)},
-        name=event_data[CONF_EVENT_NAME],
+        name=config_entry.title,
         manufacturer="WhenHub",
         model=event_info["model"],
     )
@@ -172,7 +171,7 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
             return calculation_func()
         except Exception as err:
             _LOGGER.warning("Calculation error in %s sensor %s: %s",
-                           self._event_data[CONF_EVENT_NAME], self._sensor_type, err)
+                           self._config_entry.title, self._sensor_type, err)
             return fallback
 
     def _get_base_attributes(self) -> dict[str, Any]:
@@ -182,7 +181,7 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
             Dictionary with event_name and event_type attributes
         """
         return {
-            "event_name": self._event_data[CONF_EVENT_NAME],
+            "event_name": self._config_entry.title,
             "event_type": self._event_data.get(CONF_EVENT_TYPE),
         }
 

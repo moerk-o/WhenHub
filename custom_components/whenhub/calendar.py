@@ -30,7 +30,6 @@ from .const import (
     CONF_CALENDAR_TYPES,
     CONF_CALENDAR_EVENT_IDS,
     CONF_EVENT_TYPE,
-    CONF_EVENT_NAME,
     CONF_START_DATE,
     CONF_END_DATE,
     CONF_TARGET_DATE,
@@ -91,7 +90,7 @@ class WhenHubCalendar(CalendarEntity):
             model = "All Events"
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            name=self._entry.data.get(CONF_EVENT_NAME, "WhenHub"),
+            name=self._entry.title,
             manufacturer="WhenHub",
             model=model,
         )
@@ -107,7 +106,7 @@ class WhenHubCalendar(CalendarEntity):
                 continue
             if not self._entry_in_scope(entry):
                 continue
-            current = _get_current_event(entry.data, today)
+            current = _get_current_event(entry.data, today, entry.title)
             if current is not None:
                 return current
         return None
@@ -130,7 +129,7 @@ class WhenHubCalendar(CalendarEntity):
                 continue
             if not self._entry_in_scope(entry):
                 continue
-            events.extend(_get_calendar_events(entry.data, start, end))
+            events.extend(_get_calendar_events(entry.data, start, end, entry.title))
 
         return events
 
@@ -152,24 +151,23 @@ class WhenHubCalendar(CalendarEntity):
 # Event calculation helpers (module-level, no HA dependencies)
 # =============================================================================
 
-def _get_calendar_events(event_data: dict, start: date, end: date) -> list[CalendarEvent]:
+def _get_calendar_events(event_data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Route event calculation to the correct type handler."""
     event_type = event_data.get(CONF_EVENT_TYPE)
     if event_type == EVENT_TYPE_TRIP:
-        return _trip_events(event_data, start, end)
+        return _trip_events(event_data, start, end, name)
     if event_type == EVENT_TYPE_MILESTONE:
-        return _milestone_events(event_data, start, end)
+        return _milestone_events(event_data, start, end, name)
     if event_type == EVENT_TYPE_ANNIVERSARY:
-        return _anniversary_events(event_data, start, end)
+        return _anniversary_events(event_data, start, end, name)
     if event_type == EVENT_TYPE_SPECIAL:
-        return _special_events(event_data, start, end)
+        return _special_events(event_data, start, end, name)
     return []
 
 
-def _get_current_event(event_data: dict, today: date) -> CalendarEvent | None:
+def _get_current_event(event_data: dict, today: date, name: str) -> CalendarEvent | None:
     """Return a CalendarEvent if this event is active today (used for STATE_ON)."""
     event_type = event_data.get(CONF_EVENT_TYPE)
-    name = event_data.get(CONF_EVENT_NAME, "")
 
     if event_type == EVENT_TYPE_TRIP:
         trip_start = parse_date(event_data[CONF_START_DATE])
@@ -233,13 +231,13 @@ def _get_current_event(event_data: dict, today: date) -> CalendarEvent | None:
     return None
 
 
-def _trip_events(data: dict, start: date, end: date) -> list[CalendarEvent]:
+def _trip_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return trip event if it overlaps with [start, end]."""
     trip_start = parse_date(data[CONF_START_DATE])
     trip_end = parse_date(data[CONF_END_DATE])
     if trip_start <= end and trip_end >= start:
         return [CalendarEvent(
-            summary=data[CONF_EVENT_NAME],
+            summary=name,
             start=trip_start,
             end=trip_end,
             description="Trip",
@@ -247,12 +245,12 @@ def _trip_events(data: dict, start: date, end: date) -> list[CalendarEvent]:
     return []
 
 
-def _milestone_events(data: dict, start: date, end: date) -> list[CalendarEvent]:
+def _milestone_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return milestone event if its date falls within [start, end]."""
     target = parse_date(data[CONF_TARGET_DATE])
     if start <= target <= end:
         return [CalendarEvent(
-            summary=data[CONF_EVENT_NAME],
+            summary=name,
             start=target,
             end=target + timedelta(days=1),
             description="Milestone",
@@ -260,14 +258,13 @@ def _milestone_events(data: dict, start: date, end: date) -> list[CalendarEvent]
     return []
 
 
-def _anniversary_events(data: dict, start: date, end: date) -> list[CalendarEvent]:
+def _anniversary_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return all anniversary occurrences within [start, end].
 
     Uses anniversary_for_year() for leap-year-safe date calculation.
     Title format: "Name (N.)" where N is the number of years since the original date.
     """
     original = parse_date(data[CONF_TARGET_DATE])
-    name = data[CONF_EVENT_NAME]
     events = []
 
     for year in range(max(original.year, start.year), end.year + 1):
@@ -283,14 +280,13 @@ def _anniversary_events(data: dict, start: date, end: date) -> list[CalendarEven
     return events
 
 
-def _special_events(data: dict, start: date, end: date) -> list[CalendarEvent]:
+def _special_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return all special event occurrences within [start, end].
 
     Iterates over each year in the range and calls the appropriate calculation
     function (next_special_event or next_dst_event) once per year.
     """
     special_category = data.get(CONF_SPECIAL_CATEGORY)
-    name = data.get(CONF_EVENT_NAME, "")
     events = []
 
     if special_category == "dst":
