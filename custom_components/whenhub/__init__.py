@@ -13,9 +13,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from homeassistant.helpers.entity_registry import RegistryEntryDisabler
-
-from .const import DOMAIN, CONF_ENTRY_TYPE, ENTRY_TYPE_CALENDAR, CONF_URL, CONF_MEMO
+from .const import DOMAIN, CONF_ENTRY_TYPE, ENTRY_TYPE_CALENDAR
 from .coordinator import WhenHubCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,34 +51,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "event_data": dict(entry.data),
         }
         await hass.config_entries.async_forward_entry_setups(entry, EVENT_PLATFORMS)
-        _enable_url_memo_entities(hass, entry)
 
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
 
     _LOGGER.info("WhenHub integration loaded: %s", entry.title)
 
     return True
-
-
-def _enable_url_memo_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Enable URL / Memo sensor entities when their fields are populated.
-
-    Entities start disabled by default (entity_registry_enabled_default=False).
-    This function enables them if the corresponding config field is non-empty.
-    Only entities disabled by the integration are touched — USER-disabled ones
-    are left alone.
-    """
-    entity_reg = er.async_get(hass)
-    url_filled = bool(entry.data.get(CONF_URL, ""))
-    memo_filled = bool(entry.data.get(CONF_MEMO, ""))
-
-    for entity_entry in er.async_entries_for_config_entry(entity_reg, entry.entry_id):
-        if entity_entry.disabled_by != RegistryEntryDisabler.INTEGRATION:
-            continue
-        if url_filled and entity_entry.unique_id.endswith("_url"):
-            entity_reg.async_update_entity(entity_entry.entity_id, disabled_by=None)
-        elif memo_filled and entity_entry.unique_id.endswith("_memo"):
-            entity_reg.async_update_entity(entity_entry.entity_id, disabled_by=None)
 
 
 async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:

@@ -17,14 +17,12 @@ if TYPE_CHECKING:
 class WhenHubUrlSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
     """Sensor exposing the event URL.
 
-    Starts disabled by default; enabled automatically by __init__.py
-    when the URL field is populated.
+    Only created when the URL field is non-empty.
     """
 
     _attr_has_entity_name = True
     _attr_translation_key = "url"
     _attr_icon = "mdi:link"
-    _attr_entity_registry_enabled_default = False
 
     def __init__(
         self,
@@ -50,14 +48,12 @@ class WhenHubUrlSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
 class WhenHubMemoSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
     """Sensor exposing the event memo / notes.
 
-    Starts disabled by default; enabled automatically by __init__.py
-    when the Memo field is populated.
+    Only created when the Memo field is non-empty.
     """
 
     _attr_has_entity_name = True
     _attr_translation_key = "memo"
     _attr_icon = "mdi:note-text"
-    _attr_entity_registry_enabled_default = False
 
     def __init__(
         self,

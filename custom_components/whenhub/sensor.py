@@ -27,6 +27,8 @@ from .const import (
     ANNIVERSARY_SENSOR_TYPES,
     SPECIAL_SENSOR_TYPES,
     CUSTOM_PATTERN_SENSOR_TYPES,
+    CONF_URL,
+    CONF_MEMO,
 )
 from .coordinator import WhenHubCoordinator
 from .sensors import TripSensor, MilestoneSensor, AnniversarySensor, SpecialEventSensor, WhenHubUrlSensor, WhenHubMemoSensor
@@ -191,11 +193,17 @@ def _create_url_memo_sensors(
     config_entry: ConfigEntry,
     event_data: dict,
 ) -> list:
-    """Create URL and Memo sensor entities (FR11) for any event type."""
-    return [
-        WhenHubUrlSensor(coordinator, config_entry, event_data),
-        WhenHubMemoSensor(coordinator, config_entry, event_data),
-    ]
+    """Create URL and Memo sensor entities (FR11) for any event type.
+
+    Sensors are only created when the corresponding field is non-empty,
+    so they appear immediately without a disabled→enabled transition delay.
+    """
+    sensors = []
+    if event_data.get(CONF_URL, ""):
+        sensors.append(WhenHubUrlSensor(coordinator, config_entry, event_data))
+    if event_data.get(CONF_MEMO, ""):
+        sensors.append(WhenHubMemoSensor(coordinator, config_entry, event_data))
+    return sensors
 
 
 def _create_special_sensors(

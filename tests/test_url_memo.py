@@ -94,14 +94,14 @@ class TestMemoSensorValue:
 
 
 class TestSensorDefaults:
-    def test_url_sensor_disabled_by_default(self):
-        # entity_registry_enabled_default is the public property, returns the _attr_ value
+    def test_url_sensor_enabled_by_default(self):
+        # Sensors are only created when their field is non-empty, so always enabled.
         s = _make_url_sensor()
-        assert s.entity_registry_enabled_default is False
+        assert s.entity_registry_enabled_default is True
 
-    def test_memo_sensor_disabled_by_default(self):
+    def test_memo_sensor_enabled_by_default(self):
         s = _make_memo_sensor()
-        assert s.entity_registry_enabled_default is False
+        assert s.entity_registry_enabled_default is True
 
     def test_url_sensor_has_entity_name(self):
         s = _make_url_sensor()
@@ -260,11 +260,10 @@ async def test_url_entity_enabled_when_url_set(hass):
 
 
 @pytest.mark.asyncio
-async def test_url_entity_disabled_when_url_empty(hass):
-    """URL sensor should remain disabled when URL field is empty."""
+async def test_url_entity_not_created_when_url_empty(hass):
+    """URL sensor should not be created when URL field is empty."""
     from pytest_homeassistant_custom_component.common import MockConfigEntry
     from homeassistant.helpers import entity_registry as er
-    from homeassistant.helpers.entity_registry import RegistryEntryDisabler
 
     entry = MockConfigEntry(
         domain="whenhub",
@@ -289,6 +288,4 @@ async def test_url_entity_disabled_when_url_empty(hass):
          if e.unique_id.endswith("_url")),
         None,
     )
-    assert url_entity is not None
-    assert url_entity.disabled_by == RegistryEntryDisabler.INTEGRATION, \
-        "URL sensor should be disabled by integration when URL is empty"
+    assert url_entity is None, "URL sensor should not be created when URL is empty"
