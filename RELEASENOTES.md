@@ -1,6 +1,35 @@
+### ✨ New Features
+
+- **WhenHub Calendar**
+  - All your WhenHub events are now available as a native Home Assistant calendar — visible in the calendar card and queryable in automations
+  - Create multiple independent calendars with different scopes: show everything, filter by event type (e.g. only Trips), or pick individual entries
+
+- **Repeating Events**
+  - New event type for anything that follows a regular pattern: weekly team meetings, monthly bill reminders, annual traditions
+  - Choose from daily, weekly (select individual weekdays), monthly, or yearly; optionally set an end date or a maximum occurrence count
+
+- **Event Images**
+  - Give every event its own image — drag and drop a photo directly in the setup dialog
+  - The image appears as a dedicated entity in the image platform, ready to use on dashboards
+
+- **URL and Memo**
+  - Attach a booking link or free-text notes to any event — useful for holidays, trips, or project milestones
+  - Both appear as Home Assistant sensors the moment the field is filled in, making them available to automations and companion apps
+
 ### 🐞 Bug Fixes
 
-- **Binary Sensor Display Fixed**: Binary sensors now show "On/Off" 
+- **Cleaner Setup Flow**: The event name field no longer appears twice; WhenHub now generates a sensible title automatically and increments it if a duplicate already exists (e.g. "Trip 2")
+- **Next Date Sensor**: Fixed an off-by-one where the "next date" showed today on days the pattern fires, instead of pointing to the following occurrence
+
+**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.2.2...v2.3.0
+
+---
+
+# v2.2.2
+
+### 🐞 Bug Fixes
+
+- **Binary Sensor Display Fixed**: Binary sensors now show "On/Off"
 
 - **DST Default Name Localization**: Removed hardcoded German default names for DST events
 
