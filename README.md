@@ -52,12 +52,12 @@ When setting up a Trip event, you configure:
 - **Memo** *(optional)*: Free-text notes — supports Markdown.
 - **Notify when expired** *(optional)*: Create a notification in [HA Repairs](#expiry-notifications) when the trip's end date has passed. Default: off.
 
-> **Entity as date source:** Enable the toggle next to a date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. The coordinator reads the entity's state on every update. When an entity source is active, the **Event Date** sensor shows the `mdi:calendar-sync` icon.
+> **Entity as date source:** Enable the toggle next to a date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. The coordinator reads the entity's state on every update. When an entity source is active, the **Event Date** sensor shows a different icon to indicate the dynamic source.
 
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Start date of the trip (ISO 8601 timestamp, displays as relative time) — icon: `mdi:calendar-sync` when any date comes from an entity
+- **Event Date** - Start date of the trip (ISO 8601 timestamp, displays as relative time) — different icon when any date comes from an entity
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (trip)
@@ -98,12 +98,12 @@ When setting up a Milestone event, you configure:
 - **Memo** *(optional)*: Free-text notes — supports Markdown.
 - **Notify when expired** *(optional)*: Create a notification in [HA Repairs](#expiry-notifications) when the target date has passed. Default: off.
 
-> **Entity as date source:** Enable the toggle next to the date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. When active, the **Event Date** sensor shows the `mdi:calendar-sync` icon.
+> **Entity as date source:** Enable the toggle next to the date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. When active, the **Event Date** sensor shows a different icon to indicate the dynamic source.
 
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Target date of the milestone (ISO 8601 timestamp, displays as relative time) — icon: `mdi:calendar-sync` when date comes from an entity
+- **Event Date** - Target date of the milestone (ISO 8601 timestamp, displays as relative time) — different icon when date comes from an entity
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (milestone)
@@ -135,12 +135,12 @@ When setting up an Anniversary event, you configure:
 - **URL** *(optional)*: A link to a website or any related URL.
 - **Memo** *(optional)*: Free-text notes — supports Markdown.
 
-> **Entity as date source:** Enable the toggle next to the date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. When active, the **Event Date** sensor shows the `mdi:calendar-sync` icon.
+> **Entity as date source:** Enable the toggle next to the date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. When active, the **Event Date** sensor shows a different icon to indicate the dynamic source.
 
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Date of the next anniversary (ISO 8601 timestamp, displays as relative time) — icon: `mdi:calendar-sync` when date comes from an entity
+- **Event Date** - Date of the next anniversary (ISO 8601 timestamp, displays as relative time) — different icon when date comes from an entity
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (anniversary)
