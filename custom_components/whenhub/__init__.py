@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.helpers.issue_registry import async_delete_issue
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -142,6 +142,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "event_data": dict(entry.data),
         }
         _setup_entity_date_listeners(hass, entry, coordinator)
+        _setup_entity_registry_listener(hass, entry)
+        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
         await hass.config_entries.async_forward_entry_setups(entry, EVENT_PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
@@ -165,6 +167,84 @@ async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None
     await hass.config_entries.async_reload(entry.entry_id)
 
     _LOGGER.info("WhenHub integration updated: %s", entry.title)
+
+
+def _get_source_entity_map(data: dict) -> dict[str, str]:
+    """Return {config_key: entity_id} for all active entity date sources."""
+    result: dict[str, str] = {}
+    for use_key, id_key in (
+        (CONF_EVENT_DATE_USE_ENTITY, CONF_EVENT_DATE_ENTITY_ID),
+        (CONF_START_DATE_USE_ENTITY, CONF_START_DATE_ENTITY_ID),
+        (CONF_END_DATE_USE_ENTITY, CONF_END_DATE_ENTITY_ID),
+    ):
+        if data.get(use_key) and data.get(id_key):
+            result[id_key] = data[id_key]
+    return result
+
+
+def _setup_entity_registry_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Register entity registry listener to track renames and deletions of entity date sources.
+
+    - On rename (action="update", entity_id changed): auto-migrates config entry data.
+    - On delete (action="remove"): creates a Repairs issue.
+    - On create (action="create"): auto-resolves a previous Repairs issue.
+
+    The listener is automatically removed when the entry is unloaded via entry.async_on_unload().
+    """
+    if not _get_source_entity_map(entry.data):
+        return
+
+    @callback
+    def _handle_entity_registry_update(event: Any) -> None:  # noqa: ANN401
+        action = event.data.get("action")
+        source_map = _get_source_entity_map(entry.data)
+
+        if action == "update":
+            changes = event.data.get("changes", {})
+            if "entity_id" not in changes:
+                return
+            old_entity_id = changes["entity_id"]
+            new_entity_id = event.data["entity_id"]
+
+            affected_keys = [k for k, v in source_map.items() if v == old_entity_id]
+            if not affected_keys:
+                return
+
+            new_data = dict(entry.data)
+            for key in affected_keys:
+                new_data[key] = new_entity_id
+            hass.config_entries.async_update_entry(entry, data=new_data)
+
+        elif action == "remove":
+            deleted_entity_id = event.data["entity_id"]
+            if deleted_entity_id not in source_map.values():
+                return
+
+            async_create_issue(
+                hass,
+                DOMAIN,
+                f"entity_deleted_{entry.entry_id}",
+                is_fixable=False,
+                severity=IssueSeverity.WARNING,
+                translation_key="entity_source_deleted",
+                translation_placeholders={
+                    "name": entry.title,
+                    "entity_id": deleted_entity_id,
+                },
+            )
+
+        elif action == "create":
+            new_entity_id = event.data["entity_id"]
+            if new_entity_id not in source_map.values():
+                return
+
+            async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
+            coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+            hass.async_create_task(coordinator.async_request_refresh())
+
+    entry.async_on_unload(
+        hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, _handle_entity_registry_update)
+    )
 
 
 def _setup_entity_date_listeners(
@@ -229,6 +309,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Clean up any open Repairs issues for this entry
         async_delete_issue(hass, DOMAIN, f"expired_{entry.entry_id}")
         async_delete_issue(hass, DOMAIN, f"date_order_{entry.entry_id}")
+        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
 
         hass.data[DOMAIN].pop(entry.entry_id)
 
