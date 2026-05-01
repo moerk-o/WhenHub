@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 
+from homeassistant.helpers.issue_registry import async_delete_issue
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -96,6 +97,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, platforms):
+        # Clean up any open Repairs issue for this entry
+        async_delete_issue(hass, DOMAIN, f"expired_{entry.entry_id}")
+
         hass.data[DOMAIN].pop(entry.entry_id)
 
         entity_registry = er.async_get(hass)
