@@ -13,6 +13,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import slugify
 
 from .const import DOMAIN, CONF_ENTRY_TYPE, ENTRY_TYPE_CALENDAR
 from .coordinator import WhenHubCoordinator
@@ -22,6 +23,83 @@ _LOGGER = logging.getLogger(__name__)
 # Platforms per entry type
 EVENT_PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SENSOR]
 CALENDAR_PLATFORMS: list[Platform] = [Platform.CALENDAR]
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Migrate config entry to the current version.
+
+    Version 1 → 2 (v3.0.0): Standardize entity IDs to English type-key suffixes.
+
+    Entity IDs were previously generated from the translated entity name (language-
+    dependent). This migration renames them to always use the English sensor type key
+    (e.g. 'event_date' instead of 'ereignisdatum' on German HA).
+    Also affects English installs where the translated name differed from the type
+    key (e.g. 'days_until_start' → 'days_until', 'trip_days_remaining' → 'trip_left_days').
+    """
+    _LOGGER.info("Migrating WhenHub entry '%s' from version %s to 2", entry.title, entry.version)
+
+    if entry.version == 1:
+        # Calendar entries have no sensor entities with language-dependent IDs.
+        if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_CALENDAR:
+            hass.config_entries.async_update_entry(entry, version=2)
+            return True
+
+        entity_registry = er.async_get(hass)
+        entities = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
+        device_slug = slugify(entry.title)
+        entry_id = entry.entry_id
+        binary_prefix = f"{entry_id}_binary_"
+        entry_prefix = f"{entry_id}_"
+        renamed = 0
+
+        for entity_entry in entities:
+            uid = entity_entry.unique_id
+            platform = entity_entry.domain  # "sensor", "binary_sensor", or "image"
+
+            # Determine the canonical English suffix from the unique_id
+            if uid == f"{entry_id}_image":
+                english_suffix = "event_image"
+            elif uid == f"{entry_id}_calendar":
+                continue  # Should not occur for event entries, skip to be safe
+            elif uid.startswith(binary_prefix):
+                english_suffix = uid[len(binary_prefix):]
+            elif uid.startswith(entry_prefix):
+                english_suffix = uid[len(entry_prefix):]
+            else:
+                _LOGGER.warning("Unexpected unique_id during migration: %s — skipping", uid)
+                continue
+
+            expected_entity_id = f"{platform}.{device_slug}_{english_suffix}"
+
+            if entity_entry.entity_id == expected_entity_id:
+                continue  # Already correct (no rename needed)
+
+            # Skip if the target entity_id is already taken by another entity
+            if entity_registry.async_get(expected_entity_id) is not None:
+                _LOGGER.warning(
+                    "Cannot rename %s → %s: target already exists. "
+                    "Please rename manually.",
+                    entity_entry.entity_id,
+                    expected_entity_id,
+                )
+                continue
+
+            entity_registry.async_update_entity(
+                entity_entry.entity_id,
+                new_entity_id=expected_entity_id,
+            )
+            _LOGGER.debug("Renamed entity: %s → %s", entity_entry.entity_id, expected_entity_id)
+            renamed += 1
+
+        hass.config_entries.async_update_entry(entry, version=2)
+        _LOGGER.info(
+            "Migration complete for '%s': %d of %d entities renamed",
+            entry.title,
+            renamed,
+            len(entities),
+        )
+
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

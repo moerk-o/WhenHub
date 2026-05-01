@@ -41,6 +41,7 @@ WhenHub provides:
 
 - **Domain:** `whenhub`
 - **Entity Prefix:** User-defined event name (e.g., "Denmark Vacation" → `sensor.denmark_vacation_*`)
+- **Entity ID Suffix:** Always the English sensor type key, regardless of HA system language (e.g., `days_until`, not `tage_bis_start`). Enforced via `suggested_object_id` since v3.0.0.
 - **Unique ID Pattern:** `{entry_id}_{sensor_type}`
 
 ---
@@ -802,6 +803,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 2.3.0 | 2026-03 | FR08 Calendar entity, FR09 Custom Pattern, FR11 URL/Memo sensors, Bug 003 fixes |
 | 2.4.0 | 2026-05 | FR13 Expiry notifications via HA Repairs |
 | 2.4.1 | 2026-05 | Fix #12: Image upload validation (extension check, 5 MB size limit), options flow error translations |
+| 3.0.0 | 2026-05 | FR13 Expiry notifications (HA Repairs), Fix #12 image validation, Fix #14 entity ID standardization (English type keys, automatic migration v1→v2) |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 

@@ -194,6 +194,15 @@ class BaseBinarySensor(CoordinatorEntity["WhenHubCoordinator"], BinarySensorEnti
         )
 
     @property
+    def suggested_object_id(self) -> str:
+        """Return the English sensor type key as the entity ID suffix.
+
+        Ensures entity IDs are language-independent (e.g. always 'is_today',
+        never 'ist_heute'). See BaseSensor.suggested_object_id for details.
+        """
+        return self._sensor_type
+
+    @property
     def device_info(self) -> DeviceInfo:
         """Return device information about this entity.
 

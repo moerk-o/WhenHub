@@ -441,8 +441,8 @@ class TestCustomPatternSensors:
         await hass.async_block_till_done()
 
         assert entry.state == ConfigEntryState.LOADED
-        # days_until translates to "Days until start" → entity_id ends with days_until_start
-        state = hass.states.get("sensor.every_day_days_until_start")
+        # days_until translates to "Days until start" → entity_id ends with days_until
+        state = hass.states.get("sensor.every_day_days_until")
         assert state is not None
         # Today IS an occurrence → days_until shows days to NEXT future occurrence = 1
         assert state.state == "1"
@@ -460,7 +460,7 @@ class TestCustomPatternSensors:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        state = hass.states.get("sensor.mon_wed_days_until_start")
+        state = hass.states.get("sensor.mon_wed_days_until")
         assert state is not None
         # Monday IS occurrence → next_display = Wed Apr 8 → days_until == 2
         assert state.state == "2"
@@ -520,7 +520,7 @@ class TestCustomPatternSensors:
         assert bs is not None
         assert bs.state == "on"
         # days_until shows days to next Thanksgiving (2027-11-25 = 364 days away)
-        state = hass.states.get("sensor.thanksgiving_days_until_start")
+        state = hass.states.get("sensor.thanksgiving_days_until")
         assert state is not None
         assert state.state == "364"
 
@@ -537,7 +537,7 @@ class TestCustomPatternSensors:
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-        state = hass.states.get("sensor.thanksgiving_future_days_until_start")
+        state = hass.states.get("sensor.thanksgiving_future_days_until")
         assert state is not None
         assert int(state.state) > 0
 
