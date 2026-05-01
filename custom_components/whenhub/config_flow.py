@@ -86,45 +86,62 @@ _IMAGE_MIME_MAP = {
     ".gif": "image/gif",
 }
 
+# Maximum allowed image file size (5 MB). Larger files would bloat the config entry JSON.
+_MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
-def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None]:
+
+def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None, str | None]:
     """Process an uploaded image file from a FileSelector field.
 
-    Returns (base64_data, mime_type) if an upload was provided, (None, None) otherwise.
+    Returns (base64_data, mime_type, error_key):
+    - (None, None, None): no upload provided
+    - (data, mime, None): upload successful
+    - (None, None, "image_upload_failed"): unsupported file type
+    - (None, None, "image_too_large"): file exceeds _MAX_IMAGE_SIZE_BYTES
     """
     upload_id = user_input.get(CONF_IMAGE_UPLOAD)
     if not upload_id:
-        return None, None
+        return None, None, None
     try:
         with process_uploaded_file(hass, upload_id) as path:
+            if path.suffix.lower() not in _IMAGE_MIME_MAP:
+                return None, None, "image_upload_failed"
+            if path.stat().st_size > _MAX_IMAGE_SIZE_BYTES:
+                return None, None, "image_too_large"
             image_bytes = path.read_bytes()
             image_data = base64.b64encode(image_bytes).decode()
-            image_mime = _IMAGE_MIME_MAP.get(path.suffix.lower(), "image/jpeg")
-            return image_data, image_mime
+            image_mime = _IMAGE_MIME_MAP[path.suffix.lower()]
+            return image_data, image_mime, None
     except Exception as err:
         _LOGGER.warning("Failed to process uploaded image: %s", err)
-        return None, None
+        return None, None, None
 
 
-def _apply_image_changes(hass: HomeAssistant, new_data: dict, user_input: dict) -> None:
+def _apply_image_changes(hass: HomeAssistant, new_data: dict, user_input: dict) -> str | None:
     """Apply image upload / delete choices from user_input to new_data (in-place).
 
     - If 'image_delete' is checked: clears image_data, image_mime, image_path.
     - Else if a file was uploaded: stores base64 data and MIME type.
     - Else: leaves existing image_data / image_mime untouched.
     Always removes the temporary UI-only keys from new_data.
+    Returns an error key string if the uploaded file type is unsupported, None otherwise.
     """
     if user_input.get(CONF_IMAGE_DELETE):
         new_data["image_data"] = None
         new_data[CONF_IMAGE_MIME] = None
         new_data[CONF_IMAGE_PATH] = ""
     else:
-        image_data, image_mime = _process_image_upload(hass, user_input)
+        image_data, image_mime, error = _process_image_upload(hass, user_input)
+        if error:
+            new_data.pop(CONF_IMAGE_UPLOAD, None)
+            new_data.pop(CONF_IMAGE_DELETE, None)
+            return error
         if image_data:
             new_data["image_data"] = image_data
             new_data[CONF_IMAGE_MIME] = image_mime
     new_data.pop(CONF_IMAGE_UPLOAD, None)
     new_data.pop(CONF_IMAGE_DELETE, None)
+    return None
 
 
 def _schema_image(current: dict, show_delete: bool = False) -> dict:
@@ -513,12 +530,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if not errors:
             user_input[CONF_EVENT_TYPE] = self._event_type
-            image_data, image_mime = _process_image_upload(self.hass, user_input)
-            if image_data:
-                user_input["image_data"] = image_data
-                user_input[CONF_IMAGE_MIME] = image_mime
-            user_input.pop(CONF_IMAGE_UPLOAD, None)
-            return self.async_create_entry(title=self._suggest_event_name("Trip"), data=user_input)
+            image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                if image_data:
+                    user_input["image_data"] = image_data
+                    user_input[CONF_IMAGE_MIME] = image_mime
+                user_input.pop(CONF_IMAGE_UPLOAD, None)
+                return self.async_create_entry(title=self._suggest_event_name("Trip"), data=user_input)
 
         return await self._show_trip_form(user_input, errors)
 
@@ -549,7 +569,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_milestone_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_milestone_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
@@ -582,7 +604,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_anniversary_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_anniversary_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
@@ -649,7 +673,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_special_event_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
@@ -699,7 +725,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_dst_event_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
@@ -913,6 +941,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="cp_image",
                 data_schema=_schema_cp_image(self._cp_data),
             )
+        if user_input.get(CONF_IMAGE_UPLOAD):
+            _, _, img_error = _process_image_upload(self.hass, user_input)
+            if img_error:
+                return self.async_show_form(
+                    step_id="cp_image",
+                    data_schema=_schema_cp_image(self._cp_data),
+                    errors={"base": img_error},
+                )
         self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
         if user_input.get(CONF_IMAGE_UPLOAD):
             self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
@@ -922,7 +958,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def _cp_create_entry(self) -> FlowResult:
         """Assemble entry data and create the config entry."""
-        image_data, image_mime = _process_image_upload(self.hass, self._cp_data)
+        image_data, image_mime, _ = _process_image_upload(self.hass, self._cp_data)
         data = {
             CONF_EVENT_TYPE: self._event_type,
             CONF_SPECIAL_CATEGORY: "custom_pattern",
@@ -1001,15 +1037,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
                 new_data = dict(self.config_entry.data)
                 new_data.update(user_input)
-                _apply_image_changes(self.hass, new_data, user_input)
+                img_error = _apply_image_changes(self.hass, new_data, user_input)
+                if img_error:
+                    errors["base"] = img_error
+                else:
+                    self.hass.config_entries.async_update_entry(
+                        self.config_entry,
+                        data=new_data,
+                    )
 
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data=new_data,
-                )
-
-                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-                return self.async_create_entry(title="", data={})
+                    self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                    return self.async_create_entry(title="", data={})
 
         current_data = user_input if user_input is not None else self.config_entry.data
         has_image = bool(self.config_entry.data.get("image_data") or self.config_entry.data.get(CONF_IMAGE_PATH))
@@ -1031,20 +1069,23 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle milestone options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                )
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
         has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
@@ -1058,26 +1099,30 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="milestone_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_anniversary_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle anniversary options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                )
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
         has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
@@ -1090,26 +1135,30 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="anniversary_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_special_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle special event options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                )
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
 
@@ -1146,27 +1195,31 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="special_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_dst_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle DST event options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
             user_input[CONF_SPECIAL_CATEGORY] = self.config_entry.data.get(CONF_SPECIAL_CATEGORY, "dst")
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                )
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
         region_options = list(DST_REGIONS.keys())
@@ -1195,6 +1248,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="dst_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_calendar_options(
@@ -1456,6 +1510,19 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 step_id="cp_image",
                 data_schema=data_schema,
             )
+        if user_input.get(CONF_IMAGE_UPLOAD):
+            _, _, img_error = _process_image_upload(self.hass, user_input)
+            if img_error:
+                data_schema = _schema_cp_image(merged, show_delete=has_image) if not has_end else vol.Schema({
+                    **_schema_image(merged, show_delete=has_image),
+                    **_schema_url_memo(merged),
+                    **_schema_notify_on_expiry(merged),
+                })
+                return self.async_show_form(
+                    step_id="cp_image",
+                    data_schema=data_schema,
+                    errors={"base": img_error},
+                )
         self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
         if user_input.get(CONF_IMAGE_UPLOAD):
             self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
@@ -1476,7 +1543,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Ensure fixed keys are always present
         new_data[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
         new_data[CONF_SPECIAL_CATEGORY] = "custom_pattern"
-        _apply_image_changes(self.hass, new_data, self._cp_data)
+        _apply_image_changes(self.hass, new_data, self._cp_data)  # upload already validated in async_step_cp_image
 
         self.hass.config_entries.async_update_entry(
             self.config_entry,

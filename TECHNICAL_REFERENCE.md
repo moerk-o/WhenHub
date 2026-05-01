@@ -399,8 +399,8 @@ Each event includes an image entity that displays either a custom image or a def
 | Special Event | Star | Purple |
 
 **Image sources:**
-1. **Uploaded file**: Stored in HA `www/` directory, path saved in entry data
-2. **Custom path**: `/local/images/my-event.jpg`
+1. **Uploaded file**: Stored as base64 in config entry data — no files on the server. Supported formats: JPEG, PNG, WebP, GIF. Maximum file size: 5 MB. Validation is done server-side in `_process_image_upload()`.
+2. **Custom path**: `/local/images/my-event.jpg` (files placed in the `www/` directory of the HA config)
 3. **Default SVG**: Auto-generated icon based on event type
 
 **Attributes:**
@@ -470,7 +470,7 @@ async_step_user (menu)
 |-----------|------|----------|-------------|
 | `start_date` | date | Yes | Trip start |
 | `end_date` | date | Yes | Trip end |
-| `image_upload` | file | No | Upload image (JPEG/PNG/WebP/GIF) |
+| `image_upload` | file | No | Upload image (JPEG/PNG/WebP/GIF, max 5 MB) |
 | `image_path` | string | No | Path to image (e.g. `/local/images/trip.jpg`) |
 | `url` | string | No | Website or booking URL |
 | `memo` | string | No | Free-text notes (Markdown) |
@@ -481,7 +481,7 @@ async_step_user (menu)
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `target_date` | date | Yes | Target date |
-| `image_upload` | file | No | Upload image |
+| `image_upload` | file | No | Upload image (JPEG/PNG/WebP/GIF, max 5 MB) |
 | `image_path` | string | No | Path to image |
 | `url` | string | No | Website or related URL |
 | `memo` | string | No | Free-text notes (Markdown) |
@@ -801,6 +801,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 2.2.1 | 2025-02 | Special Events (holidays, DST), OptionsFlow fixes, removed astronomical events |
 | 2.3.0 | 2026-03 | FR08 Calendar entity, FR09 Custom Pattern, FR11 URL/Memo sensors, Bug 003 fixes |
 | 2.4.0 | 2026-05 | FR13 Expiry notifications via HA Repairs |
+| 2.4.1 | 2026-05 | Fix #12: Image upload validation (extension check, 5 MB size limit), options flow error translations |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 

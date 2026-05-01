@@ -223,7 +223,8 @@
     "error": {
       "invalid_dates": "End date must be after start date",
       "invalid_date_format": "Invalid date format. Use YYYY-MM-DD",
-      "image_upload_failed": "Error uploading image"
+      "image_upload_failed": "Unsupported file type. Please upload a JPEG, PNG, WebP or GIF file.",
+      "image_too_large": "File is too large. Maximum allowed size is 5 MB."
     }
   },
   "options": {
@@ -430,6 +431,12 @@
           "notify_on_expiry": "Create a notification in HA Repairs when this repeating event has no more future occurrences"
         }
       }
+    },
+    "error": {
+      "invalid_dates": "End date must be after start date",
+      "invalid_date_format": "Invalid date format. Use YYYY-MM-DD",
+      "image_upload_failed": "Unsupported file type. Please upload a JPEG, PNG, WebP or GIF file.",
+      "image_too_large": "File is too large. Maximum allowed size is 5 MB."
     }
   },
   "selector": {
