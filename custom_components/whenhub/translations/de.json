@@ -733,7 +733,7 @@
     },
     "entity_source_deleted": {
       "title": "Datumsquellen-Entity entfernt: {name}",
-      "description": "Die Entity **{entity_id}**, die als Datumsquelle für **{name}** konfiguriert ist, wurde aus Home Assistant entfernt.\n\nAlle Sensoren für dieses Ereignis sind derzeit nicht verfügbar. Öffne die Einstellungen des Ereignisses und wähle eine andere Entity oder gib ein festes Datum ein."
+      "description": "Die Entity **{entity_id}**, die als Datumsquelle für **{name}** konfiguriert ist, wurde aus Home Assistant entfernt.\n\nAlle Sensoren für dieses Ereignis sind derzeit nicht verfügbar. Um das Problem zu beheben öffne die Einstellungen des Ereignisses und wähle eine andere Entity, gib ein festes Datum ein oder lösche das Ereignis."
     }
   }
 }

@@ -733,7 +733,7 @@
     },
     "entity_source_deleted": {
       "title": "Date source entity removed: {name}",
-      "description": "The entity **{entity_id}** used as a date source for **{name}** has been removed from Home Assistant.\n\nAll sensors for this event are currently unavailable. Open the event's settings and either choose a different entity or enter a fixed date to resolve this issue."
+      "description": "The entity **{entity_id}** used as a date source for **{name}** has been removed from Home Assistant.\n\nAll sensors for this event are currently unavailable. To resolve this issue, open the event's settings and either choose a different entity, enter a fixed date, or delete the event."
     }
   }
 }
