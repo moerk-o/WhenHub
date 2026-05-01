@@ -30,11 +30,13 @@ def _fake_hass():
     return MagicMock()
 
 
-def _mock_upload(suffix: str, content: bytes = b"fake_image_data"):
+def _mock_upload(suffix: str, content: bytes = b"fake_image_data", size: int | None = None):
     """Context manager that simulates process_uploaded_file returning a path."""
     fake_path = MagicMock(spec=Path)
     fake_path.suffix = suffix
     fake_path.read_bytes.return_value = content
+    # Default size: len(content) — small enough to pass the 5 MB limit
+    fake_path.stat.return_value.st_size = size if size is not None else len(content)
 
     @contextmanager
     def _ctx(hass, upload_id):
@@ -161,6 +163,54 @@ class TestProcessImageUpload:
                 _fake_hass(), {CONF_IMAGE_UPLOAD: "upload123"}
             )
         assert data == base64.b64encode(content).decode()
+
+    def test_file_too_large_rejected(self):
+        """Files exceeding 5 MB return 'image_too_large' error."""
+        from custom_components.whenhub.config_flow import _MAX_IMAGE_SIZE_BYTES
+
+        fake_path = MagicMock(spec=Path)
+        fake_path.suffix = ".jpg"
+        fake_path.stat.return_value.st_size = _MAX_IMAGE_SIZE_BYTES + 1
+
+        @contextmanager
+        def _ctx(hass, upload_id):
+            yield fake_path
+
+        with patch(
+            "custom_components.whenhub.config_flow.process_uploaded_file",
+            side_effect=_ctx,
+        ):
+            data, mime, error = _process_image_upload(
+                _fake_hass(), {CONF_IMAGE_UPLOAD: "upload123"}
+            )
+        assert data is None
+        assert mime is None
+        assert error == "image_too_large"
+
+    def test_file_exactly_at_limit_accepted(self):
+        """File exactly at 5 MB limit is accepted."""
+        from custom_components.whenhub.config_flow import _MAX_IMAGE_SIZE_BYTES
+        import base64
+
+        content = b"x" * _MAX_IMAGE_SIZE_BYTES
+        fake_path = MagicMock(spec=Path)
+        fake_path.suffix = ".png"
+        fake_path.stat.return_value.st_size = _MAX_IMAGE_SIZE_BYTES
+        fake_path.read_bytes.return_value = content
+
+        @contextmanager
+        def _ctx(hass, upload_id):
+            yield fake_path
+
+        with patch(
+            "custom_components.whenhub.config_flow.process_uploaded_file",
+            side_effect=_ctx,
+        ):
+            data, mime, error = _process_image_upload(
+                _fake_hass(), {CONF_IMAGE_UPLOAD: "upload123"}
+            )
+        assert error is None
+        assert mime == "image/png"
 
     def test_exception_returns_triple_none(self):
         """If process_uploaded_file raises, return (None, None, None) — not an error."""

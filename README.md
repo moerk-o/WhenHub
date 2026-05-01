@@ -480,7 +480,7 @@ Every WhenHub event has an **Event Image** entity. When no image is configured, 
 
 In the configuration form, two options are available — use one or both:
 
-1. **Upload** — Drag & drop or click to select a file directly in the HA config flow. The image is stored inside the config entry — no files to manage on the server. Supported: JPEG, PNG, WebP, GIF.
+1. **Upload** — Drag & drop or click to select a file directly in the HA config flow. The image is stored inside the config entry — no files to manage on the server. Supported formats: JPEG, PNG, WebP, GIF. Maximum file size: 5 MB.
 2. **Path** — Enter a path to an image already on your HA server, e.g. `/local/images/trip.jpg` (files placed in the `www/` directory of your HA config).
 
 **Priority:** If both are provided, the upload takes precedence over the path.

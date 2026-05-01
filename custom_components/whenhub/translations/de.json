@@ -223,7 +223,8 @@
     "error": {
       "invalid_dates": "Das Enddatum muss nach dem Startdatum liegen",
       "invalid_date_format": "Ungültiges Datumsformat. Verwende YYYY-MM-DD",
-      "image_upload_failed": "Fehler beim Hochladen des Bildes"
+      "image_upload_failed": "Nicht unterstütztes Dateiformat. Bitte lade eine JPEG-, PNG-, WebP- oder GIF-Datei hoch.",
+      "image_too_large": "Die Datei ist zu groß. Die maximale Dateigröße beträgt 5 MB."
     }
   },
   "options": {
@@ -430,6 +431,12 @@
           "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Muster keine zukünftigen Vorkommen mehr hat"
         }
       }
+    },
+    "error": {
+      "invalid_dates": "Das Enddatum muss nach dem Startdatum liegen",
+      "invalid_date_format": "Ungültiges Datumsformat. Verwende YYYY-MM-DD",
+      "image_upload_failed": "Nicht unterstütztes Dateiformat. Bitte lade eine JPEG-, PNG-, WebP- oder GIF-Datei hoch.",
+      "image_too_large": "Die Datei ist zu groß. Die maximale Dateigröße beträgt 5 MB."
     }
   },
   "selector": {

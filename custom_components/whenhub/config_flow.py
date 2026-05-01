@@ -86,6 +86,9 @@ _IMAGE_MIME_MAP = {
     ".gif": "image/gif",
 }
 
+# Maximum allowed image file size (5 MB). Larger files would bloat the config entry JSON.
+_MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+
 
 def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None, str | None]:
     """Process an uploaded image file from a FileSelector field.
@@ -94,6 +97,7 @@ def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | 
     - (None, None, None): no upload provided
     - (data, mime, None): upload successful
     - (None, None, "image_upload_failed"): unsupported file type
+    - (None, None, "image_too_large"): file exceeds _MAX_IMAGE_SIZE_BYTES
     """
     upload_id = user_input.get(CONF_IMAGE_UPLOAD)
     if not upload_id:
@@ -102,6 +106,8 @@ def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | 
         with process_uploaded_file(hass, upload_id) as path:
             if path.suffix.lower() not in _IMAGE_MIME_MAP:
                 return None, None, "image_upload_failed"
+            if path.stat().st_size > _MAX_IMAGE_SIZE_BYTES:
+                return None, None, "image_too_large"
             image_bytes = path.read_bytes()
             image_data = base64.b64encode(image_bytes).decode()
             image_mime = _IMAGE_MIME_MAP[path.suffix.lower()]
