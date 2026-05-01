@@ -48,6 +48,9 @@ When setting up a Trip event, you configure:
 - **Start Date**: When the trip begins (Format: YYYY-MM-DD)
 - **End Date**: When the trip ends (Format: YYYY-MM-DD)
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: blue airplane icon.
+- **URL** *(optional)*: A link to a booking page, website or any related URL.
+- **Memo** *(optional)*: Free-text notes — supports Markdown.
+- **Notify when expired** *(optional)*: Create a notification in [HA Repairs](#expiry-notifications) when the trip's end date has passed. Default: off.
 
 ### Available Entities
 
@@ -66,6 +69,8 @@ When setting up a Trip event, you configure:
 - **Days Until End** - Days until trip ends (can become negative if date has passed)
 - **Trip Left Days** - Remaining days during the trip
 - **Trip Left Percent** - Remaining trip percentage (100% before start, decreases during trip, 0% after end)
+- **URL** *(optional)* — Created only when a URL is configured
+- **Memo** *(optional)* — Created only when a memo is configured
 
 #### Binary Sensors
 - **Trip Starts Today** - `true` when the trip starts today
@@ -85,6 +90,9 @@ When setting up a Milestone event, you configure:
 
 - **Target Date**: The important date (Format: YYYY-MM-DD)
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: red flag icon.
+- **URL** *(optional)*: A link to a website or any related URL.
+- **Memo** *(optional)*: Free-text notes — supports Markdown.
+- **Notify when expired** *(optional)*: Create a notification in [HA Repairs](#expiry-notifications) when the target date has passed. Default: off.
 
 ### Available Entities
 
@@ -98,6 +106,8 @@ When setting up a Milestone event, you configure:
     - `breakdown_weeks` - Weeks component of countdown until target
     - `breakdown_days` - Days component of countdown until target
 - **Days Until** - Days until milestone (can become negative if date has passed)
+- **URL** *(optional)* — Created only when a URL is configured
+- **Memo** *(optional)* — Created only when a memo is configured
 
 #### Binary Sensors
 - **Is Today** - `true` when today is the milestone day
@@ -115,6 +125,8 @@ When setting up an Anniversary event, you configure:
 
 - **Original Date**: The date of the first event (Format: YYYY-MM-DD)
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: pink heart icon.
+- **URL** *(optional)*: A link to a website or any related URL.
+- **Memo** *(optional)*: Free-text notes — supports Markdown.
 
 ### Available Entities
 
@@ -134,6 +146,8 @@ When setting up an Anniversary event, you configure:
 - **Occurrences Count** - Number of past occurrences
 - **Next Date** - Date of next anniversary (ISO 8601 timestamp)
 - **Last Date** - Date of last anniversary (ISO 8601 timestamp)
+- **URL** *(optional)* — Created only when a URL is configured
+- **Memo** *(optional)* — Created only when a memo is configured
 
 #### Binary Sensors
 - **Is Today** - `true` when today is an anniversary day
@@ -155,6 +169,8 @@ When setting up a Special Event, you configure:
 - **Event Category**: Choose from 4 categories (Traditional Holidays, Calendar Holidays, Daylight Saving Time, Custom Pattern)
 - **Special Event Type**: Choose from 13 predefined holidays — or define your own Custom Pattern
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: purple star icon.
+- **URL** *(optional)*: A link to a website or any related URL.
+- **Memo** *(optional)*: Free-text notes — supports Markdown.
 
 ### Available Entities
 
@@ -173,6 +189,8 @@ When setting up a Special Event, you configure:
     - `breakdown_days` - Days component of countdown until next
 - **Next Date** - Date of next occurrence (ISO 8601 timestamp)
 - **Last Date** - Date of last occurrence (ISO 8601 timestamp)
+- **URL** *(optional)* — Created only when a URL is configured
+- **Memo** *(optional)* — Created only when a memo is configured
 
 #### Binary Sensors
 - **Is Today** - `true` when today is the special event day
@@ -286,6 +304,13 @@ Depending on the frequency, you then define how the day within the period is sel
 | Until a date | Repeats until a specific date (inclusive) |
 | After N occurrences | Stops after exactly N occurrences |
 
+**Step 4 — Image, URL, Memo and Notifications**
+
+- **Image** *(optional)*: Upload or enter path — [see Image Management](#image-management).
+- **URL** *(optional)*: A link to a website or any related URL.
+- **Memo** *(optional)*: Free-text notes — supports Markdown.
+- **Notify when expired** *(optional)*: Only shown when an end condition is set. Create a notification in [HA Repairs](#expiry-notifications) when the pattern has no more future occurrences. Default: off.
+
 ##### Example Configurations
 
 **1 — Early May Bank Holiday** (1st Monday in May, UK):
@@ -355,6 +380,8 @@ Depending on the frequency, you then define how the day within the period is sel
 - **Next Date** — Timestamp of the next *future* occurrence (never today, even when today is an occurrence)
 - **Last Date** — Timestamp of the most recent occurrence (including today)
 - **Occurrence Count** — How many times the pattern has fired since the anchor date (counting today)
+- **URL** *(optional)* — Created only when a URL is configured
+- **Memo** *(optional)* — Created only when a memo is configured
 
 ###### Binary Sensors
 - **Is Today** — `true` when today is an occurrence day
@@ -487,6 +514,28 @@ The `event_date` sensor provides breakdown attributes for building localized cou
 
 These values are calculated using approximations (365 days/year, 30 days/month) for consistent results. Use these attributes in Lovelace cards or templates to create formatted countdown text in your preferred language.
 
+### Expiry Notifications
+
+WhenHub can notify you when an event's date has passed and the event is no longer relevant. This feature uses Home Assistant's built-in **Repairs** panel.
+
+**Supported event types:**
+- **Trip** — notifies when the end date has passed
+- **Milestone** — notifies when the target date has passed
+- **Custom Pattern** — notifies when the pattern has no more future occurrences (only available when an end condition is configured)
+
+**How to enable:**
+Enable **Notify when expired** in the event's configuration (or Options Flow). The toggle is off by default.
+
+**How it works:**
+1. WhenHub detects on every update cycle that the event has expired
+2. A fixable issue appears in **Settings → System → Repairs**
+3. Click **Fix** to open a confirmation dialog
+4. Confirm to permanently remove the event and all its entities
+
+> **Before confirming:** Check if any dashboards, automations, or scripts reference this event's entities — they will stop working after removal. You can also dismiss the notification to keep the event unchanged.
+
+**Auto-resolve:** If you update the event's dates (via Options Flow) so that it is no longer expired, the Repairs notification disappears automatically on the next update cycle.
+
 ### Options Flow
 
 All event configurations can be edited after initial setup via the **Options Flow**:
@@ -503,7 +552,7 @@ All sensors are automatically updated with the new data.
 
 | Property | Value |
 |----------|-------|
-| Update Interval | Once per day (at midnight) |
+| Update Interval | Once per hour |
 | IoT Class | `calculated` |
 | Platforms | Sensor, Binary Sensor, Image, Calendar |
 | Config Flow | Full UI configuration |

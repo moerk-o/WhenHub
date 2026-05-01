@@ -64,6 +64,9 @@ CONF_IMAGE_DELETE = "image_delete"  # UI-only checkbox: remove existing image in
 CONF_URL = "url"
 CONF_MEMO = "memo"
 
+# FR13: Expiry notification via HA Repairs
+CONF_NOTIFY_ON_EXPIRY = "notify_on_expiry"
+
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"
 

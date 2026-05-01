@@ -17,7 +17,8 @@
           "image_upload": "Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
           "start_date": "Das Datum, an dem der Trip beginnt",
@@ -25,7 +26,8 @@
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
           "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
-          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt",
+          "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
       "milestone": {
@@ -36,14 +38,16 @@
           "image_upload": "Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
           "target_date": "Das Datum des wichtigen Termins",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
-          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt",
+          "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
       "anniversary": {
@@ -236,13 +240,15 @@
           "image_path": "Oder Bildpfad eingeben (optional)",
           "image_delete": "Aktuelles Bild entfernen",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
           "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
-          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt",
+          "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
       "milestone_options": {
@@ -253,13 +259,15 @@
           "image_path": "Oder Bildpfad eingeben (optional)",
           "image_delete": "Aktuelles Bild entfernen",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
-          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt",
+          "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
       "anniversary_options": {
@@ -411,13 +419,15 @@
           "image_path": "Oder Bildpfad eingeben",
           "image_delete": "Aktuelles Bild entfernen",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/event.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
-          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+          "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt",
+          "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Muster keine zukünftigen Vorkommen mehr hat"
         }
       }
     }
@@ -599,6 +609,19 @@
     "image": {
       "event_image": {
         "name": "Ereignisbild"
+      }
+    }
+  },
+  "issues": {
+    "expired_event": {
+      "title": "WhenHub Event abgelaufen: {event_name}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Abgelaufenes Event entfernen",
+            "description": "**{event_name}** ist am **{expiry_date}** abgelaufen.\n\nVor der Bestätigung: Prüfe ob Dashboards, Automationen oder Skripte auf Entitäten dieses Events zugreifen — sie werden nach der Entfernung nicht mehr funktionieren.\n\nAuf Absenden klicken, um das Event und alle seine Entitäten dauerhaft zu entfernen."
+          }
+        }
       }
     }
   }

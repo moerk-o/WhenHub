@@ -17,7 +17,8 @@
           "image_upload": "Upload image (optional)",
           "image_path": "Or enter image path (optional)",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
           "start_date": "The date when the trip begins",
@@ -25,7 +26,8 @@
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority",
           "url": "Link to a website, booking page or any related URL",
-          "memo": "Free-text notes about this event — supports Markdown"
+          "memo": "Free-text notes about this event — supports Markdown",
+          "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
       "milestone": {
@@ -36,14 +38,16 @@
           "image_upload": "Upload image (optional)",
           "image_path": "Or enter image path (optional)",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
           "target_date": "The date of the important event",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
-          "memo": "Free-text notes about this event — supports Markdown"
+          "memo": "Free-text notes about this event — supports Markdown",
+          "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
       "anniversary": {
@@ -236,13 +240,15 @@
           "image_path": "Or enter image path (optional)",
           "image_delete": "Remove current image",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority",
           "url": "Link to a website, booking page or any related URL",
-          "memo": "Free-text notes about this event — supports Markdown"
+          "memo": "Free-text notes about this event — supports Markdown",
+          "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
       "milestone_options": {
@@ -253,13 +259,15 @@
           "image_path": "Or enter image path (optional)",
           "image_delete": "Remove current image",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
-          "memo": "Free-text notes about this event — supports Markdown"
+          "memo": "Free-text notes about this event — supports Markdown",
+          "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
       "anniversary_options": {
@@ -411,13 +419,15 @@
           "image_path": "Or enter image path",
           "image_delete": "Remove current image",
           "url": "URL (optional)",
-          "memo": "Memo (optional)"
+          "memo": "Memo (optional)",
+          "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/event.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
-          "memo": "Free-text notes about this event — supports Markdown"
+          "memo": "Free-text notes about this event — supports Markdown",
+          "notify_on_expiry": "Create a notification in HA Repairs when this repeating event has no more future occurrences"
         }
       }
     }
@@ -599,6 +609,19 @@
     "image": {
       "event_image": {
         "name": "Event image"
+      }
+    }
+  },
+  "issues": {
+    "expired_event": {
+      "title": "WhenHub event expired: {event_name}",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Remove expired event",
+            "description": "**{event_name}** expired on **{expiry_date}**.\n\nBefore confirming: check if any dashboards, automations or scripts reference this event's entities — they will stop working after removal.\n\nPress Submit to permanently remove this event and all its entities."
+          }
+        }
       }
     }
   }

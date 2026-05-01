@@ -73,6 +73,7 @@ from .const import (
     CONF_CP_COUNT,
     CONF_URL,
     CONF_MEMO,
+    CONF_NOTIFY_ON_EXPIRY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -154,6 +155,19 @@ def _schema_url_memo(current: dict) -> dict:
         vol.Optional(CONF_MEMO, default=current.get(CONF_MEMO, "")): TextSelector(
             TextSelectorConfig(multiline=True)
         ),
+    }
+
+
+def _schema_notify_on_expiry(current: dict) -> dict:
+    """Return voluptuous field dict for the expiry notification toggle.
+
+    Intended to be spread into a larger vol.Schema dict.
+    """
+    return {
+        vol.Optional(
+            CONF_NOTIFY_ON_EXPIRY,
+            default=current.get(CONF_NOTIFY_ON_EXPIRY, False),
+        ): BooleanSelector(),
     }
 
 
@@ -518,6 +532,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_END_DATE, default=current.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current),
             **_schema_url_memo(current),
+            **_schema_notify_on_expiry(current),
         })
 
         return self.async_show_form(
@@ -550,6 +565,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current),
             **_schema_url_memo(current),
+            **_schema_notify_on_expiry(current),
         })
 
         return self.async_show_form(
@@ -1002,6 +1018,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(self.config_entry.data, show_delete=has_image),
             **_schema_url_memo(self.config_entry.data),
+            **_schema_notify_on_expiry(self.config_entry.data),
         })
 
         return self.async_show_form(
@@ -1035,6 +1052,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
             **_schema_image(current_data, show_delete=has_image),
             **_schema_url_memo(current_data),
+            **_schema_notify_on_expiry(current_data),
         })
 
         return self.async_show_form(
@@ -1422,13 +1440,21 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Final step: optional image upload and/or path."""
         current_data = self.config_entry.data
+        merged = {**current_data, **self._cp_data}
         has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
+        has_end = merged.get(CONF_CP_END_TYPE, "none") != "none"
         if user_input is None:
+            if has_end:
+                data_schema = vol.Schema({
+                    **_schema_image(merged, show_delete=has_image),
+                    **_schema_url_memo(merged),
+                    **_schema_notify_on_expiry(merged),
+                })
+            else:
+                data_schema = _schema_cp_image(merged, show_delete=has_image)
             return self.async_show_form(
                 step_id="cp_image",
-                data_schema=_schema_cp_image(
-                    {**current_data, **self._cp_data}, show_delete=has_image
-                ),
+                data_schema=data_schema,
             )
         self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
         if user_input.get(CONF_IMAGE_UPLOAD):
@@ -1437,6 +1463,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self._cp_data[CONF_IMAGE_DELETE] = True
         self._cp_data[CONF_URL] = user_input.get(CONF_URL, "")
         self._cp_data[CONF_MEMO] = user_input.get(CONF_MEMO, "")
+        if has_end:
+            self._cp_data[CONF_NOTIFY_ON_EXPIRY] = user_input.get(CONF_NOTIFY_ON_EXPIRY, False)
+        else:
+            self._cp_data[CONF_NOTIFY_ON_EXPIRY] = False
         return self._cp_save_options()
 
     def _cp_save_options(self) -> FlowResult:

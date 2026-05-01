@@ -10,6 +10,7 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
@@ -26,6 +27,9 @@ from .const import (
     CONF_SPECIAL_CATEGORY,
     CONF_DST_TYPE,
     CONF_DST_REGION,
+    CONF_NOTIFY_ON_EXPIRY,
+    CONF_CP_END_TYPE,
+    CONF_CP_UNTIL,
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
@@ -139,6 +143,8 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             data.update(self._calculate_anniversary_data(today))
         elif self.event_type == EVENT_TYPE_SPECIAL:
             data.update(self._calculate_special_data(today))
+
+        self._check_expiry_repair(today)
 
         return data
 
@@ -339,3 +345,68 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Binary sensor values
             "is_today": is_today_val,
         }
+
+    def _check_expiry_repair(self, today: date) -> None:
+        """Create or delete a Repairs issue based on event expiry state.
+
+        Called on every coordinator update cycle. Idempotent — calling
+        async_create_issue repeatedly with the same issue_id is safe in HA.
+        """
+        issue_id = f"expired_{self.config_entry.entry_id}"
+        notify = self.event_data.get(CONF_NOTIFY_ON_EXPIRY, False)
+
+        if not notify:
+            # Clean up if the toggle was turned off after expiry was reported
+            async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+
+        is_expired = False
+        expiry_date = ""
+
+        if self.event_type == EVENT_TYPE_TRIP:
+            end_date = parse_date(self.event_data.get(CONF_END_DATE, ""))
+            if end_date is not None and end_date < today:
+                is_expired = True
+                expiry_date = end_date.isoformat()
+
+        elif self.event_type == EVENT_TYPE_MILESTONE:
+            target_date = parse_date(self.event_data.get(CONF_TARGET_DATE, ""))
+            if target_date is not None and target_date < today:
+                is_expired = True
+                expiry_date = target_date.isoformat()
+
+        elif self.event_type == EVENT_TYPE_SPECIAL:
+            special_category = self.event_data.get(CONF_SPECIAL_CATEGORY)
+            if special_category == "custom_pattern":
+                cp_end_type = self.event_data.get(CONF_CP_END_TYPE, "none")
+                if cp_end_type != "none":
+                    next_occurrence = next_custom_pattern(self.event_data, today)
+                    if next_occurrence is None:
+                        is_expired = True
+                        until = self.event_data.get(CONF_CP_UNTIL)
+                        if until:
+                            expiry_date = until
+                        else:
+                            last = last_custom_pattern(self.event_data, today)
+                            expiry_date = last.isoformat() if last else ""
+
+        if is_expired:
+            async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=True,
+                severity=IssueSeverity.WARNING,
+                translation_key="expired_event",
+                translation_placeholders={
+                    "event_name": self.config_entry.title,
+                    "expiry_date": expiry_date,
+                },
+                data={
+                    "entry_id": self.config_entry.entry_id,
+                    "event_name": self.config_entry.title,
+                    "expiry_date": expiry_date,
+                },
+            )
+        else:
+            async_delete_issue(self.hass, DOMAIN, issue_id)
