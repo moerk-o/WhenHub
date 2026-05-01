@@ -1,4 +1,8 @@
-"""Test entity ID generation with different system languages."""
+"""Test that entity IDs are always language-independent (English type keys).
+
+Since v3.0.0, suggested_object_id ensures entity IDs always use the English
+sensor type key as suffix, regardless of the HA system language.
+"""
 import pytest
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -18,17 +22,15 @@ def create_trip_entry(suffix: str = ""):
             "image_path": "",
         },
         unique_id=f"whenhub_sprachtest{suffix}",
-        version=1,
+        version=2,
     )
 
 
 @pytest.mark.asyncio
-async def test_entity_id_with_english_language(hass: HomeAssistant):
-    """Test that English system creates English entity IDs."""
-    # Set system language to English
+async def test_entity_id_english_system_uses_english_keys(hass: HomeAssistant):
+    """English system: entity IDs use English type keys."""
     hass.config.language = "en"
 
-    # First load the component
     assert await async_setup_component(hass, "whenhub", {})
     await hass.async_block_till_done()
 
@@ -38,37 +40,21 @@ async def test_entity_id_with_english_language(hass: HomeAssistant):
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    # Get all sensor entity IDs
-    entity_ids = [state.entity_id for state in hass.states.async_all()]
-    sensor_ids = [eid for eid in entity_ids if eid.startswith("sensor.")]
+    sensor_ids = [s.entity_id for s in hass.states.async_all() if s.entity_id.startswith("sensor.")]
 
-    print(f"\n{'='*60}")
-    print(f"ENGLISH SYSTEM (hass.config.language = 'en')")
-    print(f"{'='*60}")
-    print(f"Sensor entity IDs:")
-    for eid in sorted(sensor_ids):
-        print(f"  - {eid}")
-
-    # Check for English patterns based on translations/en.json
-    # "days_until" -> "Days until start" -> "days_until_start"
-    has_english = any("days_until_start" in eid for eid in sensor_ids)
-    has_german = any("tage_bis_start" in eid for eid in sensor_ids)
-
-    print(f"\nPattern check:")
-    print(f"  Has English 'days_until_start': {has_english}")
-    print(f"  Has German 'tage_bis_start': {has_german}")
-
-    assert has_english, f"Expected English entity IDs, got: {sensor_ids}"
-    assert not has_german, f"Should not have German entity IDs with English language"
+    assert any("days_until" in eid for eid in sensor_ids), \
+        f"Expected 'days_until' in entity IDs, got: {sensor_ids}"
+    assert not any("days_until_start" in eid for eid in sensor_ids), \
+        f"Should not have old 'days_until_start' suffix: {sensor_ids}"
+    assert not any("tage_bis" in eid for eid in sensor_ids), \
+        f"Should not have German suffixes: {sensor_ids}"
 
 
 @pytest.mark.asyncio
-async def test_entity_id_with_german_language(hass: HomeAssistant):
-    """Test that German system creates German entity IDs."""
-    # Set system language to German
+async def test_entity_id_german_system_uses_english_keys(hass: HomeAssistant):
+    """German system: entity IDs must still use English type keys (not German)."""
     hass.config.language = "de"
 
-    # First load the component
     assert await async_setup_component(hass, "whenhub", {})
     await hass.async_block_till_done()
 
@@ -78,25 +64,11 @@ async def test_entity_id_with_german_language(hass: HomeAssistant):
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    # Get all sensor entity IDs
-    entity_ids = [state.entity_id for state in hass.states.async_all()]
-    sensor_ids = [eid for eid in entity_ids if eid.startswith("sensor.")]
+    sensor_ids = [s.entity_id for s in hass.states.async_all() if s.entity_id.startswith("sensor.")]
 
-    print(f"\n{'='*60}")
-    print(f"GERMAN SYSTEM (hass.config.language = 'de')")
-    print(f"{'='*60}")
-    print(f"Sensor entity IDs:")
-    for eid in sorted(sensor_ids):
-        print(f"  - {eid}")
-
-    # Check for German patterns based on translations/de.json
-    # "days_until" -> "Tage bis Start" -> "tage_bis_start"
-    has_english = any("days_until_start" in eid for eid in sensor_ids)
-    has_german = any("tage_bis_start" in eid for eid in sensor_ids)
-
-    print(f"\nPattern check:")
-    print(f"  Has English 'days_until_start': {has_english}")
-    print(f"  Has German 'tage_bis_start': {has_german}")
-
-    assert has_german, f"Expected German entity IDs, got: {sensor_ids}"
-    assert not has_english, f"Should not have English entity IDs with German language"
+    assert any("days_until" in eid for eid in sensor_ids), \
+        f"Expected English 'days_until' even on German HA, got: {sensor_ids}"
+    assert not any("tage_bis" in eid for eid in sensor_ids), \
+        f"German HA must not produce German entity IDs: {sensor_ids}"
+    assert not any("tage_seit" in eid for eid in sensor_ids), \
+        f"German HA must not produce German entity IDs: {sensor_ids}"

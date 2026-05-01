@@ -332,7 +332,7 @@ def _schema_cp_image(current: dict, show_delete: bool = False) -> vol.Schema:
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for WhenHub."""
 
-    VERSION = 1
+    VERSION = 2  # v3.0.0: entity IDs standardized to English keys (migration in async_migrate_entry)
 
     def __init__(self) -> None:
         """Initialize the config flow."""

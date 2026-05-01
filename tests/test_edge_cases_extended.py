@@ -93,7 +93,7 @@ async def test_new_years_eve_countdown(hass: HomeAssistant, silvester_special_co
         await hass.async_block_till_done()
 
         # Should be 1 day until Dec 31
-        state = hass.states.get("sensor.silvester_test_days_until_start")
+        state = hass.states.get("sensor.silvester_test_days_until")
         assert state is not None
         assert int(state.state) == 1
 
@@ -108,7 +108,7 @@ async def test_new_year_countdown_from_previous_year(hass: HomeAssistant, neujah
         await hass.async_block_till_done()
 
         # Should be 1 day until Jan 1
-        state = hass.states.get("sensor.neujahr_test_days_until_start")
+        state = hass.states.get("sensor.neujahr_test_days_until")
         assert state is not None
         assert int(state.state) == 1
 
@@ -130,8 +130,8 @@ async def test_multiple_trips_same_time(hass: HomeAssistant, parallel_trip_1_con
     await hass.async_block_till_done()
 
     # Both should have their own sensors
-    trip1_sensor = hass.states.get("sensor.parallel_trip_1_days_until_start")
-    trip2_sensor = hass.states.get("sensor.parallel_trip_2_days_until_start")
+    trip1_sensor = hass.states.get("sensor.parallel_trip_1_days_until")
+    trip2_sensor = hass.states.get("sensor.parallel_trip_2_days_until")
 
     assert trip1_sensor is not None, "Trip 1 sensor not found"
     assert trip2_sensor is not None, "Trip 2 sensor not found"
@@ -154,8 +154,8 @@ async def test_mixed_event_types(hass: HomeAssistant, trip_config_entry, milesto
     await hass.async_block_till_done()
 
     # All three should have sensors
-    assert hass.states.get("sensor.danemark_2026_days_until_start") is not None
-    assert hass.states.get("sensor.projektabgabe_days_until_start") is not None
+    assert hass.states.get("sensor.danemark_2026_days_until") is not None
+    assert hass.states.get("sensor.projektabgabe_days_until") is not None
     assert hass.states.get("sensor.geburtstag_max_days_until_next") is not None
 
 

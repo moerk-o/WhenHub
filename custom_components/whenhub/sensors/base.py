@@ -147,6 +147,17 @@ class BaseSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_{sensor_type}"
 
     @property
+    def suggested_object_id(self) -> str:
+        """Return the English sensor type key as the entity ID suffix.
+
+        Ensures entity IDs are always language-independent regardless of the HA
+        system language (e.g. always 'event_date', never 'ereignisdatum').
+        Only takes effect for newly created entities; existing IDs are migrated
+        via async_migrate_entry when upgrading from config entry version 1 to 2.
+        """
+        return self._sensor_type
+
+    @property
     def device_info(self) -> DeviceInfo:
         """Return device information about this entity.
 

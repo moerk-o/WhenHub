@@ -16,7 +16,7 @@ class TestFixedSpecialEvents:
 
         # Check that all 5 sensors are created
         base = "sensor.weihnachts_countdown"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_days_since_last") is not None
         assert hass.states.get(f"{base}_event_date") is not None
         assert hass.states.get(f"{base}_next_date") is not None
@@ -29,7 +29,7 @@ class TestFixedSpecialEvents:
         assert await hass.config_entries.async_setup(special_config_entry.entry_id)
         await hass.async_block_till_done()
 
-        state = hass.states.get("sensor.weihnachts_countdown_days_until_start")
+        state = hass.states.get("sensor.weihnachts_countdown_days_until")
         assert state is not None
         days = int(state.state)
         # Should be between 0 and 365
@@ -60,7 +60,7 @@ class TestCalculatedSpecialEvents:
 
         # Check that sensors are created
         base = "sensor.ostern"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_next_date") is not None
 
     @pytest.mark.asyncio
@@ -87,7 +87,7 @@ class TestCalculatedSpecialEvents:
 
         # Check that sensors are created
         base = "sensor.1_advent"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_next_date") is not None
 
     @pytest.mark.asyncio
@@ -117,11 +117,11 @@ class TestDSTEvents:
 
         # Check that sensors are created
         base = "sensor.zeitumstellung_eu"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_next_date") is not None
 
         # Check binary sensor
-        assert hass.states.get("binary_sensor.zeitumstellung_eu_daylight_saving_time_active") is not None
+        assert hass.states.get("binary_sensor.zeitumstellung_eu_is_dst_active") is not None
 
     @pytest.mark.asyncio
     async def test_dst_eu_next_date_is_sunday(self, hass: HomeAssistant, dst_eu_config_entry):
@@ -146,7 +146,7 @@ class TestDSTEvents:
 
         # Check that sensors are created
         base = "sensor.dst_usa"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_next_date") is not None
 
     @pytest.mark.asyncio
@@ -156,7 +156,7 @@ class TestDSTEvents:
         assert await hass.config_entries.async_setup(dst_eu_config_entry.entry_id)
         await hass.async_block_till_done()
 
-        state = hass.states.get("binary_sensor.zeitumstellung_eu_daylight_saving_time_active")
+        state = hass.states.get("binary_sensor.zeitumstellung_eu_is_dst_active")
         assert state is not None
         # Should be either "on" or "off"
         assert state.state in ("on", "off")
@@ -169,7 +169,7 @@ class TestDSTEvents:
         await hass.async_block_till_done()
 
         base = "sensor.dst_australia"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_next_date") is not None
 
     @pytest.mark.asyncio
@@ -180,7 +180,7 @@ class TestDSTEvents:
         await hass.async_block_till_done()
 
         base = "sensor.dst_new_zealand"
-        assert hass.states.get(f"{base}_days_until_start") is not None
+        assert hass.states.get(f"{base}_days_until") is not None
         assert hass.states.get(f"{base}_next_date") is not None
 
     @pytest.mark.asyncio

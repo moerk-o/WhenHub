@@ -1,109 +1,46 @@
 ### ✨ New Features
 
-- **WhenHub Calendar**
-  - All your WhenHub events are now available as a native Home Assistant calendar — visible in the calendar card and queryable in automations
-  - Create multiple independent calendars with different scopes: show everything, filter by event type (e.g. only Trips), or pick individual entries
-
-- **Repeating Events**
-  - New event type for anything that follows a regular pattern: weekly team meetings, monthly bill reminders, annual traditions
-  - Choose from daily, weekly (select individual weekdays), monthly, or yearly; optionally set an end date or a maximum occurrence count
-
-- **Event Images**
-  - Give every event its own image — drag and drop a photo directly in the setup dialog
-  - The image appears as a dedicated entity in the image platform, ready to use on dashboards
-
-- **URL and Memo**
-  - Attach a booking link or free-text notes to any event — useful for holidays, trips, or project milestones
-  - Both appear as Home Assistant sensors the moment the field is filled in, making them available to automations and companion apps
+- **Expiry Notifications** ([#13](https://github.com/moerk-o/WhenHub/issues/13))
+  - Trip, Milestone, and Custom Pattern events can now notify you when they expire
+  - An actionable issue appears in **Settings → System → Repairs** with a one-click removal flow
+  - Enable per event via the "Notify when expired" toggle (off by default)
+  - Auto-resolves if you update the event dates so it is no longer expired
 
 ### 🐞 Bug Fixes
 
-- **Cleaner Setup Flow**: The event name field no longer appears twice; WhenHub now generates a sensible title automatically and increments it if a duplicate already exists (e.g. "Trip 2")
-- **Next Date Sensor**: Fixed an off-by-one where the "next date" showed today on days the pattern fires, instead of pointing to the following occurrence
+- **Image upload validation** ([#12](https://github.com/moerk-o/WhenHub/issues/12))
+  - Uploaded files are now validated server-side: only JPEG, PNG, WebP and GIF are accepted
+  - Files larger than 5 MB are rejected with a clear error message
+  - Options flow now shows translated error messages (previously displayed raw error keys)
 
-**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.2.2...v2.3.0
+### ⚠️ Breaking Changes
 
----
+- **Entity IDs are now standardized to English keys** ([#14](https://github.com/moerk-o/WhenHub/issues/14))
 
-# v2.2.2
+  **All entity IDs are automatically renamed on first startup after the update.** No manual action is required for the migration itself, but you must update any references in dashboards, automations, and scripts before or after the update.
 
-### 🐞 Bug Fixes
+  Entity IDs now always use the internal English type key as their suffix, regardless of the Home Assistant system language. Previously, entity IDs were generated from the translated display name — causing them to differ between language settings.
 
-- **Binary Sensor Display Fixed**: Binary sensors now show "On/Off"
+  **Affected suffixes (all installations):**
 
-- **DST Default Name Localization**: Removed hardcoded German default names for DST events
+  | Old suffix | New suffix |
+  |---|---|
+  | `days_until_start` | `days_until` |
+  | `trip_days_remaining` | `trip_left_days` |
+  | `trip_percent_remaining` | `trip_left_percent` |
+  | `daylight_saving_time_active` | `is_dst_active` |
 
-**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.2.1...v2.2.2
+  **Additional suffixes affected on non-English Home Assistant installations** (e.g. German): all entity ID suffixes were previously in the system language and are now standardized to English.
 
----
-
-# v2.2.1
-
-### ✨ New Features
-
-- **Language-based Entity IDs**
-  - Entity IDs now based on configured HA language
-  - Correct translations for sensor names in DE/EN
-  - `EntityDescription` for consistent naming
-
-- **Improved Date Picker**
-  - Native Home Assistant `DateSelector` for date selection
-  - Better UX in Config Flow
-
-### 🐞 Bug Fixes
-- **OptionsFlow Error Fixed**: 500 Internal Server Error when clicking "Configure" in newer Home Assistant versions
-  - Cause: `config_entry` is a read-only property of `OptionsFlow` base class in newer HA versions
-  - Fix: Removed `__init__` method from `OptionsFlowHandler`
-- **DSTBinarySensor Icon Bug**: Fixed `AttributeError` when accessing `_attr_icon`
-- **Options Flow Error Display**: Validation errors are now displayed correctly
-
-### 🔧 Infrastructure
-- **Device Info Cleanup**: Removed firmware version from device info (WhenHub events are virtual devices without actual firmware)
-- **HACS ZIP Release**: Enabled `zip_release` 
+  **Example (German installation):**
+  - Before: `sensor.johns_geburtstag_ereignisdatum`
+  - After: `sensor.johns_geburtstag_event_date`
 
 ### 📝 Documentation
-- Added GitHub repository description and topics
 
-### 🗑️ Removed
-- **Astronomical Events Removed**
-  - Sunrise, sunset, solstice, equinox removed
-  - These are better covered by dedicated integrations (e.g., [Solstice Season](https://github.com/moerk-o/ha-solstice_season) for precise seasonal data or HA Core [Sun](https://www.home-assistant.io/integrations/sun/))
+- Updated README and Technical Reference with upload limits, corrected image storage description, and migration details
+- For the complete v2.x.x release history, see [RELEASENOTES_v2.md](RELEASENOTES_v2.md)
 
-**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.2.0...v2.2.1
+**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v2.3.0...v3.0.0
 
 ---
-
-# v2.2.0 (internal)
-
-*This version was released but superseded by v2.2.1. Changes are included above.*
-
----
-
-# v2.1.0 (internal)
-
-*This version was not released publicly. Changes are included in v2.2.1.*
-
----
-
-# v2.0.0
-
-### ✨ New Features
-- **Internationalization**
-  - Full German and English support
-  - UI automatically adapts to your Home Assistant language setting
-
-- **Localized Date Display**
-  - Date sensors now show relative time in the frontend ("In 18 days", "Tomorrow")
-  - Use `format: relative`, `format: date`, etc. in Lovelace cards
-
-- **Improved Sensor Classes**
-  - `device_class: timestamp` for all date sensors
-  - `device_class: duration` with unit "d" for all days sensors
-
-### 📝 Documentation
-- Updated README with new features documentation
-
-### 🔧 Infrastructure
-- Code cleanup and improved type hints
-
-**Full Changelog**: https://github.com/moerk-o/WhenHub/compare/v1.0.0...v2.0.0
