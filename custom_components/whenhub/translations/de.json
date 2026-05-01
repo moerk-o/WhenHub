@@ -615,7 +615,6 @@
   "issues": {
     "expired_event": {
       "title": "WhenHub Event abgelaufen: {event_name}",
-      "description": "Das Event **{event_name}** ist am {expiry_date} abgelaufen. Klicke auf Reparieren, um es aus Home Assistant zu entfernen, oder schließe die Meldung, um es zu behalten.",
       "fix_flow": {
         "step": {
           "confirm": {

@@ -615,7 +615,6 @@
   "issues": {
     "expired_event": {
       "title": "WhenHub event expired: {event_name}",
-      "description": "The event **{event_name}** has expired on {expiry_date}. Click Fix to remove it from Home Assistant, or dismiss to keep it.",
       "fix_flow": {
         "step": {
           "confirm": {
