@@ -24,9 +24,9 @@
         },
         "data_description": {
           "start_date": "The date when the trip begins",
-          "start_date_use_entity": "When enabled, an extra step will appear to select a date or timestamp entity. The date field above is then ignored.",
+          "start_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "end_date": "The date when the trip ends",
-          "end_date_use_entity": "When enabled, an extra step will appear to select a date or timestamp entity. The date field above is then ignored.",
+          "end_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority",
           "url": "Link to a website, booking page or any related URL",
@@ -36,22 +36,22 @@
       },
       "trip_start_entity": {
         "title": "Select start date entity",
-        "description": "Choose the entity that will provide the trip start date. Only date and timestamp entities are shown.",
+        "description": "Select the entity that provides the start date.",
         "data": {
           "start_date_entity_id": "Start date entity"
         },
         "data_description": {
-          "start_date_entity_id": "Entity with device_class 'date' (state: YYYY-MM-DD) or 'timestamp' (ISO-8601, converted to local date)"
+          "start_date_entity_id": "Date or timestamp entity"
         }
       },
       "trip_end_entity": {
         "title": "Select end date entity",
-        "description": "Choose the entity that will provide the trip end date. Only date and timestamp entities are shown.",
+        "description": "Select the entity that provides the end date.",
         "data": {
           "end_date_entity_id": "End date entity"
         },
         "data_description": {
-          "end_date_entity_id": "Entity with device_class 'date' (state: YYYY-MM-DD) or 'timestamp' (ISO-8601, converted to local date)"
+          "end_date_entity_id": "Date or timestamp entity"
         }
       },
       "milestone": {
@@ -68,7 +68,7 @@
         },
         "data_description": {
           "target_date": "The date of the important event",
-          "event_date_use_entity": "When enabled, an extra step will appear to select a date or timestamp entity. The date field above is then ignored.",
+          "event_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
@@ -78,12 +78,12 @@
       },
       "milestone_entity": {
         "title": "Select date entity",
-        "description": "Choose the entity that will provide the milestone date. Only date and timestamp entities are shown.",
+        "description": "Select the entity that provides the date.",
         "data": {
           "event_date_entity_id": "Date entity"
         },
         "data_description": {
-          "event_date_entity_id": "Entity with device_class 'date' (state: YYYY-MM-DD) or 'timestamp' (ISO-8601, converted to local date)"
+          "event_date_entity_id": "Date or timestamp entity"
         }
       },
       "anniversary": {
@@ -99,7 +99,7 @@
         },
         "data_description": {
           "target_date": "The original date (will repeat yearly)",
-          "event_date_use_entity": "When enabled, an extra step will appear to select a date or timestamp entity. The date field above is then ignored.",
+          "event_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/anniversary.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
@@ -108,12 +108,12 @@
       },
       "anniversary_entity": {
         "title": "Select date entity",
-        "description": "Choose the entity that will provide the anniversary start date. Only date and timestamp entities are shown.",
+        "description": "Select the entity that provides the date.",
         "data": {
           "event_date_entity_id": "Date entity"
         },
         "data_description": {
-          "event_date_entity_id": "Entity with device_class 'date' (state: YYYY-MM-DD) or 'timestamp' (ISO-8601, converted to local date)"
+          "event_date_entity_id": "Date or timestamp entity"
         }
       },
       "special_category": {
@@ -295,8 +295,8 @@
           "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
-          "start_date_use_entity": "When enabled, an extra step will appear to select or change the start date entity.",
-          "end_date_use_entity": "When enabled, an extra step will appear to select or change the end date entity.",
+          "start_date_use_entity": "Use a date or timestamp entity instead of the date field",
+          "end_date_use_entity": "Use a date or timestamp entity instead of the date field",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority",
           "url": "Link to a website, booking page or any related URL",
@@ -306,7 +306,7 @@
       },
       "trip_start_entity_options": {
         "title": "Select start date entity",
-        "description": "Choose or change the entity that provides the trip start date.",
+        "description": "Select the entity that provides the start date.",
         "data": {
           "start_date_entity_id": "Start date entity"
         },
@@ -316,7 +316,7 @@
       },
       "trip_end_entity_options": {
         "title": "Select end date entity",
-        "description": "Choose or change the entity that provides the trip end date.",
+        "description": "Select the entity that provides the end date.",
         "data": {
           "end_date_entity_id": "End date entity"
         },
@@ -337,7 +337,7 @@
           "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
-          "event_date_use_entity": "When enabled, an extra step will appear to select or change the date entity.",
+          "event_date_use_entity": "Use a date or timestamp entity instead of the date field",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
@@ -347,7 +347,7 @@
       },
       "milestone_entity_options": {
         "title": "Select date entity",
-        "description": "Choose or change the entity that provides the milestone date.",
+        "description": "Select the entity that provides the date.",
         "data": {
           "event_date_entity_id": "Date entity"
         },
@@ -367,7 +367,7 @@
           "memo": "Memo (optional)"
         },
         "data_description": {
-          "event_date_use_entity": "When enabled, an extra step will appear to select or change the date entity.",
+          "event_date_use_entity": "Use a date or timestamp entity instead of the date field",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/anniversary.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
@@ -376,7 +376,7 @@
       },
       "anniversary_entity_options": {
         "title": "Select date entity",
-        "description": "Choose or change the entity that provides the anniversary start date.",
+        "description": "Select the entity that provides the date.",
         "data": {
           "event_date_entity_id": "Date entity"
         },

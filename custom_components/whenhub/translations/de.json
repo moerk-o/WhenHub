@@ -24,9 +24,9 @@
         },
         "data_description": {
           "start_date": "Das Datum, an dem der Trip beginnt",
-          "start_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl einer Datums- oder Zeitstempel-Entity. Das Datumsfeld oben wird dann ignoriert.",
+          "start_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "end_date": "Das Datum, an dem der Trip endet",
-          "end_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl einer Datums- oder Zeitstempel-Entity. Das Datumsfeld oben wird dann ignoriert.",
+          "end_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
           "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
@@ -36,22 +36,22 @@
       },
       "trip_start_entity": {
         "title": "Startdatum-Entity auswählen",
-        "description": "Wähle die Entity, die das Startdatum des Trips liefert. Es werden nur Datums- und Zeitstempel-Entities angezeigt.",
+        "description": "Entity auswählen, die das Startdatum liefert.",
         "data": {
           "start_date_entity_id": "Startdatum-Entity"
         },
         "data_description": {
-          "start_date_entity_id": "Entity mit device_class 'date' (State: YYYY-MM-DD) oder 'timestamp' (ISO-8601, wird in lokales Datum umgewandelt)"
+          "start_date_entity_id": "Datums- oder Zeitstempel-Entity"
         }
       },
       "trip_end_entity": {
         "title": "Enddatum-Entity auswählen",
-        "description": "Wähle die Entity, die das Enddatum des Trips liefert. Es werden nur Datums- und Zeitstempel-Entities angezeigt.",
+        "description": "Entity auswählen, die das Enddatum liefert.",
         "data": {
           "end_date_entity_id": "Enddatum-Entity"
         },
         "data_description": {
-          "end_date_entity_id": "Entity mit device_class 'date' (State: YYYY-MM-DD) oder 'timestamp' (ISO-8601, wird in lokales Datum umgewandelt)"
+          "end_date_entity_id": "Datums- oder Zeitstempel-Entity"
         }
       },
       "milestone": {
@@ -68,7 +68,7 @@
         },
         "data_description": {
           "target_date": "Das Datum des wichtigen Termins",
-          "event_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl einer Datums- oder Zeitstempel-Entity. Das Datumsfeld oben wird dann ignoriert.",
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
@@ -78,12 +78,12 @@
       },
       "milestone_entity": {
         "title": "Datums-Entity auswählen",
-        "description": "Wähle die Entity, die das Milestone-Datum liefert. Es werden nur Datums- und Zeitstempel-Entities angezeigt.",
+        "description": "Entity auswählen, die das Datum liefert.",
         "data": {
           "event_date_entity_id": "Datums-Entity"
         },
         "data_description": {
-          "event_date_entity_id": "Entity mit device_class 'date' (State: YYYY-MM-DD) oder 'timestamp' (ISO-8601, wird in lokales Datum umgewandelt)"
+          "event_date_entity_id": "Datums- oder Zeitstempel-Entity"
         }
       },
       "anniversary": {
@@ -99,7 +99,7 @@
         },
         "data_description": {
           "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
-          "event_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl einer Datums- oder Zeitstempel-Entity. Das Datumsfeld oben wird dann ignoriert.",
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
@@ -108,12 +108,12 @@
       },
       "anniversary_entity": {
         "title": "Datums-Entity auswählen",
-        "description": "Wähle die Entity, die das Anniversary-Startdatum liefert. Es werden nur Datums- und Zeitstempel-Entities angezeigt.",
+        "description": "Entity auswählen, die das Datum liefert.",
         "data": {
           "event_date_entity_id": "Datums-Entity"
         },
         "data_description": {
-          "event_date_entity_id": "Entity mit device_class 'date' (State: YYYY-MM-DD) oder 'timestamp' (ISO-8601, wird in lokales Datum umgewandelt)"
+          "event_date_entity_id": "Datums- oder Zeitstempel-Entity"
         }
       },
       "special_category": {
@@ -295,8 +295,8 @@
           "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
-          "start_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl oder Änderung der Startdatum-Entity.",
-          "end_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl oder Änderung der Enddatum-Entity.",
+          "start_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
+          "end_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
           "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
@@ -306,7 +306,7 @@
       },
       "trip_start_entity_options": {
         "title": "Startdatum-Entity auswählen",
-        "description": "Wähle oder ändere die Entity, die das Trip-Startdatum liefert.",
+        "description": "Entity auswählen, die das Startdatum liefert.",
         "data": {
           "start_date_entity_id": "Startdatum-Entity"
         },
@@ -316,7 +316,7 @@
       },
       "trip_end_entity_options": {
         "title": "Enddatum-Entity auswählen",
-        "description": "Wähle oder ändere die Entity, die das Trip-Enddatum liefert.",
+        "description": "Entity auswählen, die das Enddatum liefert.",
         "data": {
           "end_date_entity_id": "Enddatum-Entity"
         },
@@ -337,7 +337,7 @@
           "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
-          "event_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl oder Änderung der Datums-Entity.",
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
@@ -347,7 +347,7 @@
       },
       "milestone_entity_options": {
         "title": "Datums-Entity auswählen",
-        "description": "Wähle oder ändere die Entity, die das Milestone-Datum liefert.",
+        "description": "Entity auswählen, die das Datum liefert.",
         "data": {
           "event_date_entity_id": "Datums-Entity"
         },
@@ -367,7 +367,7 @@
           "memo": "Memo (optional)"
         },
         "data_description": {
-          "event_date_use_entity": "Wenn aktiviert, folgt ein zusätzlicher Schritt zur Auswahl oder Änderung der Datums-Entity.",
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
@@ -376,7 +376,7 @@
       },
       "anniversary_entity_options": {
         "title": "Datums-Entity auswählen",
-        "description": "Wähle oder ändere die Entity, die das Anniversary-Startdatum liefert.",
+        "description": "Entity auswählen, die das Datum liefert.",
         "data": {
           "event_date_entity_id": "Datums-Entity"
         },
