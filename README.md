@@ -45,17 +45,19 @@ Trip events have a **start date** and **end date** and provide comprehensive tra
 
 When setting up a Trip event, you configure:
 
-- **Start Date**: When the trip begins (Format: YYYY-MM-DD)
-- **End Date**: When the trip ends (Format: YYYY-MM-DD)
+- **Start Date**: When the trip begins (Format: YYYY-MM-DD) — or use a date/timestamp entity as source
+- **End Date**: When the trip ends (Format: YYYY-MM-DD) — or use a date/timestamp entity as source
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: blue airplane icon.
 - **URL** *(optional)*: A link to a booking page, website or any related URL.
 - **Memo** *(optional)*: Free-text notes — supports Markdown.
 - **Notify when expired** *(optional)*: Create a notification in [HA Repairs](#expiry-notifications) when the trip's end date has passed. Default: off.
 
+> **Entity as date source:** Enable the toggle next to a date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. The coordinator reads the entity's state on every update. When an entity source is active, the **Event Date** sensor shows the `mdi:calendar-sync` icon.
+
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Start date of the trip (ISO 8601 timestamp, displays as relative time)
+- **Event Date** - Start date of the trip (ISO 8601 timestamp, displays as relative time) — icon: `mdi:calendar-sync` when any date comes from an entity
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (trip)
@@ -65,6 +67,8 @@ When setting up a Trip event, you configure:
     - `breakdown_months` - Months component of countdown until start
     - `breakdown_weeks` - Weeks component of countdown until start
     - `breakdown_days` - Days component of countdown until start
+    - `start_date_source_entity` *(only when start date comes from entity)* - Entity ID of the start date source
+    - `end_date_source_entity` *(only when end date comes from entity)* - Entity ID of the end date source
 - **Days Until Start** -  Days until trip begins (can become negative if date has passed)
 - **Days Until End** - Days until trip ends (can become negative if date has passed)
 - **Trip Left Days** - Remaining days during the trip
@@ -88,16 +92,18 @@ Milestone events have a single **target date** and focus on the countdown to thi
 
 When setting up a Milestone event, you configure:
 
-- **Target Date**: The important date (Format: YYYY-MM-DD)
+- **Target Date**: The important date (Format: YYYY-MM-DD) — or use a date/timestamp entity as source
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: red flag icon.
 - **URL** *(optional)*: A link to a website or any related URL.
 - **Memo** *(optional)*: Free-text notes — supports Markdown.
 - **Notify when expired** *(optional)*: Create a notification in [HA Repairs](#expiry-notifications) when the target date has passed. Default: off.
 
+> **Entity as date source:** Enable the toggle next to the date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. When active, the **Event Date** sensor shows the `mdi:calendar-sync` icon.
+
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Target date of the milestone (ISO 8601 timestamp, displays as relative time)
+- **Event Date** - Target date of the milestone (ISO 8601 timestamp, displays as relative time) — icon: `mdi:calendar-sync` when date comes from an entity
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (milestone)
@@ -105,6 +111,7 @@ When setting up a Milestone event, you configure:
     - `breakdown_months` - Months component of countdown until target
     - `breakdown_weeks` - Weeks component of countdown until target
     - `breakdown_days` - Days component of countdown until target
+    - `date_source_entity` *(only when date comes from entity)* - Entity ID of the date source
 - **Days Until** - Days until milestone (can become negative if date has passed)
 - **URL** *(optional)* — Created only when a URL is configured
 - **Memo** *(optional)* — Created only when a memo is configured
@@ -123,15 +130,17 @@ Anniversary events repeat annually based on an **original date** and provide bot
 
 When setting up an Anniversary event, you configure:
 
-- **Original Date**: The date of the first event (Format: YYYY-MM-DD)
+- **Original Date**: The date of the first event (Format: YYYY-MM-DD) — or use a date/timestamp entity as source
 - **Image** *(optional)*: Upload a file or enter a path — [see Image Management](#image-management). Default: pink heart icon.
 - **URL** *(optional)*: A link to a website or any related URL.
 - **Memo** *(optional)*: Free-text notes — supports Markdown.
 
+> **Entity as date source:** Enable the toggle next to the date field to pick a HA entity (`device_class: date` or `timestamp`) instead of a fixed date. When active, the **Event Date** sensor shows the `mdi:calendar-sync` icon.
+
 ### Available Entities
 
 #### Sensors
-- **Event Date** - Date of the next anniversary (ISO 8601 timestamp, displays as relative time)
+- **Event Date** - Date of the next anniversary (ISO 8601 timestamp, displays as relative time) — icon: `mdi:calendar-sync` when date comes from an entity
   - **Attributes**:
     - `event_name` - Name of the event
     - `event_type` - Type of event (anniversary)
@@ -141,6 +150,7 @@ When setting up an Anniversary event, you configure:
     - `breakdown_months` - Months component of countdown until next anniversary
     - `breakdown_weeks` - Weeks component of countdown until next anniversary
     - `breakdown_days` - Days component of countdown until next anniversary
+    - `date_source_entity` *(only when date comes from entity)* - Entity ID of the date source
 - **Days Until Next** - Days until next anniversary
 - **Days Since Last** - Days since last anniversary
 - **Occurrences Count** - Number of past occurrences

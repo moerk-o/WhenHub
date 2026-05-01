@@ -339,6 +339,10 @@ Each event creates multiple entities grouped under a common device.
 **Attributes on `event_date` sensor:**
 - `event_name`, `event_type`, `end_date`, `trip_duration_days`
 - `breakdown_years`, `breakdown_months`, `breakdown_weeks`, `breakdown_days`
+- `start_date_source_entity` *(only present when start date comes from a HA entity)*
+- `end_date_source_entity` *(only present when end date comes from a HA entity)*
+
+**Icon:** `mdi:calendar-sync` when start or end date is sourced from a HA entity; `mdi:calendar` otherwise.
 
 ### 3.2 Milestone Entities
 
@@ -352,6 +356,13 @@ Each event creates multiple entities grouped under a common device.
 | **Image** | `event_image` | Custom or default image |
 
 > **Conditional sensors:** See note in 3.1.
+
+**Attributes on `event_date` sensor:**
+- `event_name`, `event_type`
+- `breakdown_years`, `breakdown_months`, `breakdown_weeks`, `breakdown_days`
+- `date_source_entity` *(only present when date comes from a HA entity)*
+
+**Icon:** `mdi:calendar-sync` when date is sourced from a HA entity; `mdi:calendar` otherwise.
 
 ### 3.3 Anniversary Entities
 
@@ -368,6 +379,13 @@ Each event creates multiple entities grouped under a common device.
 | **Image** | `event_image` | Custom or default image |
 
 > **Conditional sensors:** See note in 3.1.
+
+**Attributes on `event_date` sensor:**
+- `event_name`, `event_type`, `initial_date`, `years_on_next`
+- `breakdown_years`, `breakdown_months`, `breakdown_weeks`, `breakdown_days`
+- `date_source_entity` *(only present when date comes from a HA entity)*
+
+**Icon:** `mdi:calendar-sync` when date is sourced from a HA entity; `mdi:calendar` otherwise.
 
 ### 3.4 Special Event Entities
 
@@ -653,6 +671,16 @@ The integration uses Home Assistant's `DataUpdateCoordinator` for centralized da
 Sensors will always show correct values since calculations use `date.today()` at the time of the update call. An hourly interval is sufficient for date-based countdown data.
 
 At each update cycle, the coordinator also calls `_check_expiry_repair(today)` to maintain the Repairs issue state.
+
+**Entity date source resolution:** When a date field is configured to use a HA entity, the coordinator calls `_resolve_date(entity_id, field_name)` instead of reading the static config value. This method:
+1. Reads `hass.states.get(entity_id)` — returns `None` if the entity doesn't exist
+2. Rejects states `"unavailable"` or `"unknown"` with `UpdateFailed`
+3. Delegates to `_parse_entity_date(state)` which handles:
+   - `device_class: date` → parses `YYYY-MM-DD` state string
+   - `device_class: timestamp` → parses ISO-8601 UTC timestamp, converts to local date
+4. Raises `UpdateFailed` on any parse error
+
+Trip entries may have entity sources on start date, end date, or both independently.
 
 ### 5.6 Entry Type Routing
 
