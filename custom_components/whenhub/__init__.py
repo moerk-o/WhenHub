@@ -7,15 +7,27 @@ of all platforms (sensors, binary sensors, images) for event tracking.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.helpers.issue_registry import async_delete_issue
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import slugify
 
-from .const import DOMAIN, CONF_ENTRY_TYPE, ENTRY_TYPE_CALENDAR
+from .const import (
+    DOMAIN,
+    CONF_ENTRY_TYPE,
+    ENTRY_TYPE_CALENDAR,
+    CONF_EVENT_DATE_USE_ENTITY,
+    CONF_EVENT_DATE_ENTITY_ID,
+    CONF_START_DATE_USE_ENTITY,
+    CONF_START_DATE_ENTITY_ID,
+    CONF_END_DATE_USE_ENTITY,
+    CONF_END_DATE_ENTITY_ID,
+)
 from .coordinator import WhenHubCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -129,6 +141,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "coordinator": coordinator,
             "event_data": dict(entry.data),
         }
+        _setup_entity_date_listeners(hass, entry, coordinator)
         await hass.config_entries.async_forward_entry_setups(entry, EVENT_PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
@@ -154,6 +167,44 @@ async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None
     _LOGGER.info("WhenHub integration updated: %s", entry.title)
 
 
+def _setup_entity_date_listeners(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    coordinator: WhenHubCoordinator,
+) -> None:
+    """Register state-change listeners for entity date sources.
+
+    For each date field configured to use an entity as source, a listener is
+    registered so the coordinator refreshes immediately when that entity changes
+    (including transitions to/from unavailable or unknown).
+
+    Listeners are automatically removed when the entry is unloaded via
+    entry.async_on_unload().
+    """
+    data = entry.data
+    entity_ids: list[str] = []
+
+    for use_key, id_key in (
+        (CONF_EVENT_DATE_USE_ENTITY, CONF_EVENT_DATE_ENTITY_ID),
+        (CONF_START_DATE_USE_ENTITY, CONF_START_DATE_ENTITY_ID),
+        (CONF_END_DATE_USE_ENTITY, CONF_END_DATE_ENTITY_ID),
+    ):
+        if data.get(use_key) and data.get(id_key):
+            entity_ids.append(data[id_key])
+
+    if not entity_ids:
+        return
+
+    @callback
+    def _handle_entity_date_change(event: Any) -> None:  # noqa: ANN401
+        hass.async_create_task(coordinator.async_request_refresh())
+
+    for entity_id in entity_ids:
+        entry.async_on_unload(
+            async_track_state_change_event(hass, entity_id, _handle_entity_date_change)
+        )
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload WhenHub integration config entry.
 
@@ -175,8 +226,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, platforms):
-        # Clean up any open Repairs issue for this entry
+        # Clean up any open Repairs issues for this entry
         async_delete_issue(hass, DOMAIN, f"expired_{entry.entry_id}")
+        async_delete_issue(hass, DOMAIN, f"date_order_{entry.entry_id}")
 
         hass.data[DOMAIN].pop(entry.entry_id)
 

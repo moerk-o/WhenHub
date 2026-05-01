@@ -67,6 +67,14 @@ CONF_MEMO = "memo"
 # FR13: Expiry notification via HA Repairs
 CONF_NOTIFY_ON_EXPIRY = "notify_on_expiry"
 
+# FR09: Entity date source configuration keys
+CONF_EVENT_DATE_USE_ENTITY = "event_date_use_entity"   # Milestone / Anniversary
+CONF_EVENT_DATE_ENTITY_ID = "event_date_entity_id"     # Milestone / Anniversary
+CONF_START_DATE_USE_ENTITY = "start_date_use_entity"   # Trip start
+CONF_START_DATE_ENTITY_ID = "start_date_entity_id"     # Trip start
+CONF_END_DATE_USE_ENTITY = "end_date_use_entity"       # Trip end
+CONF_END_DATE_ENTITY_ID = "end_date_entity_id"         # Trip end
+
 # Default values
 DEFAULT_IMAGE = "/local/whenhub/default_event.png"
 
