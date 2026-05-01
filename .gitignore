@@ -40,3 +40,10 @@ prompt.md
 docs/
 bugs/
 tests/custom_components/
+
+# Claude Code (local only)
+CLAUDE.md
+CLAUDE_GUIDE.md
+GIT_WORKFLOW_GUIDE.md
+RELEASE_GUIDE.md
+TESTING_GUIDE.md
