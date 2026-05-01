@@ -13,7 +13,9 @@
         "description": "Richte einen neuen Trip bei WhenHub ein",
         "data": {
           "start_date": "Startdatum",
+          "start_date_use_entity": "HA-Entity als Startdatum-Quelle verwenden",
           "end_date": "Enddatum",
+          "end_date_use_entity": "HA-Entity als Enddatum-Quelle verwenden",
           "image_upload": "Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "url": "URL (optional)",
@@ -22,7 +24,9 @@
         },
         "data_description": {
           "start_date": "Das Datum, an dem der Trip beginnt",
+          "start_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "end_date": "Das Datum, an dem der Trip endet",
+          "end_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
           "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
@@ -30,11 +34,32 @@
           "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
+      "trip_start_entity": {
+        "title": "Startdatum-Entity auswählen",
+        "description": "Entity auswählen, die das Startdatum liefert.",
+        "data": {
+          "start_date_entity_id": "Startdatum-Entity"
+        },
+        "data_description": {
+          "start_date_entity_id": "Datums- oder Zeitstempel-Entity"
+        }
+      },
+      "trip_end_entity": {
+        "title": "Enddatum-Entity auswählen",
+        "description": "Entity auswählen, die das Enddatum liefert.",
+        "data": {
+          "end_date_entity_id": "Enddatum-Entity"
+        },
+        "data_description": {
+          "end_date_entity_id": "Datums- oder Zeitstempel-Entity"
+        }
+      },
       "milestone": {
         "title": "Milestone einrichten",
         "description": "Richte einen neuen Milestone bei WhenHub ein",
         "data": {
           "target_date": "Zieldatum",
+          "event_date_use_entity": "HA-Entity als Datums-Quelle verwenden",
           "image_upload": "Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "url": "URL (optional)",
@@ -43,6 +68,7 @@
         },
         "data_description": {
           "target_date": "Das Datum des wichtigen Termins",
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
@@ -50,11 +76,22 @@
           "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
+      "milestone_entity": {
+        "title": "Datums-Entity auswählen",
+        "description": "Entity auswählen, die das Datum liefert.",
+        "data": {
+          "event_date_entity_id": "Datums-Entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Datums- oder Zeitstempel-Entity"
+        }
+      },
       "anniversary": {
         "title": "Anniversary einrichten",
         "description": "Richte ein neues Anniversary bei WhenHub ein",
         "data": {
           "target_date": "Ursprüngliches Datum",
+          "event_date_use_entity": "HA-Entity als Datums-Quelle verwenden",
           "image_upload": "Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "url": "URL (optional)",
@@ -62,10 +99,21 @@
         },
         "data_description": {
           "target_date": "Das ursprüngliche Datum (wird jährlich wiederholt)",
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes oben verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
           "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+        }
+      },
+      "anniversary_entity": {
+        "title": "Datums-Entity auswählen",
+        "description": "Entity auswählen, die das Datum liefert.",
+        "data": {
+          "event_date_entity_id": "Datums-Entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Datums- oder Zeitstempel-Entity"
         }
       },
       "special_category": {
@@ -237,6 +285,8 @@
         "title": "Trip Optionen",
         "description": "Bearbeite die Einstellungen für diesen Trip",
         "data": {
+          "start_date_use_entity": "HA-Entity als Startdatum-Quelle verwenden",
+          "end_date_use_entity": "HA-Entity als Enddatum-Quelle verwenden",
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "image_delete": "Aktuelles Bild entfernen",
@@ -245,6 +295,8 @@
           "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
+          "start_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
+          "end_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/trip.jpg — Upload hat Vorrang",
           "url": "Link zur Buchungsseite, Website oder einer anderen relevanten URL",
@@ -252,10 +304,31 @@
           "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
+      "trip_start_entity_options": {
+        "title": "Startdatum-Entity auswählen",
+        "description": "Entity auswählen, die das Startdatum liefert.",
+        "data": {
+          "start_date_entity_id": "Startdatum-Entity"
+        },
+        "data_description": {
+          "start_date_entity_id": "Entity mit device_class 'date' oder 'timestamp'"
+        }
+      },
+      "trip_end_entity_options": {
+        "title": "Enddatum-Entity auswählen",
+        "description": "Entity auswählen, die das Enddatum liefert.",
+        "data": {
+          "end_date_entity_id": "Enddatum-Entity"
+        },
+        "data_description": {
+          "end_date_entity_id": "Entity mit device_class 'date' oder 'timestamp'"
+        }
+      },
       "milestone_options": {
         "title": "Milestone Optionen",
         "description": "Bearbeite die Einstellungen für diesen Milestone",
         "data": {
+          "event_date_use_entity": "HA-Entity als Datums-Quelle verwenden",
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "image_delete": "Aktuelles Bild entfernen",
@@ -264,6 +337,7 @@
           "notify_on_expiry": "Benachrichtigung bei Ablauf"
         },
         "data_description": {
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/milestone.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
@@ -271,10 +345,21 @@
           "notify_on_expiry": "Erstellt eine Meldung in HA-Reparaturen, wenn dieses Event abgelaufen ist"
         }
       },
+      "milestone_entity_options": {
+        "title": "Datums-Entity auswählen",
+        "description": "Entity auswählen, die das Datum liefert.",
+        "data": {
+          "event_date_entity_id": "Datums-Entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Entity mit device_class 'date' oder 'timestamp'"
+        }
+      },
       "anniversary_options": {
         "title": "Anniversary Optionen",
         "description": "Bearbeite die Einstellungen für dieses Anniversary",
         "data": {
+          "event_date_use_entity": "HA-Entity als Datums-Quelle verwenden",
           "image_upload": "Neues Bild hochladen (optional)",
           "image_path": "Oder Bildpfad eingeben (optional)",
           "image_delete": "Aktuelles Bild entfernen",
@@ -282,10 +367,21 @@
           "memo": "Memo (optional)"
         },
         "data_description": {
+          "event_date_use_entity": "Datums- oder Zeitstempel-Entity statt des Datumsfeldes verwenden",
           "image_upload": "Datei hierher ziehen oder klicken — JPEG, PNG, WebP oder GIF",
           "image_path": "Pfad zu einem Bild, z.B. /local/images/anniversary.jpg — Upload hat Vorrang",
           "url": "Link zu einer Website oder einer anderen relevanten URL",
           "memo": "Freitext-Notizen zu diesem Event — Markdown wird unterstützt"
+        }
+      },
+      "anniversary_entity_options": {
+        "title": "Datums-Entity auswählen",
+        "description": "Entity auswählen, die das Datum liefert.",
+        "data": {
+          "event_date_entity_id": "Datums-Entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Entity mit device_class 'date' oder 'timestamp'"
         }
       },
       "special_options": {
@@ -630,6 +726,10 @@
           }
         }
       }
+    },
+    "date_order_invalid": {
+      "title": "Trip-Datumsreihenfolge ungültig: {event_name}",
+      "description": "Das entity-basierte Enddatum (**{end_date}**) liegt vor dem Startdatum (**{start_date}**) für **{event_name}**.\n\nAlle Sensoren dieses Trips sind derzeit nicht verfügbar. Passe die Quell-Entities so an, dass das Enddatum nach dem Startdatum liegt — das Problem wird dann automatisch behoben."
     }
   }
 }

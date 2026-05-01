@@ -13,7 +13,9 @@
         "description": "Set up a new trip in WhenHub",
         "data": {
           "start_date": "Start date",
+          "start_date_use_entity": "Use an HA entity as start date source",
           "end_date": "End date",
+          "end_date_use_entity": "Use an HA entity as end date source",
           "image_upload": "Upload image (optional)",
           "image_path": "Or enter image path (optional)",
           "url": "URL (optional)",
@@ -22,7 +24,9 @@
         },
         "data_description": {
           "start_date": "The date when the trip begins",
+          "start_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "end_date": "The date when the trip ends",
+          "end_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority",
           "url": "Link to a website, booking page or any related URL",
@@ -30,11 +34,32 @@
           "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
+      "trip_start_entity": {
+        "title": "Select start date entity",
+        "description": "Select the entity that provides the start date.",
+        "data": {
+          "start_date_entity_id": "Start date entity"
+        },
+        "data_description": {
+          "start_date_entity_id": "Date or timestamp entity"
+        }
+      },
+      "trip_end_entity": {
+        "title": "Select end date entity",
+        "description": "Select the entity that provides the end date.",
+        "data": {
+          "end_date_entity_id": "End date entity"
+        },
+        "data_description": {
+          "end_date_entity_id": "Date or timestamp entity"
+        }
+      },
       "milestone": {
         "title": "Set up milestone",
         "description": "Set up a new milestone in WhenHub",
         "data": {
           "target_date": "Target date",
+          "event_date_use_entity": "Use an HA entity as date source",
           "image_upload": "Upload image (optional)",
           "image_path": "Or enter image path (optional)",
           "url": "URL (optional)",
@@ -43,6 +68,7 @@
         },
         "data_description": {
           "target_date": "The date of the important event",
+          "event_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
@@ -50,11 +76,22 @@
           "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
+      "milestone_entity": {
+        "title": "Select date entity",
+        "description": "Select the entity that provides the date.",
+        "data": {
+          "event_date_entity_id": "Date entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Date or timestamp entity"
+        }
+      },
       "anniversary": {
         "title": "Set up anniversary",
         "description": "Set up a new anniversary in WhenHub",
         "data": {
           "target_date": "Original date",
+          "event_date_use_entity": "Use an HA entity as date source",
           "image_upload": "Upload image (optional)",
           "image_path": "Or enter image path (optional)",
           "url": "URL (optional)",
@@ -62,10 +99,21 @@
         },
         "data_description": {
           "target_date": "The original date (will repeat yearly)",
+          "event_date_use_entity": "Use a date or timestamp entity instead of the field above",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/anniversary.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
           "memo": "Free-text notes about this event — supports Markdown"
+        }
+      },
+      "anniversary_entity": {
+        "title": "Select date entity",
+        "description": "Select the entity that provides the date.",
+        "data": {
+          "event_date_entity_id": "Date entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Date or timestamp entity"
         }
       },
       "special_category": {
@@ -237,6 +285,8 @@
         "title": "Trip Options",
         "description": "Edit the settings for this trip",
         "data": {
+          "start_date_use_entity": "Use an HA entity as start date source",
+          "end_date_use_entity": "Use an HA entity as end date source",
           "image_upload": "Upload new image (optional)",
           "image_path": "Or enter image path (optional)",
           "image_delete": "Remove current image",
@@ -245,6 +295,8 @@
           "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
+          "start_date_use_entity": "Use a date or timestamp entity instead of the date field",
+          "end_date_use_entity": "Use a date or timestamp entity instead of the date field",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/trip.jpg — upload above takes priority",
           "url": "Link to a website, booking page or any related URL",
@@ -252,10 +304,31 @@
           "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
+      "trip_start_entity_options": {
+        "title": "Select start date entity",
+        "description": "Select the entity that provides the start date.",
+        "data": {
+          "start_date_entity_id": "Start date entity"
+        },
+        "data_description": {
+          "start_date_entity_id": "Entity with device_class 'date' or 'timestamp'"
+        }
+      },
+      "trip_end_entity_options": {
+        "title": "Select end date entity",
+        "description": "Select the entity that provides the end date.",
+        "data": {
+          "end_date_entity_id": "End date entity"
+        },
+        "data_description": {
+          "end_date_entity_id": "Entity with device_class 'date' or 'timestamp'"
+        }
+      },
       "milestone_options": {
         "title": "Milestone Options",
         "description": "Edit the settings for this milestone",
         "data": {
+          "event_date_use_entity": "Use an HA entity as date source",
           "image_upload": "Upload new image (optional)",
           "image_path": "Or enter image path (optional)",
           "image_delete": "Remove current image",
@@ -264,6 +337,7 @@
           "notify_on_expiry": "Notify when expired"
         },
         "data_description": {
+          "event_date_use_entity": "Use a date or timestamp entity instead of the date field",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/milestone.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
@@ -271,10 +345,21 @@
           "notify_on_expiry": "Create a notification in HA Repairs when this event expires"
         }
       },
+      "milestone_entity_options": {
+        "title": "Select date entity",
+        "description": "Select the entity that provides the date.",
+        "data": {
+          "event_date_entity_id": "Date entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Entity with device_class 'date' or 'timestamp'"
+        }
+      },
       "anniversary_options": {
         "title": "Anniversary Options",
         "description": "Edit the settings for this anniversary",
         "data": {
+          "event_date_use_entity": "Use an HA entity as date source",
           "image_upload": "Upload new image (optional)",
           "image_path": "Or enter image path (optional)",
           "image_delete": "Remove current image",
@@ -282,10 +367,21 @@
           "memo": "Memo (optional)"
         },
         "data_description": {
+          "event_date_use_entity": "Use a date or timestamp entity instead of the date field",
           "image_upload": "Drag & drop or click to select a JPEG, PNG, WebP or GIF file",
           "image_path": "Path to an image, e.g. /local/images/anniversary.jpg — upload above takes priority",
           "url": "Link to a website or any related URL",
           "memo": "Free-text notes about this event — supports Markdown"
+        }
+      },
+      "anniversary_entity_options": {
+        "title": "Select date entity",
+        "description": "Select the entity that provides the date.",
+        "data": {
+          "event_date_entity_id": "Date entity"
+        },
+        "data_description": {
+          "event_date_entity_id": "Entity with device_class 'date' or 'timestamp'"
         }
       },
       "special_options": {
@@ -630,6 +726,10 @@
           }
         }
       }
+    },
+    "date_order_invalid": {
+      "title": "Trip date order invalid: {event_name}",
+      "description": "The entity-sourced end date (**{end_date}**) is before the start date (**{start_date}**) for **{event_name}**.\n\nAll sensors for this trip are currently unavailable. Update the source entities so that the end date is after the start date to resolve this issue automatically."
     }
   }
 }

@@ -14,6 +14,10 @@ from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     TRIP_SENSOR_TYPES,
+    CONF_START_DATE_USE_ENTITY,
+    CONF_START_DATE_ENTITY_ID,
+    CONF_END_DATE_USE_ENTITY,
+    CONF_END_DATE_ENTITY_ID,
 )
 from .base import BaseCountdownSensor
 
@@ -52,6 +56,16 @@ class TripSensor(BaseCountdownSensor):
             sensor_type: Type of sensor to create (from TRIP_SENSOR_TYPES)
         """
         super().__init__(coordinator, config_entry, event_data, sensor_type, TRIP_SENSOR_TYPES)
+
+    @property
+    def icon(self) -> str | None:
+        """Return calendar-sync icon when any date comes from an entity."""
+        if self._sensor_type == "event_date" and (
+            self._event_data.get(CONF_START_DATE_USE_ENTITY)
+            or self._event_data.get(CONF_END_DATE_USE_ENTITY)
+        ):
+            return "mdi:calendar-sync"
+        return self.entity_description.icon
 
     @property
     def native_value(self) -> datetime | int | float | None:
@@ -96,6 +110,10 @@ class TripSensor(BaseCountdownSensor):
                 "trip_duration_days": data.get("total_days"),
             })
             attributes.update(self._get_countdown_attributes())
+            if self._event_data.get(CONF_START_DATE_USE_ENTITY):
+                attributes["start_date_source_entity"] = self._event_data.get(CONF_START_DATE_ENTITY_ID)
+            if self._event_data.get(CONF_END_DATE_USE_ENTITY):
+                attributes["end_date_source_entity"] = self._event_data.get(CONF_END_DATE_ENTITY_ID)
             return attributes
 
         return {}
