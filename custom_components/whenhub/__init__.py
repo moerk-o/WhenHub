@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.helpers.issue_registry import async_delete_issue
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
@@ -35,6 +35,9 @@ _LOGGER = logging.getLogger(__name__)
 # Platforms per entry type
 EVENT_PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SENSOR]
 CALENDAR_PLATFORMS: list[Platform] = [Platform.CALENDAR]
+
+# Key in hass.data[DOMAIN] for tracking entity restore listeners (per entry_id)
+_RESTORE_LISTENER_KEY = "_entity_restore_listeners"
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -135,6 +138,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.config_entries.async_forward_entry_setups(entry, CALENDAR_PLATFORMS)
     else:
         # Event entry: existing behavior unchanged
+        _check_entity_source_availability(hass, entry)
         coordinator = WhenHubCoordinator(hass, entry, dict(entry.data))
         await coordinator.async_config_entry_first_refresh()
         hass.data[DOMAIN][entry.entry_id] = {
@@ -142,6 +146,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "event_data": dict(entry.data),
         }
         _setup_entity_date_listeners(hass, entry, coordinator)
+        _setup_entity_registry_listener(hass, entry)
         await hass.config_entries.async_forward_entry_setups(entry, EVENT_PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
@@ -165,6 +170,142 @@ async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None
     await hass.config_entries.async_reload(entry.entry_id)
 
     _LOGGER.info("WhenHub integration updated: %s", entry.title)
+
+
+def _get_source_entity_map(data: dict) -> dict[str, str]:
+    """Return {config_key: entity_id} for all active entity date sources."""
+    result: dict[str, str] = {}
+    for use_key, id_key in (
+        (CONF_EVENT_DATE_USE_ENTITY, CONF_EVENT_DATE_ENTITY_ID),
+        (CONF_START_DATE_USE_ENTITY, CONF_START_DATE_ENTITY_ID),
+        (CONF_END_DATE_USE_ENTITY, CONF_END_DATE_ENTITY_ID),
+    ):
+        if data.get(use_key) and data.get(id_key):
+            result[id_key] = data[id_key]
+    return result
+
+
+def _setup_entity_registry_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Register entity registry listener to track renames and deletions of entity date sources.
+
+    - On rename (action="update", entity_id changed): auto-migrates config entry data.
+    - On delete (action="remove"): creates a Repairs issue.
+    - On create (action="create"): auto-resolves a previous Repairs issue.
+
+    The listener is automatically removed when the entry is unloaded via entry.async_on_unload().
+    """
+    if not _get_source_entity_map(entry.data):
+        return
+
+    @callback
+    def _handle_entity_registry_update(event: Any) -> None:  # noqa: ANN401
+        action = event.data.get("action")
+        source_map = _get_source_entity_map(entry.data)
+
+        if action == "update":
+            changes = event.data.get("changes", {})
+            if "entity_id" not in changes:
+                return
+            old_entity_id = changes["entity_id"]
+            new_entity_id = event.data["entity_id"]
+
+            affected_keys = [k for k, v in source_map.items() if v == old_entity_id]
+            if not affected_keys:
+                return
+
+            new_data = dict(entry.data)
+            for key in affected_keys:
+                new_data[key] = new_entity_id
+            hass.config_entries.async_update_entry(entry, data=new_data)
+
+        elif action == "remove":
+            deleted_entity_id = event.data["entity_id"]
+            if deleted_entity_id not in source_map.values():
+                return
+
+            async_create_issue(
+                hass,
+                DOMAIN,
+                f"entity_deleted_{entry.entry_id}",
+                is_fixable=False,
+                severity=IssueSeverity.WARNING,
+                translation_key="entity_source_deleted",
+                translation_placeholders={
+                    "name": entry.title,
+                    "entity_id": deleted_entity_id,
+                },
+            )
+
+        elif action == "create":
+            new_entity_id = event.data["entity_id"]
+            if new_entity_id not in source_map.values():
+                return
+
+            async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
+            coordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
+            hass.async_create_task(coordinator.async_request_refresh())
+
+    entry.async_on_unload(
+        hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, _handle_entity_registry_update)
+    )
+
+
+def _check_entity_source_availability(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Check configured entity date sources and update Repairs issue accordingly.
+
+    Called on every entry setup (including HA restarts and retries). When sources are
+    missing, also registers a one-shot restore listener so the Repairs issue is cleared
+    immediately when the entity comes back — even while the entry is in retry mode
+    (where _setup_entity_registry_listener is not yet active).
+
+    The restore listener triggers an immediate reload so the coordinator picks up the
+    restored entity without waiting for the next retry cycle.
+    """
+    # Cancel any restore listener from a previous setup attempt (handles retry cycles)
+    restore_listeners: dict = hass.data[DOMAIN].setdefault(_RESTORE_LISTENER_KEY, {})
+    if old_unsub := restore_listeners.pop(entry.entry_id, None):
+        old_unsub()
+
+    source_map = _get_source_entity_map(entry.data)
+
+    if not source_map:
+        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
+        return
+
+    entity_reg = er.async_get(hass)
+    missing = [eid for eid in source_map.values() if entity_reg.async_get(eid) is None]
+
+    if missing:
+        async_create_issue(
+            hass,
+            DOMAIN,
+            f"entity_deleted_{entry.entry_id}",
+            is_fixable=False,
+            severity=IssueSeverity.WARNING,
+            translation_key="entity_source_deleted",
+            translation_placeholders={
+                "name": entry.title,
+                "entity_id": missing[0],
+            },
+        )
+
+        missing_set = set(missing)
+
+        @callback
+        def _on_entity_restored(event: Any) -> None:  # noqa: ANN401
+            if event.data.get("action") != "create":
+                return
+            if event.data.get("entity_id") not in missing_set:
+                return
+            if unsub := restore_listeners.pop(entry.entry_id, None):
+                unsub()
+            async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
+            hass.async_create_task(hass.config_entries.async_reload(entry.entry_id))
+
+        unsub = hass.bus.async_listen(er.EVENT_ENTITY_REGISTRY_UPDATED, _on_entity_restored)
+        restore_listeners[entry.entry_id] = unsub
+    else:
+        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
 
 
 def _setup_entity_date_listeners(
@@ -230,7 +371,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_delete_issue(hass, DOMAIN, f"expired_{entry.entry_id}")
         async_delete_issue(hass, DOMAIN, f"date_order_{entry.entry_id}")
 
-        hass.data[DOMAIN].pop(entry.entry_id)
+        # Cancel entity restore listener if present (registered while in retry mode)
+        restore_listeners = hass.data[DOMAIN].get(_RESTORE_LISTENER_KEY, {})
+        if unsub := restore_listeners.pop(entry.entry_id, None):
+            unsub()
+
+        hass.data[DOMAIN].pop(entry.entry_id, None)
 
         entity_registry = er.async_get(hass)
         entities = er.async_entries_for_config_entry(entity_registry, entry.entry_id)

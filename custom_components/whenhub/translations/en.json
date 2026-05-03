@@ -730,6 +730,10 @@
     "date_order_invalid": {
       "title": "Trip date order invalid: {event_name}",
       "description": "The entity-sourced end date (**{end_date}**) is before the start date (**{start_date}**) for **{event_name}**.\n\nAll sensors for this trip are currently unavailable. Update the source entities so that the end date is after the start date to resolve this issue automatically."
+    },
+    "entity_source_deleted": {
+      "title": "Date source entity removed: {name}",
+      "description": "The entity **{entity_id}** used as a date source for **{name}** has been removed from Home Assistant.\n\nAll sensors for this event are currently unavailable. To resolve this issue, open the event's settings and either choose a different entity, enter a fixed date, or delete the event."
     }
   }
 }

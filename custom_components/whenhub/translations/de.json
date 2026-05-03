@@ -730,6 +730,10 @@
     "date_order_invalid": {
       "title": "Trip-Datumsreihenfolge ungültig: {event_name}",
       "description": "Das entity-basierte Enddatum (**{end_date}**) liegt vor dem Startdatum (**{start_date}**) für **{event_name}**.\n\nAlle Sensoren dieses Trips sind derzeit nicht verfügbar. Passe die Quell-Entities so an, dass das Enddatum nach dem Startdatum liegt — das Problem wird dann automatisch behoben."
+    },
+    "entity_source_deleted": {
+      "title": "Datumsquellen-Entity entfernt: {name}",
+      "description": "Die Entity **{entity_id}**, die als Datumsquelle für **{name}** konfiguriert ist, wurde aus Home Assistant entfernt.\n\nAlle Sensoren für dieses Ereignis sind derzeit nicht verfügbar. Um das Problem zu beheben öffne die Einstellungen des Ereignisses und wähle eine andere Entity, gib ein festes Datum ein oder lösche das Ereignis."
     }
   }
 }
