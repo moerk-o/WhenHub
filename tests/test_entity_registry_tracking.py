@@ -32,6 +32,7 @@ from custom_components.whenhub import (
     _get_source_entity_map,
     _setup_entity_registry_listener,
     _check_entity_source_availability,
+    _RESTORE_LISTENER_KEY,
 )
 
 
@@ -457,3 +458,140 @@ class TestCheckEntitySourceAvailability:
             _check_entity_source_availability(hass, entry)
 
         mock_delete.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Restore listener (registered when entity is missing, for retry-mode resolution)
+# ---------------------------------------------------------------------------
+
+def _call_check_and_get_restore_cb(hass: _FakeHass, entry: _FakeEntry, missing_ids: list[str]):
+    """Run _check_entity_source_availability with missing entities and return restore callback."""
+    captured = [None]
+
+    def capture_listen(event_name, cb):
+        captured[0] = cb
+        return MagicMock()
+
+    hass.bus.async_listen.side_effect = capture_listen
+
+    with patch(PATCH_ER_GET, return_value=_make_entity_reg([])), \
+         patch(PATCH_CREATE), patch(PATCH_DELETE):
+        _check_entity_source_availability(hass, entry)
+
+    return captured[0]
+
+
+class TestRestoreListener:
+    """One-shot listener registered while entry is in retry mode."""
+
+    def test_restore_listener_registered_when_entity_missing(self):
+        entry = _FakeEntry(
+            entry_id="abc123",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg([])), \
+             patch(PATCH_CREATE), patch(PATCH_DELETE):
+            _check_entity_source_availability(hass, entry)
+
+        hass.bus.async_listen.assert_called_once()
+        assert hass.data[DOMAIN][_RESTORE_LISTENER_KEY].get("abc123") is not None
+
+    def test_restore_listener_not_registered_when_entity_present(self):
+        entry = _FakeEntry(
+            entry_id="abc123",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg(["sensor.bday"])), \
+             patch(PATCH_DELETE), patch(PATCH_CREATE):
+            _check_entity_source_availability(hass, entry)
+
+        hass.bus.async_listen.assert_not_called()
+
+    def test_restore_listener_fires_on_correct_entity_create(self):
+        """When missing entity is created → issue deleted + reload triggered."""
+        entry = _FakeEntry(
+            entry_id="abc123",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+        cb = _call_check_and_get_restore_cb(hass, entry, ["sensor.bday"])
+
+        with patch(PATCH_DELETE) as mock_delete:
+            cb(_make_event("create", "sensor.bday"))
+
+        mock_delete.assert_called_once_with(hass, DOMAIN, "entity_deleted_abc123")
+        hass.async_create_task.assert_called_once()
+
+    def test_restore_listener_ignores_remove_action(self):
+        entry = _FakeEntry(
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+        cb = _call_check_and_get_restore_cb(hass, entry, ["sensor.bday"])
+
+        with patch(PATCH_DELETE) as mock_delete:
+            cb(_make_event("remove", "sensor.bday"))
+
+        mock_delete.assert_not_called()
+        hass.async_create_task.assert_not_called()
+
+    def test_restore_listener_ignores_update_action(self):
+        entry = _FakeEntry(
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+        cb = _call_check_and_get_restore_cb(hass, entry, ["sensor.bday"])
+
+        with patch(PATCH_DELETE) as mock_delete:
+            cb(_make_event("update", "sensor.bday", changes={"name": "old"}))
+
+        mock_delete.assert_not_called()
+        hass.async_create_task.assert_not_called()
+
+    def test_restore_listener_ignores_wrong_entity(self):
+        entry = _FakeEntry(
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+        cb = _call_check_and_get_restore_cb(hass, entry, ["sensor.bday"])
+
+        with patch(PATCH_DELETE) as mock_delete:
+            cb(_make_event("create", "sensor.unrelated"))
+
+        mock_delete.assert_not_called()
+        hass.async_create_task.assert_not_called()
+
+    def test_previous_restore_listener_canceled_on_retry(self):
+        """On each retry, old restore listener is unsubscribed before new one is registered."""
+        entry = _FakeEntry(
+            entry_id="abc123",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        old_unsub = MagicMock()
+        hass.data[DOMAIN].setdefault(_RESTORE_LISTENER_KEY, {})["abc123"] = old_unsub
+
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg([])), \
+             patch(PATCH_CREATE), patch(PATCH_DELETE):
+            _check_entity_source_availability(hass, entry)
+
+        old_unsub.assert_called_once()
+
+    def test_restore_listener_unsubscribes_itself_on_fire(self):
+        """After firing, the listener removes itself from restore_listeners."""
+        entry = _FakeEntry(
+            entry_id="abc123",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+        cb = _call_check_and_get_restore_cb(hass, entry, ["sensor.bday"])
+
+        with patch(PATCH_DELETE), patch(PATCH_CREATE):
+            cb(_make_event("create", "sensor.bday"))
+
+        assert "abc123" not in hass.data[DOMAIN].get(_RESTORE_LISTENER_KEY, {})
