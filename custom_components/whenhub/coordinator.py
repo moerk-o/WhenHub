@@ -10,9 +10,11 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -26,6 +28,15 @@ from .const import (
     CONF_SPECIAL_CATEGORY,
     CONF_DST_TYPE,
     CONF_DST_REGION,
+    CONF_NOTIFY_ON_EXPIRY,
+    CONF_CP_END_TYPE,
+    CONF_CP_UNTIL,
+    CONF_EVENT_DATE_USE_ENTITY,
+    CONF_EVENT_DATE_ENTITY_ID,
+    CONF_START_DATE_USE_ENTITY,
+    CONF_START_DATE_ENTITY_ID,
+    CONF_END_DATE_USE_ENTITY,
+    CONF_END_DATE_ENTITY_ID,
     EVENT_TYPE_TRIP,
     EVENT_TYPE_MILESTONE,
     EVENT_TYPE_ANNIVERSARY,
@@ -140,7 +151,61 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         elif self.event_type == EVENT_TYPE_SPECIAL:
             data.update(self._calculate_special_data(today))
 
+        self._check_expiry_repair(today)
+
         return data
+
+    def _parse_entity_date(self, state: Any) -> date | None:
+        """Parse a date from an entity state object.
+
+        Supports device_class 'date' (state is YYYY-MM-DD) and
+        'timestamp' (state is ISO-8601 datetime, converted to local date).
+        """
+        device_class = state.attributes.get("device_class")
+        if device_class == "timestamp":
+            parsed = dt_util.parse_datetime(state.state)
+            if parsed:
+                return dt_util.as_local(parsed).date()
+            return None
+        # device_class == "date" or fallback
+        try:
+            return date.fromisoformat(state.state)
+        except (ValueError, TypeError):
+            return None
+
+    def _resolve_date(
+        self,
+        date_key: str,
+        use_entity_key: str,
+        entity_id_key: str,
+    ) -> date:
+        """Resolve a date from manual config or a live entity state.
+
+        Raises UpdateFailed when the entity source is configured but
+        unavailable, unknown, or returns an unparseable value.
+        Falls back to the manual date field when use_entity is False.
+        """
+        if self.event_data.get(use_entity_key):
+            entity_id = self.event_data.get(entity_id_key)
+            if not entity_id:
+                raise UpdateFailed(
+                    f"Entity date source enabled for '{date_key}' but no entity configured"
+                )
+            state = self.hass.states.get(entity_id)
+            if state is None or state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
+                raise UpdateFailed(
+                    f"Date source entity '{entity_id}' is unavailable or unknown"
+                )
+            resolved = self._parse_entity_date(state)
+            if resolved is None:
+                raise UpdateFailed(
+                    f"Cannot parse date from entity '{entity_id}' (state: {state.state!r})"
+                )
+            return resolved
+        raw = self.event_data.get(date_key)
+        if not raw:
+            raise UpdateFailed(f"No date configured for '{date_key}'")
+        return parse_date(raw)
 
     def _calculate_trip_data(self, today: date) -> dict[str, Any]:
         """Calculate all trip-related values.
@@ -151,8 +216,37 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             Dictionary with trip sensor values
         """
-        start_date = parse_date(self.event_data[CONF_START_DATE])
-        end_date = parse_date(self.event_data[CONF_END_DATE])
+        start_date = self._resolve_date(
+            CONF_START_DATE, CONF_START_DATE_USE_ENTITY, CONF_START_DATE_ENTITY_ID
+        )
+        end_date = self._resolve_date(
+            CONF_END_DATE, CONF_END_DATE_USE_ENTITY, CONF_END_DATE_ENTITY_ID
+        )
+
+        # When at least one date comes from an entity, check order at runtime.
+        # Manual-only trips are validated at config time so this can't happen there.
+        if self.event_data.get(CONF_START_DATE_USE_ENTITY) or self.event_data.get(
+            CONF_END_DATE_USE_ENTITY
+        ):
+            issue_id = f"date_order_{self.config_entry.entry_id}"
+            if end_date < start_date:
+                async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    issue_id,
+                    is_fixable=False,
+                    severity=IssueSeverity.WARNING,
+                    translation_key="date_order_invalid",
+                    translation_placeholders={
+                        "event_name": self.config_entry.title,
+                        "start_date": start_date.isoformat(),
+                        "end_date": end_date.isoformat(),
+                    },
+                )
+                raise UpdateFailed(
+                    f"Trip end date ({end_date}) is before start date ({start_date})"
+                )
+            async_delete_issue(self.hass, DOMAIN, issue_id)
 
         days_to_start = days_until(start_date, today)
         countdown = countdown_breakdown(start_date, today) if today < start_date else {}
@@ -183,7 +277,9 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             Dictionary with milestone sensor values
         """
-        target_date = parse_date(self.event_data[CONF_TARGET_DATE])
+        target_date = self._resolve_date(
+            CONF_TARGET_DATE, CONF_EVENT_DATE_USE_ENTITY, CONF_EVENT_DATE_ENTITY_ID
+        )
 
         countdown = countdown_breakdown(target_date, today) if today < target_date else {}
 
@@ -206,7 +302,9 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             Dictionary with anniversary sensor values
         """
-        original_date = parse_date(self.event_data[CONF_TARGET_DATE])
+        original_date = self._resolve_date(
+            CONF_TARGET_DATE, CONF_EVENT_DATE_USE_ENTITY, CONF_EVENT_DATE_ENTITY_ID
+        )
         next_ann = next_anniversary(original_date, today)
         last_ann = last_anniversary(original_date, today)
 
@@ -339,3 +437,78 @@ class WhenHubCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Binary sensor values
             "is_today": is_today_val,
         }
+
+    def _check_expiry_repair(self, today: date) -> None:
+        """Create or delete a Repairs issue based on event expiry state.
+
+        Called on every coordinator update cycle. Idempotent — calling
+        async_create_issue repeatedly with the same issue_id is safe in HA.
+        """
+        issue_id = f"expired_{self.config_entry.entry_id}"
+        notify = self.event_data.get(CONF_NOTIFY_ON_EXPIRY, False)
+
+        if not notify:
+            # Clean up if the toggle was turned off after expiry was reported
+            async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+
+        is_expired = False
+        expiry_date = ""
+
+        if self.event_type == EVENT_TYPE_TRIP:
+            try:
+                end_date = self._resolve_date(
+                    CONF_END_DATE, CONF_END_DATE_USE_ENTITY, CONF_END_DATE_ENTITY_ID
+                )
+            except UpdateFailed:
+                return  # Entity unavailable — skip expiry check
+            if end_date is not None and end_date < today:
+                is_expired = True
+                expiry_date = end_date.isoformat()
+
+        elif self.event_type == EVENT_TYPE_MILESTONE:
+            try:
+                target_date = self._resolve_date(
+                    CONF_TARGET_DATE, CONF_EVENT_DATE_USE_ENTITY, CONF_EVENT_DATE_ENTITY_ID
+                )
+            except UpdateFailed:
+                return  # Entity unavailable — skip expiry check
+            if target_date is not None and target_date < today:
+                is_expired = True
+                expiry_date = target_date.isoformat()
+
+        elif self.event_type == EVENT_TYPE_SPECIAL:
+            special_category = self.event_data.get(CONF_SPECIAL_CATEGORY)
+            if special_category == "custom_pattern":
+                cp_end_type = self.event_data.get(CONF_CP_END_TYPE, "none")
+                if cp_end_type != "none":
+                    next_occurrence = next_custom_pattern(self.event_data, today)
+                    if next_occurrence is None:
+                        is_expired = True
+                        until = self.event_data.get(CONF_CP_UNTIL)
+                        if until:
+                            expiry_date = until
+                        else:
+                            last = last_custom_pattern(self.event_data, today)
+                            expiry_date = last.isoformat() if last else ""
+
+        if is_expired:
+            async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=True,
+                severity=IssueSeverity.WARNING,
+                translation_key="expired_event",
+                translation_placeholders={
+                    "event_name": self.config_entry.title,
+                    "expiry_date": expiry_date,
+                },
+                data={
+                    "entry_id": self.config_entry.entry_id,
+                    "event_name": self.config_entry.title,
+                    "expiry_date": expiry_date,
+                },
+            )
+        else:
+            async_delete_issue(self.hass, DOMAIN, issue_id)

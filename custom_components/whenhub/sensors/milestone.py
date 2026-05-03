@@ -14,6 +14,8 @@ from homeassistant.config_entries import ConfigEntry
 
 from ..const import (
     MILESTONE_SENSOR_TYPES,
+    CONF_EVENT_DATE_USE_ENTITY,
+    CONF_EVENT_DATE_ENTITY_ID,
 )
 from .base import BaseCountdownSensor
 
@@ -54,6 +56,13 @@ class MilestoneSensor(BaseCountdownSensor):
         super().__init__(coordinator, config_entry, event_data, sensor_type, MILESTONE_SENSOR_TYPES)
 
     @property
+    def icon(self) -> str | None:
+        """Return calendar-sync icon when date comes from an entity."""
+        if self._sensor_type == "event_date" and self._event_data.get(CONF_EVENT_DATE_USE_ENTITY):
+            return "mdi:calendar-sync"
+        return self.entity_description.icon
+
+    @property
     def native_value(self) -> datetime | int | float | None:
         """Return the current sensor value from coordinator data.
 
@@ -85,6 +94,8 @@ class MilestoneSensor(BaseCountdownSensor):
             data = self.coordinator.data
             attributes = self._get_base_attributes()
             attributes.update(self._get_countdown_attributes())
+            if self._event_data.get(CONF_EVENT_DATE_USE_ENTITY):
+                attributes["date_source_entity"] = self._event_data.get(CONF_EVENT_DATE_ENTITY_ID)
             return attributes
 
         return {}

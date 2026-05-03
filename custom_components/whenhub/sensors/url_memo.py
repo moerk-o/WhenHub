@@ -36,6 +36,11 @@ class WhenHubUrlSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_url"
 
     @property
+    def suggested_object_id(self) -> str:
+        """Return fixed English key as entity ID suffix (language-independent)."""
+        return "url"
+
+    @property
     def device_info(self) -> DeviceInfo:
         return get_device_info(self._config_entry, self._event_data)
 
@@ -65,6 +70,11 @@ class WhenHubMemoSensor(CoordinatorEntity["WhenHubCoordinator"], SensorEntity):
         self._config_entry = config_entry
         self._event_data = event_data
         self._attr_unique_id = f"{config_entry.entry_id}_memo"
+
+    @property
+    def suggested_object_id(self) -> str:
+        """Return fixed English key as entity ID suffix (language-independent)."""
+        return "memo"
 
     @property
     def device_info(self) -> DeviceInfo:

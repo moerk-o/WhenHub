@@ -94,9 +94,14 @@ class WhenHubImage(ImageEntity):
         self._image_mime = event_data.get(CONF_IMAGE_MIME)  # Stored MIME type for uploads
 
     @property
+    def suggested_object_id(self) -> str:
+        """Return fixed English key as entity ID suffix (language-independent)."""
+        return "event_image"
+
+    @property
     def device_info(self) -> DeviceInfo:
         """Return device information about this entity.
-        
+
         Groups this image entity with other entities from the same WhenHub event.
         """
         return get_device_info(self._config_entry, self._event_data)

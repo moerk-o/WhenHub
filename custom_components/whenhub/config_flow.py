@@ -17,6 +17,8 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.selector import (
     BooleanSelector,
     DateSelector,
+    EntitySelector,
+    EntitySelectorConfig,
     FileSelector,
     FileSelectorConfig,
     NumberSelector,
@@ -73,6 +75,13 @@ from .const import (
     CONF_CP_COUNT,
     CONF_URL,
     CONF_MEMO,
+    CONF_NOTIFY_ON_EXPIRY,
+    CONF_EVENT_DATE_USE_ENTITY,
+    CONF_EVENT_DATE_ENTITY_ID,
+    CONF_START_DATE_USE_ENTITY,
+    CONF_START_DATE_ENTITY_ID,
+    CONF_END_DATE_USE_ENTITY,
+    CONF_END_DATE_ENTITY_ID,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,45 +94,62 @@ _IMAGE_MIME_MAP = {
     ".gif": "image/gif",
 }
 
+# Maximum allowed image file size (5 MB). Larger files would bloat the config entry JSON.
+_MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
 
-def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None]:
+
+def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None, str | None]:
     """Process an uploaded image file from a FileSelector field.
 
-    Returns (base64_data, mime_type) if an upload was provided, (None, None) otherwise.
+    Returns (base64_data, mime_type, error_key):
+    - (None, None, None): no upload provided
+    - (data, mime, None): upload successful
+    - (None, None, "image_upload_failed"): unsupported file type
+    - (None, None, "image_too_large"): file exceeds _MAX_IMAGE_SIZE_BYTES
     """
     upload_id = user_input.get(CONF_IMAGE_UPLOAD)
     if not upload_id:
-        return None, None
+        return None, None, None
     try:
         with process_uploaded_file(hass, upload_id) as path:
+            if path.suffix.lower() not in _IMAGE_MIME_MAP:
+                return None, None, "image_upload_failed"
+            if path.stat().st_size > _MAX_IMAGE_SIZE_BYTES:
+                return None, None, "image_too_large"
             image_bytes = path.read_bytes()
             image_data = base64.b64encode(image_bytes).decode()
-            image_mime = _IMAGE_MIME_MAP.get(path.suffix.lower(), "image/jpeg")
-            return image_data, image_mime
+            image_mime = _IMAGE_MIME_MAP[path.suffix.lower()]
+            return image_data, image_mime, None
     except Exception as err:
         _LOGGER.warning("Failed to process uploaded image: %s", err)
-        return None, None
+        return None, None, None
 
 
-def _apply_image_changes(hass: HomeAssistant, new_data: dict, user_input: dict) -> None:
+def _apply_image_changes(hass: HomeAssistant, new_data: dict, user_input: dict) -> str | None:
     """Apply image upload / delete choices from user_input to new_data (in-place).
 
     - If 'image_delete' is checked: clears image_data, image_mime, image_path.
     - Else if a file was uploaded: stores base64 data and MIME type.
     - Else: leaves existing image_data / image_mime untouched.
     Always removes the temporary UI-only keys from new_data.
+    Returns an error key string if the uploaded file type is unsupported, None otherwise.
     """
     if user_input.get(CONF_IMAGE_DELETE):
         new_data["image_data"] = None
         new_data[CONF_IMAGE_MIME] = None
         new_data[CONF_IMAGE_PATH] = ""
     else:
-        image_data, image_mime = _process_image_upload(hass, user_input)
+        image_data, image_mime, error = _process_image_upload(hass, user_input)
+        if error:
+            new_data.pop(CONF_IMAGE_UPLOAD, None)
+            new_data.pop(CONF_IMAGE_DELETE, None)
+            return error
         if image_data:
             new_data["image_data"] = image_data
             new_data[CONF_IMAGE_MIME] = image_mime
     new_data.pop(CONF_IMAGE_UPLOAD, None)
     new_data.pop(CONF_IMAGE_DELETE, None)
+    return None
 
 
 def _schema_image(current: dict, show_delete: bool = False) -> dict:
@@ -154,6 +180,19 @@ def _schema_url_memo(current: dict) -> dict:
         vol.Optional(CONF_MEMO, default=current.get(CONF_MEMO, "")): TextSelector(
             TextSelectorConfig(multiline=True)
         ),
+    }
+
+
+def _schema_notify_on_expiry(current: dict) -> dict:
+    """Return voluptuous field dict for the expiry notification toggle.
+
+    Intended to be spread into a larger vol.Schema dict.
+    """
+    return {
+        vol.Optional(
+            CONF_NOTIFY_ON_EXPIRY,
+            default=current.get(CONF_NOTIFY_ON_EXPIRY, False),
+        ): BooleanSelector(),
     }
 
 
@@ -298,10 +337,19 @@ def _schema_cp_image(current: dict, show_delete: bool = False) -> vol.Schema:
     })
 
 
+def _schema_entity_source(entity_id_key: str, current: dict) -> vol.Schema:
+    """Schema for an entity selection step (date / timestamp device classes only)."""
+    selector = EntitySelector(EntitySelectorConfig(device_class=["date", "timestamp"]))
+    existing = current.get(entity_id_key)
+    if existing:
+        return vol.Schema({vol.Required(entity_id_key, default=existing): selector})
+    return vol.Schema({vol.Required(entity_id_key): selector})
+
+
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for WhenHub."""
 
-    VERSION = 1
+    VERSION = 2  # v3.0.0: entity IDs standardized to English keys (migration in async_migrate_entry)
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -309,6 +357,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._special_category: str | None = None
         self._calendar_data: dict = {}
         self._cp_data: dict = {}
+        self._trip_data: dict = {}       # carries data across entity selection steps
+        self._event_date_data: dict = {} # carries data across milestone/anniversary entity step
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -491,22 +541,67 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         errors = {}
 
-        start_date = user_input[CONF_START_DATE]
-        end_date = user_input[CONF_END_DATE]
+        start_use_entity = user_input.get(CONF_START_DATE_USE_ENTITY, False)
+        end_use_entity = user_input.get(CONF_END_DATE_USE_ENTITY, False)
 
-        if start_date >= end_date:
-            errors["base"] = "invalid_dates"
+        # Validate date order only when both dates are entered manually.
+        # When at least one date comes from an entity we can't check at config time.
+        if not start_use_entity and not end_use_entity:
+            if user_input[CONF_START_DATE] >= user_input[CONF_END_DATE]:
+                errors["base"] = "invalid_dates"
 
         if not errors:
             user_input[CONF_EVENT_TYPE] = self._event_type
-            image_data, image_mime = _process_image_upload(self.hass, user_input)
-            if image_data:
-                user_input["image_data"] = image_data
-                user_input[CONF_IMAGE_MIME] = image_mime
-            user_input.pop(CONF_IMAGE_UPLOAD, None)
-            return self.async_create_entry(title=self._suggest_event_name("Trip"), data=user_input)
+            image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                if image_data:
+                    user_input["image_data"] = image_data
+                    user_input[CONF_IMAGE_MIME] = image_mime
+                user_input.pop(CONF_IMAGE_UPLOAD, None)
+
+                if start_use_entity or end_use_entity:
+                    self._trip_data = user_input
+                    if start_use_entity:
+                        return await self.async_step_trip_start_entity()
+                    return await self.async_step_trip_end_entity()
+
+                return self.async_create_entry(
+                    title=self._suggest_event_name("Trip"), data=user_input
+                )
 
         return await self._show_trip_form(user_input, errors)
+
+    async def async_step_trip_start_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select the HA entity that provides the trip start date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="trip_start_entity",
+                data_schema=_schema_entity_source(CONF_START_DATE_ENTITY_ID, self._trip_data),
+            )
+        self._trip_data[CONF_START_DATE_ENTITY_ID] = user_input[CONF_START_DATE_ENTITY_ID]
+        if self._trip_data.get(CONF_END_DATE_USE_ENTITY):
+            return await self.async_step_trip_end_entity()
+        return self.async_create_entry(
+            title=self._suggest_event_name("Trip"), data=self._trip_data
+        )
+
+    async def async_step_trip_end_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select the HA entity that provides the trip end date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="trip_end_entity",
+                data_schema=_schema_entity_source(CONF_END_DATE_ENTITY_ID, self._trip_data),
+            )
+        self._trip_data[CONF_END_DATE_ENTITY_ID] = user_input[CONF_END_DATE_ENTITY_ID]
+        return self.async_create_entry(
+            title=self._suggest_event_name("Trip"), data=self._trip_data
+        )
 
     async def _show_trip_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -515,9 +610,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = user_input or {}
         data_schema = vol.Schema({
             vol.Required(CONF_START_DATE, default=current.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_START_DATE_USE_ENTITY, default=current.get(CONF_START_DATE_USE_ENTITY, False)): BooleanSelector(),
             vol.Required(CONF_END_DATE, default=current.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_END_DATE_USE_ENTITY, default=current.get(CONF_END_DATE_USE_ENTITY, False)): BooleanSelector(),
             **_schema_image(current),
             **_schema_url_memo(current),
+            **_schema_notify_on_expiry(current),
         })
 
         return self.async_show_form(
@@ -534,12 +632,33 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_milestone_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_milestone_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
         user_input.pop(CONF_IMAGE_UPLOAD, None)
+
+        if user_input.get(CONF_EVENT_DATE_USE_ENTITY):
+            self._event_date_data = user_input
+            return await self.async_step_milestone_entity()
+
         return self.async_create_entry(title=self._suggest_event_name("Milestone"), data=user_input)
+
+    async def async_step_milestone_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select the HA entity that provides the milestone date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="milestone_entity",
+                data_schema=_schema_entity_source(CONF_EVENT_DATE_ENTITY_ID, self._event_date_data),
+            )
+        self._event_date_data[CONF_EVENT_DATE_ENTITY_ID] = user_input[CONF_EVENT_DATE_ENTITY_ID]
+        return self.async_create_entry(
+            title=self._suggest_event_name("Milestone"), data=self._event_date_data
+        )
 
     async def _show_milestone_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -548,8 +667,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = user_input or {}
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_EVENT_DATE_USE_ENTITY, default=current.get(CONF_EVENT_DATE_USE_ENTITY, False)): BooleanSelector(),
             **_schema_image(current),
             **_schema_url_memo(current),
+            **_schema_notify_on_expiry(current),
         })
 
         return self.async_show_form(
@@ -566,12 +687,33 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return await self._show_anniversary_form()
 
         user_input[CONF_EVENT_TYPE] = self._event_type
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_anniversary_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
         user_input.pop(CONF_IMAGE_UPLOAD, None)
+
+        if user_input.get(CONF_EVENT_DATE_USE_ENTITY):
+            self._event_date_data = user_input
+            return await self.async_step_anniversary_entity()
+
         return self.async_create_entry(title=self._suggest_event_name("Anniversary"), data=user_input)
+
+    async def async_step_anniversary_entity(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select the HA entity that provides the anniversary start date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="anniversary_entity",
+                data_schema=_schema_entity_source(CONF_EVENT_DATE_ENTITY_ID, self._event_date_data),
+            )
+        self._event_date_data[CONF_EVENT_DATE_ENTITY_ID] = user_input[CONF_EVENT_DATE_ENTITY_ID]
+        return self.async_create_entry(
+            title=self._suggest_event_name("Anniversary"), data=self._event_date_data
+        )
 
     async def _show_anniversary_form(
         self, user_input: dict[str, Any] | None = None, errors: dict[str, str] | None = None
@@ -580,6 +722,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         current = user_input or {}
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_EVENT_DATE_USE_ENTITY, default=current.get(CONF_EVENT_DATE_USE_ENTITY, False)): BooleanSelector(),
             **_schema_image(current),
             **_schema_url_memo(current),
         })
@@ -633,7 +776,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_special_event_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
@@ -683,7 +828,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         user_input[CONF_EVENT_TYPE] = self._event_type
         user_input[CONF_SPECIAL_CATEGORY] = self._special_category
-        image_data, image_mime = _process_image_upload(self.hass, user_input)
+        image_data, image_mime, img_error = _process_image_upload(self.hass, user_input)
+        if img_error:
+            return await self._show_dst_event_form(user_input, {"base": img_error})
         if image_data:
             user_input["image_data"] = image_data
             user_input[CONF_IMAGE_MIME] = image_mime
@@ -897,6 +1044,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="cp_image",
                 data_schema=_schema_cp_image(self._cp_data),
             )
+        if user_input.get(CONF_IMAGE_UPLOAD):
+            _, _, img_error = _process_image_upload(self.hass, user_input)
+            if img_error:
+                return self.async_show_form(
+                    step_id="cp_image",
+                    data_schema=_schema_cp_image(self._cp_data),
+                    errors={"base": img_error},
+                )
         self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
         if user_input.get(CONF_IMAGE_UPLOAD):
             self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
@@ -906,7 +1061,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def _cp_create_entry(self) -> FlowResult:
         """Assemble entry data and create the config entry."""
-        image_data, image_mime = _process_image_upload(self.hass, self._cp_data)
+        image_data, image_mime, _ = _process_image_upload(self.hass, self._cp_data)
         data = {
             CONF_EVENT_TYPE: self._event_type,
             CONF_SPECIAL_CATEGORY: "custom_pattern",
@@ -941,6 +1096,8 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Initialize the options flow."""
         self._calendar_data: dict = {}
         self._cp_data: dict = {}
+        self._trip_data: dict = {}       # carries data across entity selection steps
+        self._event_date_data: dict = {} # carries data across milestone/anniversary entity step
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -967,6 +1124,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 return await self.async_step_cp_freq(user_input)
             return await self.async_step_special_options(user_input)
 
+    def _finalize_options(self, new_data: dict) -> FlowResult:
+        """Save updated config entry data and finish the options flow."""
+        self.hass.config_entries.async_update_entry(self.config_entry, data=new_data)
+        self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+        return self.async_create_entry(title="", data={})
+
     async def async_step_trip_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
@@ -974,34 +1137,39 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         errors = {}
 
         if user_input is not None:
-            start_date = user_input[CONF_START_DATE]
-            end_date = user_input[CONF_END_DATE]
+            start_use_entity = user_input.get(CONF_START_DATE_USE_ENTITY, False)
+            end_use_entity = user_input.get(CONF_END_DATE_USE_ENTITY, False)
 
-            if start_date >= end_date:
-                errors["base"] = "invalid_dates"
+            if not start_use_entity and not end_use_entity:
+                if user_input[CONF_START_DATE] >= user_input[CONF_END_DATE]:
+                    errors["base"] = "invalid_dates"
 
             if not errors:
                 user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
                 new_data = dict(self.config_entry.data)
                 new_data.update(user_input)
-                _apply_image_changes(self.hass, new_data, user_input)
-
-                self.hass.config_entries.async_update_entry(
-                    self.config_entry,
-                    data=new_data,
-                )
-
-                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-                return self.async_create_entry(title="", data={})
+                img_error = _apply_image_changes(self.hass, new_data, user_input)
+                if img_error:
+                    errors["base"] = img_error
+                else:
+                    if start_use_entity or end_use_entity:
+                        self._trip_data = new_data
+                        if start_use_entity:
+                            return await self.async_step_trip_start_entity_options()
+                        return await self.async_step_trip_end_entity_options()
+                    return self._finalize_options(new_data)
 
         current_data = user_input if user_input is not None else self.config_entry.data
         has_image = bool(self.config_entry.data.get("image_data") or self.config_entry.data.get(CONF_IMAGE_PATH))
         data_schema = vol.Schema({
             vol.Required(CONF_START_DATE, default=current_data.get(CONF_START_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_START_DATE_USE_ENTITY, default=current_data.get(CONF_START_DATE_USE_ENTITY, False)): BooleanSelector(),
             vol.Required(CONF_END_DATE, default=current_data.get(CONF_END_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_END_DATE_USE_ENTITY, default=current_data.get(CONF_END_DATE_USE_ENTITY, False)): BooleanSelector(),
             **_schema_image(self.config_entry.data, show_delete=has_image),
             **_schema_url_memo(self.config_entry.data),
+            **_schema_notify_on_expiry(self.config_entry.data),
         })
 
         return self.async_show_form(
@@ -1010,61 +1178,103 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             errors=errors,
         )
 
+    async def async_step_trip_start_entity_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select/update the entity that provides the trip start date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="trip_start_entity_options",
+                data_schema=_schema_entity_source(CONF_START_DATE_ENTITY_ID, self._trip_data),
+            )
+        self._trip_data[CONF_START_DATE_ENTITY_ID] = user_input[CONF_START_DATE_ENTITY_ID]
+        if self._trip_data.get(CONF_END_DATE_USE_ENTITY):
+            return await self.async_step_trip_end_entity_options()
+        return self._finalize_options(self._trip_data)
+
+    async def async_step_trip_end_entity_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select/update the entity that provides the trip end date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="trip_end_entity_options",
+                data_schema=_schema_entity_source(CONF_END_DATE_ENTITY_ID, self._trip_data),
+            )
+        self._trip_data[CONF_END_DATE_ENTITY_ID] = user_input[CONF_END_DATE_ENTITY_ID]
+        return self._finalize_options(self._trip_data)
+
     async def async_step_milestone_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle milestone options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
-
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                if user_input.get(CONF_EVENT_DATE_USE_ENTITY):
+                    self._event_date_data = new_data
+                    return await self.async_step_milestone_entity_options()
+                return self._finalize_options(new_data)
 
         current_data = self.config_entry.data
         has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_EVENT_DATE_USE_ENTITY, default=current_data.get(CONF_EVENT_DATE_USE_ENTITY, False)): BooleanSelector(),
             **_schema_image(current_data, show_delete=has_image),
             **_schema_url_memo(current_data),
+            **_schema_notify_on_expiry(current_data),
         })
 
         return self.async_show_form(
             step_id="milestone_options",
             data_schema=data_schema,
+            errors=errors,
         )
+
+    async def async_step_milestone_entity_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select/update the entity that provides the milestone date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="milestone_entity_options",
+                data_schema=_schema_entity_source(CONF_EVENT_DATE_ENTITY_ID, self._event_date_data),
+            )
+        self._event_date_data[CONF_EVENT_DATE_ENTITY_ID] = user_input[CONF_EVENT_DATE_ENTITY_ID]
+        return self._finalize_options(self._event_date_data)
 
     async def async_step_anniversary_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle anniversary options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
-
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                if user_input.get(CONF_EVENT_DATE_USE_ENTITY):
+                    self._event_date_data = new_data
+                    return await self.async_step_anniversary_entity_options()
+                return self._finalize_options(new_data)
 
         current_data = self.config_entry.data
         has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
         data_schema = vol.Schema({
             vol.Required(CONF_TARGET_DATE, default=current_data.get(CONF_TARGET_DATE, date.today().isoformat())): DateSelector(),
+            vol.Optional(CONF_EVENT_DATE_USE_ENTITY, default=current_data.get(CONF_EVENT_DATE_USE_ENTITY, False)): BooleanSelector(),
             **_schema_image(current_data, show_delete=has_image),
             **_schema_url_memo(current_data),
         })
@@ -1072,26 +1282,42 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="anniversary_options",
             data_schema=data_schema,
+            errors=errors,
         )
+
+    async def async_step_anniversary_entity_options(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Select/update the entity that provides the anniversary start date."""
+        if user_input is None:
+            return self.async_show_form(
+                step_id="anniversary_entity_options",
+                data_schema=_schema_entity_source(CONF_EVENT_DATE_ENTITY_ID, self._event_date_data),
+            )
+        self._event_date_data[CONF_EVENT_DATE_ENTITY_ID] = user_input[CONF_EVENT_DATE_ENTITY_ID]
+        return self._finalize_options(self._event_date_data)
 
     async def async_step_special_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle special event options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                )
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
 
@@ -1128,27 +1354,31 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="special_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_dst_options(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle DST event options."""
+        errors = {}
         if user_input is not None:
             user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
             user_input[CONF_SPECIAL_CATEGORY] = self.config_entry.data.get(CONF_SPECIAL_CATEGORY, "dst")
 
             new_data = dict(self.config_entry.data)
             new_data.update(user_input)
-            _apply_image_changes(self.hass, new_data, user_input)
+            img_error = _apply_image_changes(self.hass, new_data, user_input)
+            if img_error:
+                errors["base"] = img_error
+            else:
+                self.hass.config_entries.async_update_entry(
+                    self.config_entry,
+                    data=new_data,
+                )
 
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
-                data=new_data,
-            )
-
-            self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
-            return self.async_create_entry(title="", data={})
+                self.hass.data[DOMAIN][self.config_entry.entry_id] = new_data
+                return self.async_create_entry(title="", data={})
 
         current_data = self.config_entry.data
         region_options = list(DST_REGIONS.keys())
@@ -1177,6 +1407,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="dst_options",
             data_schema=data_schema,
+            errors=errors,
         )
 
     async def async_step_calendar_options(
@@ -1422,14 +1653,35 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Final step: optional image upload and/or path."""
         current_data = self.config_entry.data
+        merged = {**current_data, **self._cp_data}
         has_image = bool(current_data.get("image_data") or current_data.get(CONF_IMAGE_PATH))
+        has_end = merged.get(CONF_CP_END_TYPE, "none") != "none"
         if user_input is None:
+            if has_end:
+                data_schema = vol.Schema({
+                    **_schema_image(merged, show_delete=has_image),
+                    **_schema_url_memo(merged),
+                    **_schema_notify_on_expiry(merged),
+                })
+            else:
+                data_schema = _schema_cp_image(merged, show_delete=has_image)
             return self.async_show_form(
                 step_id="cp_image",
-                data_schema=_schema_cp_image(
-                    {**current_data, **self._cp_data}, show_delete=has_image
-                ),
+                data_schema=data_schema,
             )
+        if user_input.get(CONF_IMAGE_UPLOAD):
+            _, _, img_error = _process_image_upload(self.hass, user_input)
+            if img_error:
+                data_schema = _schema_cp_image(merged, show_delete=has_image) if not has_end else vol.Schema({
+                    **_schema_image(merged, show_delete=has_image),
+                    **_schema_url_memo(merged),
+                    **_schema_notify_on_expiry(merged),
+                })
+                return self.async_show_form(
+                    step_id="cp_image",
+                    data_schema=data_schema,
+                    errors={"base": img_error},
+                )
         self._cp_data[CONF_IMAGE_PATH] = user_input.get(CONF_IMAGE_PATH, "")
         if user_input.get(CONF_IMAGE_UPLOAD):
             self._cp_data[CONF_IMAGE_UPLOAD] = user_input[CONF_IMAGE_UPLOAD]
@@ -1437,6 +1689,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             self._cp_data[CONF_IMAGE_DELETE] = True
         self._cp_data[CONF_URL] = user_input.get(CONF_URL, "")
         self._cp_data[CONF_MEMO] = user_input.get(CONF_MEMO, "")
+        if has_end:
+            self._cp_data[CONF_NOTIFY_ON_EXPIRY] = user_input.get(CONF_NOTIFY_ON_EXPIRY, False)
+        else:
+            self._cp_data[CONF_NOTIFY_ON_EXPIRY] = False
         return self._cp_save_options()
 
     def _cp_save_options(self) -> FlowResult:
@@ -1446,7 +1702,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         # Ensure fixed keys are always present
         new_data[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
         new_data[CONF_SPECIAL_CATEGORY] = "custom_pattern"
-        _apply_image_changes(self.hass, new_data, self._cp_data)
+        _apply_image_changes(self.hass, new_data, self._cp_data)  # upload already validated in async_step_cp_image
 
         self.hass.config_entries.async_update_entry(
             self.config_entry,
