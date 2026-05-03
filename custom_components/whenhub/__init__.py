@@ -135,6 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.config_entries.async_forward_entry_setups(entry, CALENDAR_PLATFORMS)
     else:
         # Event entry: existing behavior unchanged
+        _check_entity_source_availability(hass, entry)
         coordinator = WhenHubCoordinator(hass, entry, dict(entry.data))
         await coordinator.async_config_entry_first_refresh()
         hass.data[DOMAIN][entry.entry_id] = {
@@ -143,7 +144,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         }
         _setup_entity_date_listeners(hass, entry, coordinator)
         _setup_entity_registry_listener(hass, entry)
-        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
         await hass.config_entries.async_forward_entry_setups(entry, EVENT_PLATFORMS)
 
     entry.async_on_unload(entry.add_update_listener(async_update_listener))
@@ -247,6 +247,40 @@ def _setup_entity_registry_listener(hass: HomeAssistant, entry: ConfigEntry) -> 
     )
 
 
+def _check_entity_source_availability(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Check if configured entity date sources exist and update Repairs issue accordingly.
+
+    Called on every entry setup (including HA restarts) to ensure the Repairs issue
+    accurately reflects the current state:
+    - Any source entity missing → create/keep the issue
+    - All source entities present (or no entity sources configured) → delete the issue
+    """
+    source_map = _get_source_entity_map(entry.data)
+
+    if not source_map:
+        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
+        return
+
+    entity_reg = er.async_get(hass)
+    missing = [eid for eid in source_map.values() if entity_reg.async_get(eid) is None]
+
+    if missing:
+        async_create_issue(
+            hass,
+            DOMAIN,
+            f"entity_deleted_{entry.entry_id}",
+            is_fixable=False,
+            severity=IssueSeverity.WARNING,
+            translation_key="entity_source_deleted",
+            translation_placeholders={
+                "name": entry.title,
+                "entity_id": missing[0],
+            },
+        )
+    else:
+        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
+
+
 def _setup_entity_date_listeners(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -309,7 +343,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Clean up any open Repairs issues for this entry
         async_delete_issue(hass, DOMAIN, f"expired_{entry.entry_id}")
         async_delete_issue(hass, DOMAIN, f"date_order_{entry.entry_id}")
-        async_delete_issue(hass, DOMAIN, f"entity_deleted_{entry.entry_id}")
 
         hass.data[DOMAIN].pop(entry.entry_id)
 

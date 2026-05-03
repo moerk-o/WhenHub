@@ -6,6 +6,7 @@ Tests:
 - Callback: rename (action="update") → auto-migration
 - Callback: delete (action="remove") → Repairs issue created
 - Callback: create/restore (action="create") → Repairs issue auto-resolved
+- _check_entity_source_availability() — issue state on setup/restart
 - Data correctness after auto-migration
 """
 from __future__ import annotations
@@ -27,7 +28,11 @@ from custom_components.whenhub.const import (
     CONF_END_DATE_USE_ENTITY,
     CONF_END_DATE_ENTITY_ID,
 )
-from custom_components.whenhub import _get_source_entity_map, _setup_entity_registry_listener
+from custom_components.whenhub import (
+    _get_source_entity_map,
+    _setup_entity_registry_listener,
+    _check_entity_source_availability,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -359,3 +364,96 @@ class TestAutoMigrate:
 
         call_positional = hass.config_entries.async_update_entry.call_args[0]
         assert call_positional[0] is entry
+
+
+# ---------------------------------------------------------------------------
+# _check_entity_source_availability (called on every setup / HA restart)
+# ---------------------------------------------------------------------------
+
+PATCH_ER_GET = "custom_components.whenhub.er.async_get"
+
+
+def _make_entity_reg(existing_ids: list[str]) -> MagicMock:
+    """Return a mock entity registry where only the given IDs exist."""
+    reg = MagicMock()
+    reg.async_get = lambda eid: MagicMock() if eid in existing_ids else None
+    return reg
+
+
+class TestCheckEntitySourceAvailability:
+    """_check_entity_source_availability() recreates or clears the Repairs issue on setup."""
+
+    def test_missing_entity_creates_issue_on_setup(self):
+        """If source entity is absent from registry → create issue (e.g. after HA restart)."""
+        entry = _FakeEntry(
+            entry_id="abc123", title="My Birthday",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg([])), \
+             patch(PATCH_CREATE) as mock_create, patch(PATCH_DELETE):
+            _check_entity_source_availability(hass, entry)
+
+        mock_create.assert_called_once()
+        kwargs = mock_create.call_args[1]
+        assert kwargs["translation_key"] == "entity_source_deleted"
+        assert kwargs["translation_placeholders"]["entity_id"] == "sensor.bday"
+
+    def test_present_entity_deletes_issue_on_setup(self):
+        """If source entity exists → delete any lingering issue."""
+        entry = _FakeEntry(
+            entry_id="abc123",
+            data={CONF_EVENT_DATE_USE_ENTITY: True, CONF_EVENT_DATE_ENTITY_ID: "sensor.bday"},
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg(["sensor.bday"])), \
+             patch(PATCH_DELETE) as mock_delete, patch(PATCH_CREATE):
+            _check_entity_source_availability(hass, entry)
+
+        mock_delete.assert_called_once_with(hass, DOMAIN, "entity_deleted_abc123")
+
+    def test_no_entity_source_deletes_lingering_issue(self):
+        """Entry without entity sources clears any leftover issue (e.g. user disabled source)."""
+        entry = _FakeEntry(entry_id="abc123", data={"event_type": "milestone"})
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_DELETE) as mock_delete, patch(PATCH_CREATE):
+            _check_entity_source_availability(hass, entry)
+
+        mock_delete.assert_called_once_with(hass, DOMAIN, "entity_deleted_abc123")
+
+    def test_trip_with_one_missing_source_creates_issue(self):
+        """Trip where only one source entity is missing still creates the issue."""
+        entry = _FakeEntry(
+            entry_id="trip1",
+            data={
+                CONF_START_DATE_USE_ENTITY: True, CONF_START_DATE_ENTITY_ID: "sensor.dep",
+                CONF_END_DATE_USE_ENTITY: True, CONF_END_DATE_ENTITY_ID: "sensor.ret",
+            },
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        # Only start entity exists, end entity is gone
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg(["sensor.dep"])), \
+             patch(PATCH_CREATE) as mock_create, patch(PATCH_DELETE):
+            _check_entity_source_availability(hass, entry)
+
+        mock_create.assert_called_once()
+
+    def test_trip_with_all_sources_present_deletes_issue(self):
+        entry = _FakeEntry(
+            entry_id="trip1",
+            data={
+                CONF_START_DATE_USE_ENTITY: True, CONF_START_DATE_ENTITY_ID: "sensor.dep",
+                CONF_END_DATE_USE_ENTITY: True, CONF_END_DATE_ENTITY_ID: "sensor.ret",
+            },
+        )
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_ER_GET, return_value=_make_entity_reg(["sensor.dep", "sensor.ret"])), \
+             patch(PATCH_DELETE) as mock_delete, patch(PATCH_CREATE):
+            _check_entity_source_availability(hass, entry)
+
+        mock_delete.assert_called_once()
