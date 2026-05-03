@@ -1,6 +1,6 @@
 # Technical Reference: Home Assistant Integration `whenhub`
 
-**Version:** 2.4.0
+**Version:** 3.0.0
 **Date:** May 2026
 **Target Platform:** Home Assistant Custom Integration
 **Development Language:** English (code, comments, variables)
@@ -487,8 +487,12 @@ async_step_user (menu)
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `start_date` | date | Yes | Trip start |
-| `end_date` | date | Yes | Trip end |
+| `start_date` | date | Cond | Trip start; required when `start_date_use_entity=false` |
+| `start_date_use_entity` | boolean | No | Use a HA entity as start date source |
+| `start_date_entity_id` | entity | Cond | Source entity (`device_class: date` or `timestamp`); required when `start_date_use_entity=true` |
+| `end_date` | date | Cond | Trip end; required when `end_date_use_entity=false` |
+| `end_date_use_entity` | boolean | No | Use a HA entity as end date source |
+| `end_date_entity_id` | entity | Cond | Source entity; required when `end_date_use_entity=true` |
 | `image_upload` | file | No | Upload image (JPEG/PNG/WebP/GIF, max 5 MB) |
 | `image_path` | string | No | Path to image (e.g. `/local/images/trip.jpg`) |
 | `url` | string | No | Website or booking URL |
@@ -499,7 +503,9 @@ async_step_user (menu)
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `target_date` | date | Yes | Target date |
+| `target_date` | date | Cond | Target date; required when `event_date_use_entity=false` |
+| `event_date_use_entity` | boolean | No | Use a HA entity as date source |
+| `event_date_entity_id` | entity | Cond | Source entity (`device_class: date` or `timestamp`); required when `event_date_use_entity=true` |
 | `image_upload` | file | No | Upload image (JPEG/PNG/WebP/GIF, max 5 MB) |
 | `image_path` | string | No | Path to image |
 | `url` | string | No | Website or related URL |
@@ -510,7 +516,9 @@ async_step_user (menu)
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `target_date` | date | Yes | Original date (repeats yearly) |
+| `target_date` | date | Cond | Original date (repeats yearly); required when `event_date_use_entity=false` |
+| `event_date_use_entity` | boolean | No | Use a HA entity as date source |
+| `event_date_entity_id` | entity | Cond | Source entity (`device_class: date` or `timestamp`); required when `event_date_use_entity=true` |
 | `image_upload` | file | No | Upload image |
 | `image_path` | string | No | Path to image |
 | `url` | string | No | Website or related URL |
@@ -754,6 +762,48 @@ WhenHub uses the Home Assistant translation system with `translation_key` at sen
 | `dependencies` | `["file_upload"]` | Required for image uploads |
 | `version` | `x.y.z` | Current version (single source of truth) |
 
+### 5.12 Entity Registry Tracking
+
+WhenHub monitors the HA entity registry for changes to entities configured as date sources. This logic lives in `__init__.py` and is only active for event entries that use at least one entity date source.
+
+#### Two mechanisms run in parallel
+
+**`_check_entity_source_availability(hass, entry)`** — called synchronously in `async_setup_entry` *before* `async_config_entry_first_refresh`. Runs on every setup attempt, including HA restarts and retry cycles.
+
+- If all source entities exist in the registry: deletes any lingering `entity_source_deleted` Repairs issue.
+- If any source entity is missing: creates the `entity_source_deleted` Repairs issue and registers a one-shot restore listener (see below).
+
+**`_setup_entity_registry_listener(hass, entry)`** — registered via `hass.bus.async_listen` after a successful setup. Only active while the entry is fully loaded.
+
+| Registry action | `event.data["action"]` | Behaviour |
+|---|---|---|
+| Entity renamed | `update` (with `changes["entity_id"]`) | Updates the affected config key(s) in `entry.data` with the new entity ID via `async_update_entry` — silent auto-migration, no user interaction needed |
+| Entity deleted | `remove` | Creates a `entity_source_deleted` Repairs issue (non-fixable, severity WARNING) |
+| Entity created | `create` | Deletes any `entity_source_deleted` issue and triggers an immediate coordinator refresh |
+
+#### Restore listener (retry mode)
+
+During `SETUP_RETRY`, `_setup_entity_registry_listener` is not yet active. To still react when a missing entity comes back, `_check_entity_source_availability` registers a **one-shot restore listener** stored in `hass.data[DOMAIN]["_entity_restore_listeners"][entry_id]`.
+
+On `action="create"` for a known-missing entity, the restore listener:
+1. Cancels itself
+2. Deletes the Repairs issue
+3. Calls `hass.config_entries.async_reload(entry_id)` to trigger a fresh setup immediately
+
+The listener is replaced atomically on each retry (old listener cancelled before registering the new one) and is cleaned up in `async_unload_entry`.
+
+#### Repairs issue details
+
+| Field | Value |
+|---|---|
+| Issue ID | `entity_source_deleted_{entry_id}` |
+| `is_fixable` | `false` — user must reconfigure via Options Flow |
+| Severity | `WARNING` |
+| `translation_key` | `entity_source_deleted` |
+| Placeholders | `name` (event title), `entity_id` (first missing entity) |
+
+The issue is **not** deleted on entry unload so it persists across HA restarts. On the next `async_setup_entry`, `_check_entity_source_availability` compares the current entity registry state and decides whether to keep or remove the issue.
+
 ---
 
 ## 6. Resources
@@ -829,9 +879,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 2.0.0 | 2025-01 | Internationalization (DE/EN), timestamp device_class, relative time display |
 | 2.2.1 | 2025-02 | Special Events (holidays, DST), OptionsFlow fixes, removed astronomical events |
 | 2.3.0 | 2026-03 | FR08 Calendar entity, FR09 Custom Pattern, FR11 URL/Memo sensors, Bug 003 fixes |
-| 2.4.0 | 2026-05 | FR13 Expiry notifications via HA Repairs |
-| 2.4.1 | 2026-05 | Fix #12: Image upload validation (extension check, 5 MB size limit), options flow error translations |
-| 3.0.0 | 2026-05 | FR13 Expiry notifications (HA Repairs), Fix #12 image validation, Fix #14 entity ID standardization (English type keys, automatic migration v1→v2) |
+| 3.0.0 | 2026-05 | FR13 Expiry notifications (HA Repairs), Fix #12 image upload validation, Fix #14 entity ID standardization (English type keys, migration v1→v2), #9 Entity date sources (Trip/Milestone/Anniversary), #19 Entity registry tracking (auto-migrate on rename, Repairs on delete) |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 
