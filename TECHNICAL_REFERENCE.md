@@ -288,6 +288,25 @@ def last_weekday_of_month(year: int, month: int, weekday: int) -> date:
 | **Australia** | 1st Sunday in October | 1st Sunday in April |
 | **New Zealand** | Last Sunday in September | 1st Sunday in April |
 
+#### Timezone Auto-Detection
+
+When a DST event is first created, the region selector is pre-populated based on `hass.config.time_zone`:
+
+```python
+TIMEZONE_TO_REGION = {
+    "Europe/": "eu",           # prefix match
+    "America/New_York": "usa",
+    "America/Chicago": "usa",
+    "America/Denver": "usa",
+    "America/Los_Angeles": "usa",
+    "America/Toronto": "usa",
+    "Australia/": "australia", # prefix match
+    "Pacific/Auckland": "new_zealand",
+}
+```
+
+If no match is found, the region selector has no pre-selection and the user must choose manually. Users may always select any region regardless of their actual timezone (e.g. expats tracking their home country's DST).
+
 #### DST Active Detection
 
 ```python
