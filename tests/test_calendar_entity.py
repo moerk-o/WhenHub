@@ -1973,3 +1973,668 @@ class TestCalendarEdgeCases:
             _dt("2026-07-01"), _dt("2026-08-01")
         )
         assert len(events) == 0
+
+
+# =============================================================================
+# 12. Entity date sources — calendar uses the coordinator's resolved dates (#27)
+# =============================================================================
+
+def _date_source(hass: HomeAssistant, object_id: str, value: str) -> str:
+    """Register a date entity in the registry and set its state.
+
+    Returns the entity_id. Mirrors the source entities used in
+    tests/test_entity_date_source.py, but registered in the entity registry so
+    the integration's availability check (#19) sees them.
+    """
+    from homeassistant.helpers import entity_registry as er
+
+    registry = er.async_get(hass)
+    source = registry.async_get_or_create(
+        "sensor", "demo", f"uid_{object_id}", suggested_object_id=object_id
+    )
+    hass.states.async_set(source.entity_id, value, {"device_class": "date"})
+    return source.entity_id
+
+
+def _coordinator(hass: HomeAssistant, entry):
+    """Return the coordinator of a loaded event entry."""
+    return hass.data[DOMAIN][entry.entry_id]["coordinator"]
+
+
+def _event_date(event, key: str = "start") -> date:
+    """Normalize a calendar event's start/end to a plain date."""
+    value = event[key]
+    if hasattr(value, "date"):
+        return value.date()
+    return date.fromisoformat(str(value))
+
+
+async def _setup(hass: HomeAssistant, entry) -> None:
+    """Add a config entry to hass and set it up."""
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+
+class TestCalendarEntityDateSources:
+    """The calendar must show the resolved date, not the config-entry placeholder.
+
+    Entries with an entity date source keep a placeholder date (the day they were
+    created) in `start_date` / `end_date` / `target_date`. Reading those keys made
+    the calendar show the wrong date and diverge from the sensors (#27).
+    """
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_trip_start_from_entity_uses_resolved_date(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """Trip start from an entity: calendar shows the entity date, not the placeholder."""
+        source = _date_source(hass, "trip_start", "2026-07-12")
+        trip = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "trip",
+                "start_date": "2026-06-01",  # placeholder from creation day
+                "end_date": "2026-07-26",
+                "image_path": "",
+                "start_date_use_entity": True,
+                "start_date_entity_id": source,
+            },
+            title="Dänemark",
+            unique_id="whenhub_cal_27_trip_start",
+            version=2,
+        )
+        await _setup(hass, trip)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-07-01"), _dt("2026-08-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 7, 12)
+        assert _event_date(events[0], "end") == date(2026, 7, 26)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_trip_end_from_entity_uses_resolved_date(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """Trip end from an entity: calendar shows the entity date, not the placeholder."""
+        source = _date_source(hass, "trip_end", "2026-07-26")
+        trip = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "trip",
+                "start_date": "2026-07-12",
+                "end_date": "2026-06-01",  # placeholder from creation day
+                "image_path": "",
+                "end_date_use_entity": True,
+                "end_date_entity_id": source,
+            },
+            title="Dänemark",
+            unique_id="whenhub_cal_27_trip_end",
+            version=2,
+        )
+        await _setup(hass, trip)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-07-01"), _dt("2026-08-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 7, 12)
+        assert _event_date(events[0], "end") == date(2026, 7, 26)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_trip_both_dates_from_entities_use_resolved_dates(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """Trip with both dates from entities: calendar shows both entity dates."""
+        start_source = _date_source(hass, "both_start", "2026-07-12")
+        end_source = _date_source(hass, "both_end", "2026-07-26")
+        trip = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "trip",
+                "start_date": "2026-06-01",
+                "end_date": "2026-06-01",
+                "image_path": "",
+                "start_date_use_entity": True,
+                "start_date_entity_id": start_source,
+                "end_date_use_entity": True,
+                "end_date_entity_id": end_source,
+            },
+            title="Dänemark",
+            unique_id="whenhub_cal_27_trip_both",
+            version=2,
+        )
+        await _setup(hass, trip)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-07-01"), _dt("2026-08-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 7, 12)
+        assert _event_date(events[0], "end") == date(2026, 7, 26)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_milestone_from_entity_uses_resolved_date(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """Milestone from an entity: calendar shows the entity date."""
+        source = _date_source(hass, "milestone_date", "2026-09-15")
+        milestone = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "target_date": "2026-06-01",  # placeholder from creation day
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Projektabgabe",
+            unique_id="whenhub_cal_27_milestone",
+            version=2,
+        )
+        await _setup(hass, milestone)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-09-01"), _dt("2026-10-01")
+        )
+        assert len(events) == 1
+        assert events[0]["summary"] == "Projektabgabe"
+        assert _event_date(events[0], "start") == date(2026, 9, 15)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_milestone_placeholder_date_not_shown(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """The placeholder date must not produce a second, wrong calendar event."""
+        source = _date_source(hass, "milestone_date2", "2026-09-15")
+        milestone = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "target_date": "2026-06-01",
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Projektabgabe",
+            unique_id="whenhub_cal_27_milestone_ph",
+            version=2,
+        )
+        await _setup(hass, milestone)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-05-15"), _dt("2026-06-15")
+        )
+        assert events == []
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_anniversary_from_entity_uses_resolved_original_date(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """Anniversary from an entity: occurrences and ordinal follow the entity date."""
+        source = _date_source(hass, "anniversary_date", "2010-05-20")
+        anniversary = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "anniversary",
+                "target_date": "2026-06-01",  # placeholder from creation day
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Geburtstag Max",
+            unique_id="whenhub_cal_27_anniversary",
+            version=2,
+        )
+        await _setup(hass, anniversary)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-05-01"), _dt("2026-06-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 5, 20)
+        assert "(16.)" in events[0]["summary"]
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_calendar_follows_entity_value_change(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """After the entity changes and the coordinator refreshes, the calendar follows."""
+        source = _date_source(hass, "moving_date", "2026-09-15")
+        milestone = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "target_date": "2026-06-01",
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Projektabgabe",
+            unique_id="whenhub_cal_27_moving",
+            version=2,
+        )
+        await _setup(hass, milestone)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-09-01"), _dt("2026-10-01")
+        )
+        assert _event_date(events[0], "start") == date(2026, 9, 15)
+
+        hass.states.async_set(source, "2026-09-30", {"device_class": "date"})
+        await _coordinator(hass, milestone).async_refresh()
+        await hass.async_block_till_done()
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-09-01"), _dt("2026-10-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 9, 30)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_unavailable_entity_omits_event(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """An unavailable date source omits the event — no exception, no stale date."""
+        source = _date_source(hass, "flaky_date", "2026-09-15")
+        milestone = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "target_date": "2026-06-01",
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Projektabgabe",
+            unique_id="whenhub_cal_27_unavailable",
+            version=2,
+        )
+        await _setup(hass, milestone)
+
+        hass.states.async_set(source, "unavailable", {"device_class": "date"})
+        coordinator = _coordinator(hass, milestone)
+        await coordinator.async_refresh()
+        await hass.async_block_till_done()
+        assert coordinator.last_update_success is False
+
+        await _setup(hass, calendar_entry_all)
+
+        # Neither the resolved date nor the placeholder date may show up
+        assert await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-09-01"), _dt("2026-10-01")
+        ) == []
+        assert await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-05-15"), _dt("2026-06-15")
+        ) == []
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-09-15 12:00:00+00:00")
+    async def test_unavailable_entity_keeps_state_off(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """An unavailable date source does not switch the calendar on for today."""
+        source = _date_source(hass, "flaky_today", "2026-09-15")
+        milestone = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "target_date": "2026-09-15",
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Projektabgabe",
+            unique_id="whenhub_cal_27_unavailable_state",
+            version=2,
+        )
+        await _setup(hass, milestone)
+
+        hass.states.async_set(source, "unavailable", {"device_class": "date"})
+        await _coordinator(hass, milestone).async_refresh()
+        await hass.async_block_till_done()
+
+        await _setup(hass, calendar_entry_all)
+
+        state = hass.states.get(CALENDAR_ENTITY_ID)
+        assert state is not None
+        assert state.state == "off"
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-07-15 12:00:00+00:00")
+    async def test_state_on_from_entity_date(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """The calendar state follows the entity date, not the placeholder."""
+        start_source = _date_source(hass, "state_start", "2026-07-12")
+        end_source = _date_source(hass, "state_end", "2026-07-26")
+        trip = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "trip",
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-02",  # placeholder: long over
+                "image_path": "",
+                "start_date_use_entity": True,
+                "start_date_entity_id": start_source,
+                "end_date_use_entity": True,
+                "end_date_entity_id": end_source,
+            },
+            title="Dänemark",
+            unique_id="whenhub_cal_27_state_on",
+            version=2,
+        )
+        await _setup(hass, trip)
+        await _setup(hass, calendar_entry_all)
+
+        state = hass.states.get(CALENDAR_ENTITY_ID)
+        assert state is not None
+        assert state.state == "on"
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_trip_without_placeholder_keys_does_not_raise(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """A trip entry without the fixed date keys must not raise a KeyError (#27)."""
+        start_source = _date_source(hass, "nokey_start", "2026-07-12")
+        end_source = _date_source(hass, "nokey_end", "2026-07-26")
+        trip = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "trip",
+                "image_path": "",
+                "start_date_use_entity": True,
+                "start_date_entity_id": start_source,
+                "end_date_use_entity": True,
+                "end_date_entity_id": end_source,
+            },
+            title="Dänemark",
+            unique_id="whenhub_cal_27_trip_nokey",
+            version=2,
+        )
+        await _setup(hass, trip)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-07-01"), _dt("2026-08-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 7, 12)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-07-15 12:00:00+00:00")
+    async def test_trip_without_placeholder_keys_state_does_not_raise(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """The state property must not raise for an entry without the fixed date keys."""
+        start_source = _date_source(hass, "nokey_state_start", "2026-07-12")
+        end_source = _date_source(hass, "nokey_state_end", "2026-07-26")
+        trip = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "trip",
+                "image_path": "",
+                "start_date_use_entity": True,
+                "start_date_entity_id": start_source,
+                "end_date_use_entity": True,
+                "end_date_entity_id": end_source,
+            },
+            title="Dänemark",
+            unique_id="whenhub_cal_27_trip_nokey_state",
+            version=2,
+        )
+        await _setup(hass, trip)
+        await _setup(hass, calendar_entry_all)
+
+        state = hass.states.get(CALENDAR_ENTITY_ID)
+        assert state is not None
+        assert state.state == "on"
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_milestone_without_placeholder_key_does_not_raise(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """A milestone entry without `target_date` must not raise a KeyError (#27)."""
+        source = _date_source(hass, "nokey_milestone", "2026-09-15")
+        milestone = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Projektabgabe",
+            unique_id="whenhub_cal_27_ms_nokey",
+            version=2,
+        )
+        await _setup(hass, milestone)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-09-01"), _dt("2026-10-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 9, 15)
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_anniversary_without_placeholder_key_does_not_raise(
+        self, hass: HomeAssistant, calendar_entry_all
+    ):
+        """An anniversary entry without `target_date` must not raise a KeyError (#27)."""
+        source = _date_source(hass, "nokey_anniversary", "2010-05-20")
+        anniversary = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "anniversary",
+                "image_path": "",
+                "event_date_use_entity": True,
+                "event_date_entity_id": source,
+            },
+            title="Geburtstag Max",
+            unique_id="whenhub_cal_27_ann_nokey",
+            version=2,
+        )
+        await _setup(hass, anniversary)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-05-01"), _dt("2026-06-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 5, 20)
+        assert "(16.)" in events[0]["summary"]
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_special_event_unaffected_by_resolved_dates(
+        self, hass: HomeAssistant, calendar_entry_all, christmas_entry
+    ):
+        """Special events derive their date from the pattern and are unaffected (#27)."""
+        await _setup(hass, christmas_entry)
+        await _setup(hass, calendar_entry_all)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-12-01"), _dt("2027-01-01")
+        )
+        assert len(events) == 1
+        assert _event_date(events[0], "start") == date(2026, 12, 24)
+
+
+# =============================================================================
+# 13. Resolved-date helpers — guards and routing (#27)
+# =============================================================================
+
+def _resolved(**kwargs) -> dict:
+    """Build a coordinator-data dict: date values as tz-aware datetimes."""
+    return {
+        key: datetime(value.year, value.month, value.day, tzinfo=timezone.utc)
+        for key, value in kwargs.items()
+    }
+
+
+class TestResolvedDateHelpers:
+    """Unit tests for the module-level helpers of calendar.py.
+
+    Without resolved dates the helpers must skip the event instead of raising —
+    the calendar no longer falls back to the config entry's placeholder (#27).
+    """
+
+    def test_trip_events_without_resolved_dates_returns_empty(self):
+        from custom_components.whenhub.calendar import _trip_events
+
+        assert _trip_events({}, date(2026, 1, 1), date(2026, 12, 31), "Trip") == []
+
+    def test_milestone_events_without_resolved_date_returns_empty(self):
+        from custom_components.whenhub.calendar import _milestone_events
+
+        assert _milestone_events({}, date(2026, 1, 1), date(2026, 12, 31), "M") == []
+
+    def test_anniversary_events_without_resolved_date_returns_empty(self):
+        from custom_components.whenhub.calendar import _anniversary_events
+
+        assert _anniversary_events({}, date(2026, 1, 1), date(2026, 12, 31), "A") == []
+
+    def test_current_event_trip_without_resolved_dates_returns_none(self):
+        from custom_components.whenhub.calendar import _get_current_event
+
+        data = {"event_type": "trip"}
+        assert _get_current_event(data, date(2026, 7, 15), "Trip") is None
+
+    def test_current_event_milestone_without_resolved_date_returns_none(self):
+        from custom_components.whenhub.calendar import _get_current_event
+
+        data = {"event_type": "milestone"}
+        assert _get_current_event(data, date(2026, 3, 15), "M") is None
+
+    def test_current_event_anniversary_without_resolved_date_returns_none(self):
+        from custom_components.whenhub.calendar import _get_current_event
+
+        data = {"event_type": "anniversary"}
+        assert _get_current_event(data, date(2026, 5, 20), "A") is None
+
+    def test_current_event_milestone_on_target_date(self):
+        from custom_components.whenhub.calendar import _get_current_event
+
+        event = _get_current_event(
+            {"event_type": "milestone"},
+            date(2026, 3, 15),
+            "Projektabgabe",
+            _resolved(target_date=date(2026, 3, 15)),
+        )
+        assert event is not None
+        assert event.summary == "Projektabgabe"
+        assert event.start == date(2026, 3, 15)
+
+    def test_current_event_anniversary_on_occurrence_day(self):
+        from custom_components.whenhub.calendar import _get_current_event
+
+        event = _get_current_event(
+            {"event_type": "anniversary"},
+            date(2026, 5, 20),
+            "Geburtstag Max",
+            _resolved(original_date=date(2010, 5, 20)),
+        )
+        assert event is not None
+        assert event.summary == "Geburtstag Max (16.)"
+
+    def test_current_event_special_on_event_day(self):
+        from custom_components.whenhub.calendar import _get_current_event
+
+        event = _get_current_event(
+            {
+                "event_type": "special",
+                "special_type": "christmas_eve",
+                "special_category": "traditional",
+            },
+            date(2026, 12, 24),
+            "Heilig Abend",
+        )
+        assert event is not None
+        assert event.description == "Special"
+
+    def test_current_event_dst_on_change_day(self):
+        from custom_components.whenhub.calendar import _get_current_event
+        from custom_components.whenhub.calculations import next_dst_event
+        from custom_components.whenhub.const import DST_REGIONS
+
+        change_day = next_dst_event(DST_REGIONS["eu"], "next_change", date(2026, 1, 1))
+        event = _get_current_event(
+            {
+                "event_type": "special",
+                "special_type": "dst",
+                "special_category": "dst",
+                "dst_type": "next_change",
+                "dst_region": "eu",
+            },
+            change_day,
+            "Zeitumstellung",
+        )
+        assert event is not None
+        assert event.description == "DST"
+
+    def test_get_calendar_events_routes_custom_pattern(self):
+        from custom_components.whenhub.calendar import _get_calendar_events
+
+        data = {
+            "event_type": "special",
+            "special_category": "custom_pattern",
+            "cp_freq": "daily",
+            "cp_interval": 1,
+            "cp_dtstart": "2026-04-01",
+            "cp_end_type": "none",
+        }
+        events = _get_calendar_events(data, date(2026, 4, 1), date(2026, 4, 3), "Daily")
+        assert len(events) == 3
+        assert events[0].description == "Custom Pattern"
+
+    def test_get_calendar_events_unknown_type_returns_empty(self):
+        from custom_components.whenhub.calendar import _get_calendar_events
+
+        events = _get_calendar_events(
+            {"event_type": "nonsense"}, date(2026, 1, 1), date(2026, 12, 31), "X"
+        )
+        assert events == []
+
+    @pytest.mark.asyncio
+    @freeze_time("2026-06-01 12:00:00+00:00")
+    async def test_unknown_scope_falls_back_to_all_events(
+        self, hass: HomeAssistant, trip_2026
+    ):
+        """An unrecognized scope value includes every event (defensive fallback)."""
+        await _setup(hass, trip_2026)
+        calendar = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                CONF_ENTRY_TYPE: ENTRY_TYPE_CALENDAR,
+                CONF_CALENDAR_SCOPE: "something_unknown",
+            },
+            title="WhenHub Calendar",
+            unique_id="whenhub_cal_27_unknown_scope",
+            version=1,
+        )
+        await _setup(hass, calendar)
+
+        events = await get_calendar_events(
+            hass, CALENDAR_ENTITY_ID, _dt("2026-07-01"), _dt("2026-08-01")
+        )
+        assert len(events) == 1

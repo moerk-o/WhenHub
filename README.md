@@ -473,6 +473,8 @@ Each calendar appears as a separate entry in the Home Assistant calendar view an
 | Special Event | Shown annually on the calculated holiday date |
 | Custom Pattern | All occurrences within the calendar's view range are shown as one-day events |
 
+> **Events with a date from an entity:** The calendar shows the date the entity currently reports — the same date the sensors show — and follows it when the entity changes. While the source entity is unavailable or unknown, the event is left out of the calendar instead of being shown with an outdated date. It reappears as soon as the entity delivers a valid date again.
+
 ### Options Flow
 
 The calendar configuration can be changed at any time:
