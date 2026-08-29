@@ -1,6 +1,6 @@
 # Technical Reference: Home Assistant Integration `whenhub`
 
-**Version:** 3.3.0
+**Version:** 3.3.1
 **Date:** August 2026
 **Target Platform:** Home Assistant Custom Integration
 **Development Language:** English (code, comments, variables)
@@ -445,6 +445,27 @@ Each event includes an image entity that displays either a custom image or a def
 **Attributes:**
 - `image_type`: "user_defined" or "system_defined"
 - `image_path`: File path, "base64_data", or "default_svg"
+
+**State and `image_last_updated`:**
+
+`ImageEntity.state` is `@final` in HA Core and returns `image_last_updated.isoformat()`
+(or `None` if that value is unset). `WhenHubImage` therefore does not define `state` of
+its own; it sets `_attr_image_last_updated` to `dt_util.utcnow()` in `__init__`. The
+frontend appends the state to the image URL, so this value is the cache key of the served
+image.
+
+Since the entity is recreated on every config entry reload, an image changed through the
+options flow gets a new timestamp for free — no extra invalidation logic is needed. A
+Home Assistant restart also renews the timestamp, which is harmless (an unchanged image is
+simply re-fetched once).
+
+`content_type` follows the same pattern: it is a `cached_property` backed by
+`_attr_content_type` in Core, and `WhenHubImage` computes the value once in `__init__`
+(`_detect_content_type()`) rather than overriding the property. All inputs
+(`image_data`, `image_mime`, `image_path`) are fixed for the lifetime of the entity.
+
+> Prior to 3.3.1 the entity overrode `state` with the fixed string `"idle"` and never set
+> `image_last_updated` (#23).
 
 ### 3.6 Calendar Entity
 
@@ -1227,6 +1248,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 3.1.0 | 2026-08 | New chapter 5 "Services" with the ADR blocks for name collisions, entity date sources, `SupportsResponse.OPTIONAL` and the import flow (#24); former chapters 5–8 renumbered to 6–9 |
 | 3.2.0 | 2026-08 | 6.9 documents `async_remove_entry` and the split between issue cleanup on unload and on removal (#28); corrected the `entity_deleted_{entry_id}` issue ID in 6.12 |
 | 3.3.0 | 2026-08 | New section 6.13 on config entry updates and reloads plus the ADR "One reload per update_event" in 5.6 (#29) |
+| 3.3.1 | 2026-08 | 3.5 documents the image entity state, `image_last_updated` and `content_type` after the ImageEntity contract fix (#23) |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 

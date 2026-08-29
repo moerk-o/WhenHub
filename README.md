@@ -510,6 +510,11 @@ Go to **Settings → Devices & Services → WhenHub**, click **Configure** on th
 
 The `Event Image` entity appears in every event's device and can be used in dashboards, picture-entity cards, or automations.
 
+**State:** the ISO timestamp of the last image change (`image_last_updated`), as required
+for Home Assistant image entities. The timestamp is renewed whenever the event is
+reconfigured or Home Assistant restarts, which is what tells the frontend to reload the
+image instead of serving a cached one.
+
 **Attributes:**
 
 | Attribute | Description |

@@ -16,6 +16,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import (
     DOMAIN,
@@ -68,6 +69,10 @@ class WhenHubImage(ImageEntity):
     
     Handles common image formats (JPEG, PNG, WebP, GIF, SVG) and provides
     appropriate content-type headers for browser compatibility.
+
+    The entity state is managed by ImageEntity and is the ISO timestamp of
+    ``image_last_updated``. The entity is recreated on every config entry
+    reload, so an image changed via the options flow gets a new timestamp.
     """
 
     def __init__(self, hass: HomeAssistant, config_entry: ConfigEntry, event_data: dict) -> None:
@@ -92,6 +97,14 @@ class WhenHubImage(ImageEntity):
         self._image_path = event_data.get(CONF_IMAGE_PATH)
         self._image_data = event_data.get("image_data")  # Base64 encoded image data
         self._image_mime = event_data.get(CONF_IMAGE_MIME)  # Stored MIME type for uploads
+
+        self._attr_content_type = self._detect_content_type()
+
+        # The image configuration is read once per entity instance and the entity
+        # is recreated on every config entry reload, so the creation time is the
+        # time the served image last changed. HA derives the entity state and the
+        # frontend cache key from this value.
+        self._attr_image_last_updated = dt_util.utcnow()
 
     @property
     def suggested_object_id(self) -> str:
@@ -246,21 +259,13 @@ class WhenHubImage(ImageEntity):
 </svg>'''
         return svg_content.encode('utf-8')
 
-    @property
-    def state(self) -> str:
-        """Return the state of the image entity.
-        
-        Image entities in Home Assistant use 'idle' state when ready to serve images.
-        """
-        return "idle"
+    def _detect_content_type(self) -> str:
+        """Determine the MIME content type for the configured image.
 
-    @property  
-    def content_type(self) -> str:
-        """Return the MIME content type for the image.
-        
         Detects content type based on file extension or defaults to appropriate
-        types for different image sources.
-        
+        types for different image sources. The result is assigned to
+        ``_attr_content_type`` in __init__.
+
         Returns:
             MIME type string for HTTP Content-Type header
         """
