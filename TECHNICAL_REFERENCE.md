@@ -1,6 +1,6 @@
 # Technical Reference: Home Assistant Integration `whenhub`
 
-**Version:** 3.1.0
+**Version:** 3.2.0
 **Date:** August 2026
 **Target Platform:** Home Assistant Custom Integration
 **Development Language:** English (code, comments, variables)
@@ -738,14 +738,16 @@ the response is `changed: {}`.
 If something changed, the entry is written and then reloaded explicitly:
 
 ```python
-hass.config_entries.async_update_entry(entry, data=new_data, title=title)
-await hass.config_entries.async_reload(entry.entry_id)
+with suppress_update_reload(hass, entry.entry_id):
+    hass.config_entries.async_update_entry(entry, data=new_data, title=title)
+    await hass.config_entries.async_reload(entry.entry_id)
 ```
 
 The explicit reload is what makes a `blocking: true` call deterministic: when the service
-returns, the entities already carry the new values. `async_update_entry()` also schedules
-the update listener registered in `async_setup_entry()`, which reloads a second time —
-harmless, but it does mean one update costs two reloads.
+returns, the entities already carry the new values. `async_update_entry()` also fires the
+update listener registered in `async_setup_entry()`, which reloads as well —
+`suppress_update_reload()` (see 6.13) turns that reload off for the duration of the block,
+so one update costs exactly one reload.
 
 **Delete.** The entity list is read from the entity registry *before*
 `hass.config_entries.async_remove()`, because `async_unload_entry()` removes the
@@ -778,6 +780,41 @@ target and a device picker with two identical names is unusable.
 
 **Consequences:** Automations that create events need to handle the error or pass
 `auto_rename`. Names stay unique across all entries, which the rename check relies on.
+
+#### One reload per update_event
+
+**Decision:** `update_event` keeps its explicit `async_reload()` and suppresses the reload
+of the update listener for the duration of that call, via the `suppress_update_reload()`
+context manager in `__init__.py`. The listener itself, the options flow and the entity
+rename auto-migration are unchanged.
+
+**Context:** `async_update_entry()` fires every update listener of the entry, and the
+listener registered in `async_setup_entry()` reloads. `update_event` also reloaded
+explicitly so that a `blocking: true` call returns only once the entities carry the new
+values — two reloads per call (#29). Home Assistant starts the listener task eagerly, so
+its reload is already under way before the service continues; the service cannot simply
+wait for it, because it holds no handle to that task.
+
+**Why this approach:** The listener is the reload path for *every* writer of the entry —
+not just the options flow, but also the entity rename auto-migration in
+`_setup_entity_registry_listener()` (#19), which relies on it to get the coordinator onto
+the renamed entity. Suppressing it for exactly one caller leaves that path intact and
+keeps the change local to the one place that reloads itself. The suppression is
+deterministic: the eagerly started listener runs inside the `with` block, and even without
+eager start it would run at the first suspension point, which is the caller's own
+`async_reload()` inside the block.
+
+**Alternatives considered:**
+- Drop the explicit reload in the service and let the listener do it — rejected: the
+  service would return while the listener's reload is still running, so a `blocking: true`
+  call would no longer guarantee that the entities show the new values.
+- Remove the update listener and reload from the options flow instead — rejected: it
+  changes the options flow, has to be repeated in every `_finalize_options()` path, and
+  breaks the rename auto-migration, which updates the entry without going through a flow.
+
+**Consequences:** A caller that updates an entry and reloads it itself has to use
+`suppress_update_reload()`, otherwise the entry is reloaded twice again. Anyone writing
+the entry without reloading keeps the listener's reload for free, unchanged.
 
 #### Fixed date does not silently replace an entity source
 
@@ -1075,6 +1112,24 @@ The listener is replaced atomically on each retry (old listener cancelled before
 
 The issue is **not** deleted on entry unload so it persists across HA restarts. On the next `async_setup_entry`, `_check_entity_source_availability` compares the current entity registry state and decides whether to keep or remove the issue.
 
+### 6.13 Config Entry Updates and Reloads
+
+`async_setup_entry` registers `async_update_listener` via `entry.add_update_listener()`. Home Assistant fires it after every `async_update_entry()` that actually changed something, and it reloads the entry so the coordinator and all platforms pick up the new data.
+
+**Who writes the entry:**
+
+| Writer | Reload |
+|---|---|
+| Options Flow (`_finalize_options`, `config_flow.py`) | update listener |
+| Entity rename auto-migration (`_setup_entity_registry_listener`, 6.12) | update listener |
+| `whenhub.update_event` (`services.py`) | its own `async_reload()`, listener suppressed |
+
+**`suppress_update_reload(hass, entry_id)`** is a context manager in `__init__.py` for the third case. It adds the entry ID to a set in `hass.data[DOMAIN]["_suppressed_update_reloads"]`; `async_update_listener` returns without reloading while the ID is in that set, and the `finally` clause always removes it again.
+
+`update_event` needs its own reload because the service must not return before the entities carry the new values. Without the suppression the entry would be reloaded twice per call (#29): Home Assistant starts the listener task eagerly, so the listener's reload begins inside `async_update_entry()`, before the service continues. Because of that eager start the listener always runs while the `with` block is still open — and even without it, it would run at the first suspension point, which is the caller's own `async_reload()` inside the block.
+
+See also the design decision "One reload per update_event" in 5.6.
+
 ---
 
 ## 7. Resources
@@ -1152,6 +1207,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 2.3.0 | 2026-03 | FR08 Calendar entity, FR09 Custom Pattern, FR11 URL/Memo sensors, Bug 003 fixes |
 | 3.0.0 | 2026-05 | FR13 Expiry notifications (HA Repairs), Fix #12 image upload validation, Fix #14 entity ID standardization (English type keys, migration v1→v2), #9 Entity date sources (Trip/Milestone/Anniversary), #19 Entity registry tracking (auto-migrate on rename, Repairs on delete) |
 | 3.1.0 | 2026-08 | New chapter 5 "Services" with the ADR blocks for name collisions, entity date sources, `SupportsResponse.OPTIONAL` and the import flow (#24); former chapters 5–8 renumbered to 6–9 |
+| 3.2.0 | 2026-08 | New section 6.13 on config entry updates and reloads plus the ADR "One reload per update_event" in 5.6 (#29) |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 

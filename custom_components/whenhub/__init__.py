@@ -7,6 +7,8 @@ of all platforms (sensors, binary sensors, images) for event tracking.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from homeassistant.helpers.issue_registry import IssueSeverity, async_create_issue, async_delete_issue
@@ -43,6 +45,10 @@ CALENDAR_PLATFORMS: list[Platform] = [Platform.CALENDAR]
 
 # Key in hass.data[DOMAIN] for tracking entity restore listeners (per entry_id)
 _RESTORE_LISTENER_KEY = "_entity_restore_listeners"
+
+# Key in hass.data[DOMAIN] for entry IDs whose update listener must not reload
+# because the caller reloads them itself (see suppress_update_reload)
+_SUPPRESSED_RELOAD_KEY = "_suppressed_update_reloads"
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -171,17 +177,53 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Handle configuration updates from the options flow.
+@contextmanager
+def suppress_update_reload(hass: HomeAssistant, entry_id: str) -> Iterator[None]:
+    """Keep `async_update_listener` from reloading one entry (#29).
 
-    This function is called when the user modifies the integration configuration
-    through the options flow. It recreates the coordinator and reloads all platforms
-    to reflect the changes.
+    For a caller that has to reload synchronously — `whenhub.update_event` only
+    returns once the entities carry the new values — the listener's reload is a
+    duplicate. Wrapping both the `async_update_entry` call and the caller's own
+    `async_reload` in this context manager reloads the entry exactly once.
+
+    Home Assistant starts the listener task eagerly, so it runs while the block
+    is still open; even without eager start it would run at the first suspension
+    point, which is the caller's `async_reload` inside the block.
+
+    Args:
+        hass: Home Assistant instance
+        entry_id: Entry whose listener reload is suppressed
+    """
+    suppressed: set[str] = hass.data.setdefault(DOMAIN, {}).setdefault(
+        _SUPPRESSED_RELOAD_KEY, set()
+    )
+    suppressed.add(entry_id)
+    try:
+        yield
+    finally:
+        suppressed.discard(entry_id)
+
+
+async def async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle configuration updates of a config entry.
+
+    Called for every `async_update_entry` on this entry — the options flow, the
+    entity rename auto-migration and the event services all go through it. The
+    entry is reloaded so the coordinator and all platforms pick up the new data.
+
+    Callers that reload the entry themselves suppress this reload via
+    `suppress_update_reload`, otherwise the entry would be reloaded twice.
 
     Args:
         hass: Home Assistant instance
         entry: Updated configuration entry
     """
+    if entry.entry_id in hass.data.get(DOMAIN, {}).get(_SUPPRESSED_RELOAD_KEY, ()):
+        _LOGGER.debug(
+            "WhenHub update listener skipped, caller reloads: %s", entry.title
+        )
+        return
+
     await hass.config_entries.async_reload(entry.entry_id)
 
     _LOGGER.info("WhenHub integration updated: %s", entry.title)
