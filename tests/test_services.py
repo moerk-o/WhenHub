@@ -5,7 +5,7 @@ Covered:
 - every error condition from the concept
 - the response structure of all three services, including ``changed: {}``
 - the reload after update_event (a sensor shows the new value, and it happens once)
-- delete_event removing entry, device, entities and an open expiry issue
+- delete_event removing entry, device, entities and any open repair issue
 """
 from __future__ import annotations
 
@@ -1207,6 +1207,31 @@ class TestDeleteEvent:
         )
         await hass.async_block_till_done()
         issue_id = f"expired_{created['entry_id']}"
+        assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+
+        await _delete(hass, created["device_id"])
+
+        assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+
+    async def test_delete_removes_entity_source_repair(
+        self, hass: HomeAssistant, whenhub
+    ):
+        """A repair about a deleted date source entity does not outlive the event (#28)."""
+        entity_registry = er.async_get(hass)
+        source = entity_registry.async_get_or_create(
+            "sensor", "demo", "source_uid", suggested_object_id="target_day"
+        )
+        hass.states.async_set(source.entity_id, "2026-09-01", {"device_class": "date"})
+        created = await _create(
+            hass,
+            event_type="milestone",
+            name="Flexible",
+            target_date_entity=source.entity_id,
+        )
+
+        entity_registry.async_remove(source.entity_id)
+        await hass.async_block_till_done()
+        issue_id = f"entity_deleted_{created['entry_id']}"
         assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
 
         await _delete(hass, created["device_id"])

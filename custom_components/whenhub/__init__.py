@@ -424,7 +424,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, platforms):
-        # Clean up any open Repairs issues for this entry
+        # Clean up the Repairs issues that only describe the loaded state.
+        # entity_deleted_* is deliberately kept so it survives a restart (#19);
+        # async_remove_entry clears it when the entry is removed for good.
         async_delete_issue(hass, DOMAIN, f"expired_{entry.entry_id}")
         async_delete_issue(hass, DOMAIN, f"date_order_{entry.entry_id}")
 
@@ -447,3 +449,31 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.error("Failed to unload WhenHub integration: %s", entry.title)
 
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Clean up after a config entry that is removed for good.
+
+    Home Assistant calls this hook only on permanent removal (deletion in the UI
+    or via `whenhub.delete_event`), after `async_unload_entry` — not on a reload
+    or a restart.
+
+    All Repairs issues of this entry are deleted here. `entity_deleted_*` is the
+    reason this hook exists: it deliberately survives unloading so it persists
+    across restarts (#19), which would otherwise leave it behind pointing at an
+    event that no longer exists. `expired_*` and `date_order_*` are cleared as
+    well because an entry that never loaded, or failed to unload, does not reach
+    the cleanup in `async_unload_entry`.
+
+    Args:
+        hass: Home Assistant instance
+        entry: Configuration entry being removed
+    """
+    for issue_id in (
+        f"entity_deleted_{entry.entry_id}",
+        f"expired_{entry.entry_id}",
+        f"date_order_{entry.entry_id}",
+    ):
+        async_delete_issue(hass, DOMAIN, issue_id)
+
+    _LOGGER.info("WhenHub entry removed: %s", entry.title)
