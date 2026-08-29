@@ -1,6 +1,6 @@
 # Technical Reference: Home Assistant Integration `whenhub`
 
-**Version:** 3.1.0
+**Version:** 3.2.0
 **Date:** August 2026
 **Target Platform:** Home Assistant Custom Integration
 **Development Language:** English (code, comments, variables)
@@ -750,7 +750,8 @@ harmless, but it does mean one update costs two reloads.
 **Delete.** The entity list is read from the entity registry *before*
 `hass.config_entries.async_remove()`, because `async_unload_entry()` removes the
 entities from the registry — read afterwards, `removed_entities` would always be empty.
-Unloading also deletes an open `expired_<entry_id>` Repairs issue.
+Unloading deletes an open `expired_<entry_id>` Repairs issue; `async_remove_entry()`
+deletes every remaining issue of the entry (see 6.9).
 
 ### 5.6 Design decisions
 
@@ -996,7 +997,24 @@ The fix flow is triggered when the user clicks "Fix" on a WhenHub issue in the H
 1. Coordinator update: `_check_expiry_repair(today)` called each cycle
 2. If expired + `notify_on_expiry`: `async_create_issue(..., is_fixable=True)`
 3. If not expired: `async_delete_issue(...)` — auto-resolves the issue
-4. On entry unload: `async_delete_issue` cleanup in `async_unload_entry`
+4. On entry unload: `async_delete_issue` cleanup in `async_unload_entry` for
+   `expired_<entry_id>` and `date_order_<entry_id>`
+5. On permanent entry removal: `async_remove_entry` deletes all three issue IDs of the
+   entry (see "Issue cleanup on unload vs. removal" below)
+
+#### Issue cleanup on unload vs. removal
+
+`async_unload_entry` runs on every reload and on every HA shutdown, so it may only clear
+issues that describe the *loaded* state. `entity_deleted_<entry_id>` is deliberately kept
+there so the warning survives a restart (#19) — the next `async_setup_entry` re-evaluates
+it against the entity registry.
+
+`async_remove_entry(hass, entry)` is the counterpart: Home Assistant calls it only when an
+entry is removed for good (deleted in the UI or via `whenhub.delete_event`), after
+`async_unload_entry`. It deletes `entity_deleted_<entry_id>`, `expired_<entry_id>` and
+`date_order_<entry_id>`. Without it the entity-source warning would outlive the event it
+refers to (#28). The other two are included because an entry that never loaded, or that
+failed to unload, does not reach the cleanup in `async_unload_entry` at all.
 
 **Important import note:**
 - `async_create_issue` / `async_delete_issue` / `IssueSeverity` → `homeassistant.helpers.issue_registry`
@@ -1067,13 +1085,13 @@ The listener is replaced atomically on each retry (old listener cancelled before
 
 | Field | Value |
 |---|---|
-| Issue ID | `entity_source_deleted_{entry_id}` |
+| Issue ID | `entity_deleted_{entry_id}` |
 | `is_fixable` | `false` — user must reconfigure via Options Flow |
 | Severity | `WARNING` |
 | `translation_key` | `entity_source_deleted` |
 | Placeholders | `name` (event title), `entity_id` (first missing entity) |
 
-The issue is **not** deleted on entry unload so it persists across HA restarts. On the next `async_setup_entry`, `_check_entity_source_availability` compares the current entity registry state and decides whether to keep or remove the issue.
+The issue is **not** deleted on entry unload so it persists across HA restarts. On the next `async_setup_entry`, `_check_entity_source_availability` compares the current entity registry state and decides whether to keep or remove the issue. It *is* deleted when the config entry is removed for good — see `async_remove_entry` in 6.9.
 
 ---
 
@@ -1152,6 +1170,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 2.3.0 | 2026-03 | FR08 Calendar entity, FR09 Custom Pattern, FR11 URL/Memo sensors, Bug 003 fixes |
 | 3.0.0 | 2026-05 | FR13 Expiry notifications (HA Repairs), Fix #12 image upload validation, Fix #14 entity ID standardization (English type keys, migration v1→v2), #9 Entity date sources (Trip/Milestone/Anniversary), #19 Entity registry tracking (auto-migrate on rename, Repairs on delete) |
 | 3.1.0 | 2026-08 | New chapter 5 "Services" with the ADR blocks for name collisions, entity date sources, `SupportsResponse.OPTIONAL` and the import flow (#24); former chapters 5–8 renumbered to 6–9 |
+| 3.2.0 | 2026-08 | 6.9 documents `async_remove_entry` and the split between issue cleanup on unload and on removal (#28); corrected the `entity_deleted_{entry_id}` issue ID in 6.12 |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 

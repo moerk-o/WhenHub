@@ -718,8 +718,8 @@ response_variable: removed
 |---|---|---|
 | `device_id` | yes | The event to remove |
 
-An open expiry notification in **Settings → System → Repairs** for that event is removed
-with it.
+Any open notification for that event in **Settings → System → Repairs** is removed with
+it — both an expiry notification and a warning about a deleted date source entity.
 
 Response:
 

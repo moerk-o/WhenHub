@@ -8,6 +8,7 @@ Tests:
 - Callback: create/restore (action="create") → Repairs issue auto-resolved
 - _check_entity_source_availability() — issue state on setup/restart
 - Data correctness after auto-migration
+- async_remove_entry() — permanent removal clears the Repairs issues (#28)
 """
 from __future__ import annotations
 
@@ -32,6 +33,7 @@ from custom_components.whenhub import (
     _get_source_entity_map,
     _setup_entity_registry_listener,
     _check_entity_source_availability,
+    async_remove_entry,
     _RESTORE_LISTENER_KEY,
 )
 
@@ -595,3 +597,86 @@ class TestRestoreListener:
             cb(_make_event("create", "sensor.bday"))
 
         assert "abc123" not in hass.data[DOMAIN].get(_RESTORE_LISTENER_KEY, {})
+
+
+# ---------------------------------------------------------------------------
+# async_remove_entry — permanent removal clears the Repairs issues (#28)
+# ---------------------------------------------------------------------------
+
+class TestAsyncRemoveEntry:
+    """The removal hook deletes every Repairs issue of the entry."""
+
+    async def test_deletes_all_issues_of_the_entry(self):
+        entry = _FakeEntry(entry_id="abc123")
+        hass = _FakeHass(entry.entry_id)
+
+        with patch(PATCH_DELETE) as mock_delete:
+            await async_remove_entry(hass, entry)
+
+        assert [call.args for call in mock_delete.call_args_list] == [
+            (hass, DOMAIN, "entity_deleted_abc123"),
+            (hass, DOMAIN, "expired_abc123"),
+            (hass, DOMAIN, "date_order_abc123"),
+        ]
+
+
+class TestRemoveEntryEndToEnd:
+    """Unloading keeps the entity_source_deleted repair (#19), removing clears it (#28)."""
+
+    @staticmethod
+    async def _entry_with_deleted_source(hass):
+        """Load a milestone, then delete its date source entity so the issue exists."""
+        from homeassistant.helpers import entity_registry as entity_reg
+        from homeassistant.helpers import issue_registry as ir
+        from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+        registry = entity_reg.async_get(hass)
+        source = registry.async_get_or_create(
+            "sensor", "demo", "source_uid", suggested_object_id="holiday_start"
+        )
+        hass.states.async_set(source.entity_id, "2027-01-01", {"device_class": "date"})
+
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={
+                "event_type": "milestone",
+                "target_date": "2027-01-01",
+                "image_path": "",
+                CONF_EVENT_DATE_USE_ENTITY: True,
+                CONF_EVENT_DATE_ENTITY_ID: source.entity_id,
+            },
+            title="Deadline",
+            version=2,
+        )
+        entry.add_to_hass(hass)
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+        registry.async_remove(source.entity_id)
+        await hass.async_block_till_done()
+
+        issue_id = f"entity_deleted_{entry.entry_id}"
+        assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+        return entry, issue_id
+
+    async def test_unloading_keeps_the_issue(self, hass):
+        """Regression for #19: the issue must survive a restart, i.e. an unload."""
+        from homeassistant.helpers import issue_registry as ir
+
+        entry, issue_id = await self._entry_with_deleted_source(hass)
+
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+
+    async def test_removing_the_entry_clears_the_issue(self, hass):
+        """Fix for #28: no repair left behind for an event that no longer exists."""
+        from homeassistant.helpers import issue_registry as ir
+
+        entry, issue_id = await self._entry_with_deleted_source(hass)
+
+        await hass.config_entries.async_remove(entry.entry_id)
+        await hass.async_block_till_done()
+
+        assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
