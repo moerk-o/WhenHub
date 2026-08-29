@@ -24,3 +24,31 @@ jobs:
         uses: hacs/action@main
         with:
           category: integration
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements-test.txt
+
+      # pytest-homeassistant-custom-component loads the integration via
+      # `import custom_components`, which resolves to tests/custom_components/.
+      # That directory is gitignored, so it has to be recreated here.
+      # The __init__.py matters: without it both custom_components directories
+      # merge into one namespace package instead of the mirror taking priority.
+      - name: Prepare tests/custom_components
+        run: |
+          mkdir -p tests/custom_components
+          echo "# Custom components package" > tests/custom_components/__init__.py
+          cp -r custom_components/whenhub tests/custom_components/
+
+      - name: Run tests
+        run: pytest
