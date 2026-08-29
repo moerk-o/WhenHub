@@ -4,17 +4,19 @@ Covered:
 - happy path of every service for every event type it supports
 - every error condition from the concept
 - the response structure of all three services, including ``changed: {}``
-- the reload after update_event (a sensor shows the new value)
+- the reload after update_event (a sensor shows the new value, and it happens once)
 - delete_event removing entry, device, entities and any open repair issue
 """
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from freezegun import freeze_time
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, SupportsResponse
+from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -100,6 +102,21 @@ async def _add_entry(hass: HomeAssistant, title: str, data: dict) -> MockConfigE
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
     return entry
+
+
+def _count_reloads(hass: HomeAssistant) -> tuple[list[str], Any]:
+    """Return a list that records every async_reload, and the patch enabling it.
+
+    The original coroutine still runs, so the entry is really reloaded.
+    """
+    original = hass.config_entries.async_reload
+    reloads: list[str] = []
+
+    async def _counting(entry_id: str) -> bool:
+        reloads.append(entry_id)
+        return await original(entry_id)
+
+    return reloads, patch.object(hass.config_entries, "async_reload", _counting)
 
 
 def _device_id(hass: HomeAssistant, entry_id: str) -> str:
@@ -572,6 +589,42 @@ class TestUpdateEvent:
 
         await _update(hass, created["device_id"], target_date="2026-06-10")
 
+        assert hass.states.get("sensor.deadline_days_until").state == "40"
+
+    async def test_update_reloads_the_entry_exactly_once(
+        self, hass: HomeAssistant, whenhub
+    ):
+        """The service reload and the update listener do not add up (#29)."""
+        created = await _create(
+            hass, event_type="milestone", name="Deadline", target_date="2026-06-01"
+        )
+        reloads, counting_reload = _count_reloads(hass)
+
+        with counting_reload:
+            await _update(hass, created["device_id"], target_date="2026-06-10")
+            await hass.async_block_till_done()
+
+        assert reloads == [created["entry_id"]]
+        assert hass.states.get("sensor.deadline_days_until").state == "40"
+
+    async def test_options_flow_still_reloads_exactly_once(
+        self, hass: HomeAssistant, whenhub
+    ):
+        """The update listener remains the reload path of the options flow (#29)."""
+        created = await _create(
+            hass, event_type="milestone", name="Deadline", target_date="2026-06-01"
+        )
+        reloads, counting_reload = _count_reloads(hass)
+
+        with counting_reload:
+            result = await hass.config_entries.options.async_init(created["entry_id"])
+            result = await hass.config_entries.options.async_configure(
+                result["flow_id"], {"target_date": "2026-06-10"}
+            )
+            await hass.async_block_till_done()
+
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert reloads == [created["entry_id"]]
         assert hass.states.get("sensor.deadline_days_until").state == "40"
 
     async def test_response_lists_only_changed_fields(

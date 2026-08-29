@@ -5,7 +5,7 @@ Three services are registered once in `async_setup` (not per config entry):
 - `whenhub.create_event` — runs the config flow import step, which applies the
   same name and date validation as the user flow.
 - `whenhub.update_event` — addressed by `device_id`; writes the config entry and
-  reloads it so entities show the new values when the call returns.
+  reloads it once so entities show the new values when the call returns.
 - `whenhub.delete_event` — addressed by `device_id`; removes the config entry
   including its device, entities and any open expiry Repairs issue.
 
@@ -535,8 +535,15 @@ async def _async_update_event(call: ServiceCall) -> ServiceResponse:
         title = new_name
 
     if changed:
-        hass.config_entries.async_update_entry(entry, data=new_data, title=title)
-        await hass.config_entries.async_reload(entry.entry_id)
+        # Imported here because __init__ imports this module while loading.
+        from . import suppress_update_reload
+
+        # The explicit reload is what makes a blocking call deterministic: when
+        # the service returns, the entities already carry the new values. The
+        # listener that async_update_entry fires would reload a second time (#29).
+        with suppress_update_reload(hass, entry.entry_id):
+            hass.config_entries.async_update_entry(entry, data=new_data, title=title)
+            await hass.config_entries.async_reload(entry.entry_id)
         _LOGGER.info(
             "WhenHub event updated via service: %s (%s)",
             title,
