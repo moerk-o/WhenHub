@@ -1,0 +1,230 @@
+# Service descriptions for WhenHub (FR15).
+# Names and descriptions live in translations/en.json and translations/de.json
+# under the "services" key — hassfest checks that both stay in sync.
+#
+# Date fields use a text selector on purpose: the point of these services is to
+# paste an ISO date such as 1983-04-17 instead of scrolling a date picker.
+
+create_event:
+  fields:
+    event_type:
+      required: true
+      example: "milestone"
+      selector:
+        select:
+          translation_key: service_event_type
+          options:
+            - trip
+            - milestone
+            - anniversary
+            - special
+            - dst
+    name:
+      required: true
+      example: "Denmark 2026"
+      selector:
+        text:
+    auto_rename:
+      default: false
+      selector:
+        boolean:
+    start_date:
+      example: "2026-07-12"
+      selector:
+        text:
+    end_date:
+      example: "2026-07-26"
+      selector:
+        text:
+    target_date:
+      example: "1983-04-17"
+      selector:
+        text:
+    start_date_entity:
+      example: "sensor.holiday_start"
+      selector:
+        entity:
+          device_class:
+            - date
+            - timestamp
+    end_date_entity:
+      example: "sensor.holiday_end"
+      selector:
+        entity:
+          device_class:
+            - date
+            - timestamp
+    target_date_entity:
+      example: "sensor.next_appointment"
+      selector:
+        entity:
+          device_class:
+            - date
+            - timestamp
+    special_type:
+      example: "christmas_eve"
+      selector:
+        select:
+          translation_key: special_type
+          options:
+            - christmas_eve
+            - christmas_day
+            - boxing_day
+            - halloween
+            - easter
+            - pentecost
+            - nikolaus
+            - advent_1
+            - advent_2
+            - advent_3
+            - advent_4
+            - new_year
+            - new_years_eve
+    dst_region:
+      example: "eu"
+      selector:
+        select:
+          translation_key: dst_region
+          options:
+            - eu
+            - usa
+            - australia
+            - new_zealand
+    dst_type:
+      default: next_change
+      example: "next_change"
+      selector:
+        select:
+          translation_key: dst_type
+          options:
+            - next_change
+            - next_summer
+            - next_winter
+    image_path:
+      example: "/local/whenhub/denmark.png"
+      selector:
+        text:
+    url:
+      example: "https://example.com/booking"
+      selector:
+        text:
+    memo:
+      example: "Ferry at 9 am"
+      selector:
+        text:
+          multiline: true
+    notify_on_expiry:
+      default: false
+      selector:
+        boolean:
+
+update_event:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: whenhub
+    name:
+      example: "Denmark 2026"
+      selector:
+        text:
+    replace_date_source:
+      default: false
+      selector:
+        boolean:
+    start_date:
+      example: "2026-07-12"
+      selector:
+        text:
+    end_date:
+      example: "2026-07-26"
+      selector:
+        text:
+    target_date:
+      example: "1983-04-17"
+      selector:
+        text:
+    start_date_entity:
+      example: "sensor.holiday_start"
+      selector:
+        entity:
+          device_class:
+            - date
+            - timestamp
+    end_date_entity:
+      example: "sensor.holiday_end"
+      selector:
+        entity:
+          device_class:
+            - date
+            - timestamp
+    target_date_entity:
+      example: "sensor.next_appointment"
+      selector:
+        entity:
+          device_class:
+            - date
+            - timestamp
+    special_type:
+      example: "christmas_eve"
+      selector:
+        select:
+          translation_key: special_type
+          options:
+            - christmas_eve
+            - christmas_day
+            - boxing_day
+            - halloween
+            - easter
+            - pentecost
+            - nikolaus
+            - advent_1
+            - advent_2
+            - advent_3
+            - advent_4
+            - new_year
+            - new_years_eve
+    dst_region:
+      example: "eu"
+      selector:
+        select:
+          translation_key: dst_region
+          options:
+            - eu
+            - usa
+            - australia
+            - new_zealand
+    dst_type:
+      example: "next_change"
+      selector:
+        select:
+          translation_key: dst_type
+          options:
+            - next_change
+            - next_summer
+            - next_winter
+    image_path:
+      example: "/local/whenhub/denmark.png"
+      selector:
+        text:
+    url:
+      example: "https://example.com/booking"
+      selector:
+        text:
+    memo:
+      example: "Ferry at 9 am"
+      selector:
+        text:
+          multiline: true
+    notify_on_expiry:
+      selector:
+        boolean:
+
+delete_event:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: whenhub

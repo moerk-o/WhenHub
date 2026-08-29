@@ -556,3 +556,39 @@ ENTRY_TYPE_CALENDAR = "calendar"  # Neu - Kalender-Entry
 CONF_CALENDAR_SCOPE = "calendar_scope"       # "all" | "by_type" | "specific"
 CONF_CALENDAR_TYPES = "calendar_types"       # list[str] bei scope "by_type"
 CONF_CALENDAR_EVENT_IDS = "calendar_event_ids"  # list[str] bei scope "specific"
+
+# FR15: Services
+SERVICE_CREATE_EVENT = "create_event"
+SERVICE_UPDATE_EVENT = "update_event"
+SERVICE_DELETE_EVENT = "delete_event"
+
+# Service-only event type value: internally special + special_category "dst"
+SERVICE_EVENT_TYPE_DST = "dst"
+SERVICE_EVENT_TYPES = [
+    EVENT_TYPE_TRIP,
+    EVENT_TYPE_MILESTONE,
+    EVENT_TYPE_ANNIVERSARY,
+    EVENT_TYPE_SPECIAL,
+    SERVICE_EVENT_TYPE_DST,
+]
+
+# Service parameter names that have no matching CONF_ key
+ATTR_DEVICE_ID = "device_id"
+ATTR_ENTRY_ID = "entry_id"
+ATTR_NAME = "name"
+ATTR_AUTO_RENAME = "auto_rename"
+ATTR_REPLACE_DATE_SOURCE = "replace_date_source"
+ATTR_START_DATE_ENTITY = "start_date_entity"
+ATTR_END_DATE_ENTITY = "end_date_entity"
+ATTR_TARGET_DATE_ENTITY = "target_date_entity"
+ATTR_CHANGED = "changed"
+ATTR_REMOVED_ENTITIES = "removed_entities"
+
+# Device classes accepted for entities used as a date source
+DATE_SOURCE_DEVICE_CLASSES = ("date", "timestamp")
+
+# Special event categories that are not selectable via SPECIAL_EVENTS
+SPECIAL_CATEGORY_DST = "dst"
+SPECIAL_CATEGORY_CUSTOM_PATTERN = "custom_pattern"
+
+DEFAULT_DST_TYPE = "next_change"

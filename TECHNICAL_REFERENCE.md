@@ -1,7 +1,7 @@
 # Technical Reference: Home Assistant Integration `whenhub`
 
-**Version:** 3.0.0
-**Date:** May 2026
+**Version:** 3.1.0
+**Date:** August 2026
 **Target Platform:** Home Assistant Custom Integration
 **Development Language:** English (code, comments, variables)
 **Translations:** English (fallback), German
@@ -26,6 +26,7 @@ WhenHub provides:
 - Calendar entity to aggregate events in the HA calendar view
 - Expiry notifications via HA Repairs (opt-in)
 - Full UI configuration via ConfigFlow
+- Services to create, update and delete events from automations and scripts
 
 ### 1.2 Event Types Overview
 
@@ -622,9 +623,255 @@ The issue is created idempotently in every coordinator update cycle. It is delet
 
 ---
 
-## 5. Technical Reference
+## 5. Services
 
-### 5.1 Project Language & Code Style
+Three services (FR15) expose what the Config and Options Flow do, so events can be
+managed from automations and scripts: `create_event`, `update_event`, `delete_event`.
+Custom Pattern creation and pattern fields are out of scope (see issue #25); Calendar
+entries are rejected by all three.
+
+### 5.1 Registration
+
+`services.py` defines the schemas and handlers, `async_setup_services(hass)` registers
+them. It is called from `async_setup()` in `__init__.py`, not from `async_setup_entry()`
+— services are global and must exist exactly once, no matter how many events are
+configured.
+
+```python
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    async_setup_services(hass)
+    return True
+```
+
+Consequence: on an installation without a single config entry the integration is never
+loaded, so the services do not exist yet. One event or calendar is enough.
+
+`CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)` documents that `whenhub:`
+in `configuration.yaml` is not a supported way to configure the integration.
+
+All three services use `SupportsResponse.OPTIONAL` (see the ADR in 5.6).
+
+### 5.2 Addressing via `device_id`
+
+`update_event` and `delete_event` take a `device_id`. Every WhenHub event is one device
+(`identifiers={(DOMAIN, entry.entry_id)}`, see 6.7), so the UI shows a device picker and
+an automation can reach the event from any of its entities.
+
+`_resolve_entry()` walks `device.config_entries`, takes the first entry belonging to
+`whenhub` and rejects three cases with a `ServiceValidationError`:
+
+| Situation | translation_key |
+|---|---|
+| No device with that ID | `device_not_found` |
+| Device belongs to another integration | `device_not_whenhub` |
+| Device is a WhenHub Calendar entry | `calendar_not_supported` |
+
+### 5.3 Field validation
+
+The service vocabulary differs from the stored data in two places, and `services.py`
+translates between them:
+
+| Service parameter | Config entry keys |
+|---|---|
+| `event_type: dst` | `event_type: special` + `special_category: dst` |
+| `target_date_entity` | `event_date_use_entity` + `event_date_entity_id` |
+| `start_date_entity` | `start_date_use_entity` + `start_date_entity_id` |
+| `end_date_entity` | `end_date_use_entity` + `end_date_entity_id` |
+
+`_service_event_type()` computes the reverse for an existing entry and returns `dst` and
+`custom_pattern` as types of their own, which is what the responses report and what the
+field check works on.
+
+`_TYPE_FIELDS` maps each service event type to the type-specific parameters it accepts.
+Any other type-specific parameter in the call is rejected with `field_not_allowed` — a
+`target_date` on a trip is an error, not a silently ignored field. Generic parameters
+(`image_path`, `url`, `memo`) are accepted everywhere.
+
+`notify_on_expiry` follows the rules of the Options Flow: trips and milestones always,
+Custom Patterns only when `cp_end_type != "none"`, everything else is rejected with
+`notify_not_supported`. Only `true` is rejected — `notify_on_expiry: false` is accepted
+for every type as a no-op, so a generic script can always send the parameter.
+
+Dates are normalized with `date.fromisoformat(value).isoformat()`. Normalizing matters:
+Python also accepts `20260712`, while the trip date order is compared as a string and
+the stored value is read back by the calendar entity and the Options Flow.
+
+An entity used as a date source must exist and carry device class `date` or `timestamp`
+— the same filter the entity picker in the Config Flow applies.
+
+When a date field is created from an entity source, the fixed date key is still written
+with today's date as a placeholder. The calendar entity reads `data[CONF_START_DATE]`
+and `data[CONF_TARGET_DATE]` directly, and the Options Flow pre-fills the field when the
+entity source is switched off again.
+
+### 5.4 Import flow for creation
+
+`create_event` does not build a `ConfigEntry`; it starts a config flow:
+
+```python
+result = await hass.config_entries.flow.async_init(
+    DOMAIN, context={"source": SOURCE_IMPORT}, data=entry_data
+)
+```
+
+`ConfigFlow.async_step_import()` receives the finished entry data plus the control keys
+`name` and `auto_rename`, applies the trip date check and the name check, and creates the
+entry. It aborts with `invalid_dates` or `name_exists`; `services.py` turns the abort
+reason into a `ServiceValidationError` carrying the same key.
+
+Two helpers are shared by the flows and the services so all paths accept exactly the same
+input:
+
+| Helper (in `config_flow.py`) | Used by |
+|---|---|
+| `validate_trip_date_order(start, end)` | `async_step_trip`, `async_step_trip_options`, `async_step_import`, `update_event` |
+| `existing_event_names(hass, ignore_entry_id=None)` | `_suggest_event_name()`, the rename check in `update_event` |
+
+### 5.5 Update and delete
+
+**Update.** `_apply_date_field()` builds the new entry data and the `changed` map at the
+same time, field by field. `changed` reports the *effective* value: while a date comes
+from an entity, its fixed-date key reads as `null`, which is why switching a source
+produces two entries in `changed`. When `changed` is empty nothing is written at all, and
+the response is `changed: {}`.
+
+If something changed, the entry is written and then reloaded explicitly:
+
+```python
+hass.config_entries.async_update_entry(entry, data=new_data, title=title)
+await hass.config_entries.async_reload(entry.entry_id)
+```
+
+The explicit reload is what makes a `blocking: true` call deterministic: when the service
+returns, the entities already carry the new values. `async_update_entry()` also schedules
+the update listener registered in `async_setup_entry()`, which reloads a second time —
+harmless, but it does mean one update costs two reloads.
+
+**Delete.** The entity list is read from the entity registry *before*
+`hass.config_entries.async_remove()`, because `async_unload_entry()` removes the
+entities from the registry — read afterwards, `removed_entities` would always be empty.
+Unloading also deletes an open `expired_<entry_id>` Repairs issue.
+
+### 5.6 Design decisions
+
+#### Name collision is an error, not silent numbering
+
+**Decision:** `create_event` rejects a name that already exists. `auto_rename: true`
+switches to the numbering the Config Flow uses ("Denmark 2", "Denmark 3"). `update_event`
+rejects a rename onto an existing name and has no `auto_rename` — renaming to the
+unchanged current name is a no-op, not an error.
+
+**Context:** `_suggest_event_name()` numbers up silently, which is right for the UI:
+a human sees the suggested name and clicks. A service call has no such moment.
+
+**Why this approach:** A faulty automation that fires nightly would otherwise create
+"Denmark 2" … "Denmark 74" without anyone noticing. Failing loudly turns that into a
+visible error in the automation trace on the first night. Bulk creation still works — it
+just has to ask for the numbering. On `update_event` the same rule keeps device names
+unique, which matters because `device_id` is how the other two services pick their
+target and a device picker with two identical names is unusable.
+
+**Alternatives considered:**
+- Always number up, as in the Config Flow — rejected, see above.
+- Reject and offer no way to number — rejected: bulk creation from a list of names is
+  one of the reasons the services exist.
+
+**Consequences:** Automations that create events need to handle the error or pass
+`auto_rename`. Names stay unique across all entries, which the rename check relies on.
+
+#### Fixed date does not silently replace an entity source
+
+**Decision:** Passing a fixed date for a field that currently reads from an entity is
+rejected with `date_source_active`. `replace_date_source: true` detaches the entity and
+stores the date. The opposite direction — pointing a field at an entity while it holds a
+fixed date — needs no parameter.
+
+**Context:** Since #9 a date can come from an entity. Both ways of setting it are
+plausible in an automation, but only one of them destroys configuration.
+
+**Why this approach:** Overwriting the source would silently break the link a user set up
+deliberately, and the sensor would keep working, so nobody notices. The asymmetry follows
+the loss: switching to an entity leaves the fixed date stored and is reversible, dropping
+the entity id is not.
+
+**Alternatives considered:**
+- Always allow it — rejected: silent loss of configuration.
+- Always refuse it — rejected: a batch run that puts a whole set of events onto fixed
+  dates is a legitimate use case, and there would be no way to do it.
+
+**Consequences:** One extra parameter in `update_event`, and automations that switch
+sources have to say so explicitly.
+
+#### `SupportsResponse.OPTIONAL` for all three services
+
+**Decision:** All three services return a response only when the caller asks for it with
+`response_variable`.
+
+**Context:** Home Assistant offers `NONE`, `OPTIONAL` and `ONLY`. The responses are
+useful — the created `device_id`, the fields that actually changed, the entities that
+were removed — but most calls will not read them.
+
+**Why this approach:** With `ONLY` a call without `response_variable` fails, which would
+break the most common uses: a dashboard button, a script action, a scene. `OPTIONAL`
+costs nothing when the response is discarded and keeps it available for automations that
+chain calls, for example creating an event and remembering its `device_id`.
+
+**Alternatives considered:**
+- `NONE` — rejected: `create_event` would give no way to learn the `device_id` of the
+  event it just made, which makes it hard to chain with `update_event`.
+- `ONLY` — rejected: fails in exactly the simple cases these services are for.
+
+**Consequences:** Handlers always build the response even when it is thrown away. That is
+a dict per call, negligible next to a config entry reload.
+
+#### Creation through the config flow import step
+
+**Decision:** `create_event` creates the entry with
+`hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_IMPORT}, data=…)`
+and a new `async_step_import()`, instead of building a `ConfigEntry` object.
+
+**Context:** A config entry can be added directly through the internal API. The Config
+Flow already contains the validation, name suggestion and entry creation for exactly this
+data.
+
+**Why this approach:** The import source is the documented way to create entries
+programmatically, and Home Assistant handles unique id, entry version, setup and the
+`async_migrate_entry` path for free. It also keeps the service honest: the same code
+decides whether a name is free and whether a trip's dates are in order, so a service call
+cannot produce an entry the UI would reject.
+
+**Alternatives considered:**
+- Build the `ConfigEntry` directly and hand it to `hass.config_entries.async_add()` —
+  rejected: bypasses the flow, duplicates the validation, and version and migration
+  handling would have to be maintained twice.
+- Validate in `services.py` and let the import step only create — rejected: the trip
+  date check would then exist in two places, and the abort/error mapping got no simpler.
+
+**Consequences:** The service has to interpret flow results: `FlowResultType.ABORT`
+becomes a `ServiceValidationError` whose key equals the abort reason, so an abort reason
+and an exception key have to stay in sync (`invalid_dates`, `name_exists` exist in both
+`config.abort` and `exceptions`).
+
+### 5.7 Errors and translations
+
+Every rejection is a `ServiceValidationError` with `translation_domain=DOMAIN` and a
+`translation_key` from the `exceptions` block of the translation files, so Home Assistant
+shows a translated message in the automation trace and the UI.
+
+`services.yaml` describes the parameters for the UI; the names and descriptions live in
+`translations/en.json` and `translations/de.json` under `services.*`. hassfest validates
+that every service and every field in `services.yaml` has a translation — both have to be
+changed together.
+
+Date parameters use a `text` selector rather than a `date` selector on purpose: entering
+a distant date as an ISO string instead of scrolling through a date picker is one of the
+reasons for these services (issue #10).
+
+---
+
+## 6. Technical Reference
+
+### 6.1 Project Language & Code Style
 
 All development is done in **English** – code, comments, commit messages, issues, release notes, and documentation.
 
@@ -634,7 +881,7 @@ All development is done in **English** – code, comments, commit messages, issu
 - **Linting:** Ruff (E, F, W rules)
 - **Line Length:** 120 characters
 
-### 5.2 HACS Distribution
+### 6.2 HACS Distribution
 
 This integration is distributed via [HACS](https://hacs.xyz/). Requirements:
 
@@ -643,7 +890,7 @@ This integration is distributed via [HACS](https://hacs.xyz/). Requirements:
 - **GitHub Releases:** Versions distributed via GitHub releases with ZIP asset
 - **Validation:** `validate.yaml` workflow runs Hassfest and HACS validation on every push/PR
 
-### 5.3 File Structure
+### 6.3 File Structure
 
 ```
 WhenHub/
@@ -656,6 +903,8 @@ WhenHub/
 │       ├── coordinator.py       # DataUpdateCoordinator (hourly)
 │       ├── calculations.py      # Pure calculation functions (no HA dependencies)
 │       ├── repairs.py           # FR13: Expiry fix flow (WhenHubRepairsFlow)
+│       ├── services.py          # FR15: create_event / update_event / delete_event
+│       ├── services.yaml        # FR15: Service parameters for the UI
 │       ├── sensor.py            # Sensor platform setup
 │       ├── binary_sensor.py     # Binary sensor platform
 │       ├── image.py             # Image entity platform
@@ -679,7 +928,7 @@ WhenHub/
 └── <Project root>               # README, RELEASENOTES, LICENSE, hacs.json
 ```
 
-### 5.4 Dependencies
+### 6.4 Dependencies
 
 | Feature | Implementation |
 |---------|----------------|
@@ -689,7 +938,7 @@ WhenHub/
 | Custom Pattern | `dateutil.rrule` (bundled in HA — no `manifest.json` entry needed) |
 | Image upload | `file_upload` HA dependency (declared in `manifest.json`) |
 
-### 5.5 DataUpdateCoordinator
+### 6.5 DataUpdateCoordinator
 
 The integration uses Home Assistant's `DataUpdateCoordinator` for centralized data management.
 
@@ -709,7 +958,7 @@ At each update cycle, the coordinator also calls `_check_expiry_repair(today)` t
 
 Trip entries may have entity sources on start date, end date, or both independently.
 
-### 5.6 Entry Type Routing
+### 6.6 Entry Type Routing
 
 `CONF_ENTRY_TYPE` in `entry.data` distinguishes between event entries and calendar entries:
 
@@ -718,7 +967,7 @@ Trip entries may have entity sources on start date, end date, or both independen
 | Event (default) | `SENSOR`, `IMAGE`, `BINARY_SENSOR` | `WhenHubCoordinator` per entry |
 | `"calendar"` | `CALENDAR` | None (reads live from `hass.config_entries`) |
 
-### 5.7 Device Registration
+### 6.7 Device Registration
 
 Each event creates a device that groups all its entities:
 
@@ -729,7 +978,7 @@ Each event creates a device that groups all its entities:
 | **Model** | Dynamic based on event type (e.g., "Trip Tracker", "Anniversary Tracker") |
 | **Identifier** | `entry_id` of the Config Entry |
 
-### 5.8 Time Handling
+### 6.8 Time Handling
 
 All timestamp sensors use `device_class: timestamp` and store values in **UTC**. Home Assistant automatically converts these to the user's local timezone for display.
 
@@ -737,7 +986,7 @@ The integration respects Home Assistant's configured timezone for:
 - Midnight/hourly update scheduling
 - DST region auto-detection
 
-### 5.9 Repairs Integration
+### 6.9 Repairs Integration
 
 WhenHub registers a repair fix flow via `repairs.py`. HA auto-discovers this file — no explicit registration in `__init__.py` needed.
 
@@ -753,7 +1002,7 @@ The fix flow is triggered when the user clicks "Fix" on a WhenHub issue in the H
 - `async_create_issue` / `async_delete_issue` / `IssueSeverity` → `homeassistant.helpers.issue_registry`
 - `RepairsFlow` / `ConfirmRepairFlow` → `homeassistant.components.repairs`
 
-### 5.10 Translations
+### 6.10 Translations
 
 WhenHub uses the Home Assistant translation system with `translation_key` at sensor level.
 
@@ -767,10 +1016,13 @@ WhenHub uses the Home Assistant translation system with `translation_key` at sen
 - Selector options (event types, DST regions, etc.)
 - Entity names
 - Issues (expiry notification title, fix flow confirmation)
+- Services (`services.*`: name, description and field texts — validated by hassfest
+  against `services.yaml`)
+- Service errors (`exceptions.*`: the message of every `ServiceValidationError`)
 
 > **Note:** `format_countdown_text()` outputs German ("5 Tage") regardless of HA language — this is intentional and not covered by the translation system.
 
-### 5.11 manifest.json
+### 6.11 manifest.json
 
 | Field | Value | Explanation |
 |-------|-------|-------------|
@@ -781,7 +1033,7 @@ WhenHub uses the Home Assistant translation system with `translation_key` at sen
 | `dependencies` | `["file_upload"]` | Required for image uploads |
 | `version` | `x.y.z` | Current version (single source of truth) |
 
-### 5.12 Entity Registry Tracking
+### 6.12 Entity Registry Tracking
 
 WhenHub monitors the HA entity registry for changes to entities configured as date sources. This logic lives in `__init__.py` and is only active for event entries that use at least one entity date source.
 
@@ -825,7 +1077,7 @@ The issue is **not** deleted on entry unload so it persists across HA restarts. 
 
 ---
 
-## 6. Resources
+## 7. Resources
 
 ### Home Assistant Development
 
@@ -860,7 +1112,7 @@ The issue is **not** deleted on entry unload so it persists across HA restarts. 
 
 ---
 
-## 7. Release Process
+## 8. Release Process
 
 ### Before Release
 
@@ -890,7 +1142,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 
 ---
 
-## 8. Version History
+## 9. Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
@@ -899,6 +1151,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 2.2.1 | 2025-02 | Special Events (holidays, DST), OptionsFlow fixes, removed astronomical events |
 | 2.3.0 | 2026-03 | FR08 Calendar entity, FR09 Custom Pattern, FR11 URL/Memo sensors, Bug 003 fixes |
 | 3.0.0 | 2026-05 | FR13 Expiry notifications (HA Repairs), Fix #12 image upload validation, Fix #14 entity ID standardization (English type keys, migration v1→v2), #9 Entity date sources (Trip/Milestone/Anniversary), #19 Entity registry tracking (auto-migrate on rename, Repairs on delete) |
+| 3.1.0 | 2026-08 | New chapter 5 "Services" with the ADR blocks for name collisions, entity date sources, `SupportsResponse.OPTIONAL` and the import flow (#24); former chapters 5–8 renumbered to 6–9 |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 

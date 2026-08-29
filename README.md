@@ -18,6 +18,9 @@ A Home Assistant integration for tracking various events and important dates. Wh
 **Special Event** - Predefined holidays like Christmas, Easter, DST changes — and your own **Custom Patterns**
 **WhenHub Calendar** - Not an event type per se, but a companion feature: aggregates your WhenHub events into Home Assistant's built-in calendar view
 
+Events are set up in the user interface. For automations and scripts, three
+[services](#services) create, change and remove events.
+
 ## Installation
 
 ### HACS (Recommended)
@@ -558,6 +561,245 @@ All event configurations can be edited after initial setup via the **Options Flo
 
 All sensors are automatically updated with the new data.
 
+## Services
+
+WhenHub events can be created, changed and removed from automations and scripts. Three
+services cover what the configuration UI does:
+
+| Service | Purpose |
+|---|---|
+| `whenhub.create_event` | Create a Trip, Milestone, Anniversary, Special Event or DST event |
+| `whenhub.update_event` | Change fields of an existing event |
+| `whenhub.delete_event` | Remove an event including its device and entities |
+
+The services are registered when the integration loads, so at least one WhenHub event or
+calendar has to exist before they show up in **Developer Tools → Actions**.
+
+**Custom Pattern events can only be created in the user interface.** Their twelve
+interdependent pattern fields need the guided configuration flow. `update_event` can
+still change the generic fields (name, image, URL, memo, expiry notification) of a Custom
+Pattern event, and `delete_event` works on it like on any other event.
+
+### `whenhub.create_event`
+
+```yaml
+action: whenhub.create_event
+data:
+  event_type: trip
+  name: Denmark 2026
+  start_date: "2026-07-12"
+  end_date: "2026-07-26"
+  image_path: /local/whenhub/denmark.jpg
+  memo: Ferry at 9 am
+  notify_on_expiry: true
+response_variable: created
+```
+
+| Parameter | Required | Description |
+|---|---|---|
+| `event_type` | yes | `trip`, `milestone`, `anniversary`, `special` or `dst` |
+| `name` | yes | Becomes the entry title and the device name |
+| `auto_rename` | no (`false`) | Append a number instead of failing when the name is taken |
+| `start_date`, `end_date` | Trip | ISO dates, `YYYY-MM-DD`. The end date must be after the start date |
+| `target_date` | Milestone, Anniversary | ISO date. For an anniversary this is the original date, e.g. the year of birth |
+| `start_date_entity`, `end_date_entity`, `target_date_entity` | no | Take the date from an entity instead. Needs device class `date` or `timestamp`; replaces the fixed date of the same field |
+| `special_type` | Special | Holiday key, e.g. `easter`, `christmas_eve`, `new_year`. The category is derived from it |
+| `dst_region` | DST | `eu`, `usa`, `australia` or `new_zealand` |
+| `dst_type` | no (`next_change`) | `next_change`, `next_summer` or `next_winter` |
+| `image_path` | no | Path or URL of an image. Uploading a file is only possible in the UI |
+| `url` | no | Creates the URL sensor |
+| `memo` | no | Markdown text, creates the memo sensor |
+| `notify_on_expiry` | no (`false`) | `true` only for `trip` and `milestone` — other types cannot expire; `false` is accepted everywhere |
+
+A name that already exists is rejected. This protects against a faulty automation that
+fires every night and would otherwise pile up "Denmark 2026 2", "Denmark 2026 3" and so
+on. Pass `auto_rename: true` when you do want the numbering, for example when creating a
+list of events in a loop.
+
+Response:
+
+```yaml
+device_id: 1a2b3c4d5e6f7890abcdef1234567890
+entry_id: 01M177T7QDGBASRJX2GNYZGJP4
+name: Denmark 2026
+event_type: trip
+```
+
+`name` is the name that was actually used, which differs from the one you passed when
+`auto_rename` stepped in. Keep the `device_id` if the automation wants to change or
+remove the event later.
+
+### `whenhub.update_event`
+
+```yaml
+action: whenhub.update_event
+data:
+  device_id: 1a2b3c4d5e6f7890abcdef1234567890
+  end_date: "2026-08-02"
+  memo: Ferry moved to 11 am
+response_variable: result
+```
+
+| Parameter | Required | Description |
+|---|---|---|
+| `device_id` | yes | The event to change. Every WhenHub event is a device |
+| `name` | no | Rename the event. Entity IDs stay as they are — that is Home Assistant behaviour |
+| `start_date`, `end_date`, `target_date` | no | Set a fixed date |
+| `start_date_entity`, `end_date_entity`, `target_date_entity` | no | Switch the field to an entity source |
+| `replace_date_source` | no (`false`) | Allow a fixed date to overwrite an active entity source |
+| `special_type`, `dst_region`, `dst_type` | no | Only on the matching event type |
+| `image_path`, `url`, `memo` | no | An empty string clears the field and removes the URL or memo sensor |
+| `notify_on_expiry` | no | `true` only for trips, milestones, and Custom Patterns that have an end condition; `false` is accepted everywhere |
+
+Only the fields you pass are changed; everything else stays untouched. The event type
+itself cannot be changed, and neither can a field that does not belong to the event type
+— `target_date` on a trip is an error, not a silent no-op. After a successful change the
+event is reloaded, so its sensors already show the new values when the call returns.
+
+Setting a fixed date on a field that currently reads from an entity is refused, because
+silently dropping the entity source would be a surprise. Add `replace_date_source: true`
+when that is what you mean:
+
+```yaml
+action: whenhub.update_event
+data:
+  device_id: 1a2b3c4d5e6f7890abcdef1234567890
+  target_date: "2026-09-01"
+  replace_date_source: true
+```
+
+The other direction — pointing a field that holds a fixed date at an entity — needs no
+extra parameter, as nothing is lost.
+
+Response:
+
+```yaml
+device_id: 1a2b3c4d5e6f7890abcdef1234567890
+name: Denmark 2026
+changed:
+  end_date:
+    old: "2026-07-26"
+    new: "2026-08-02"
+  memo:
+    old: Ferry at 9 am
+    new: Ferry moved to 11 am
+```
+
+`changed` lists only the fields whose value actually differs. A call that sets everything
+to the value it already has returns `changed: {}` and does not reload the event. When a
+field switches between a fixed date and an entity, both keys appear:
+
+```yaml
+changed:
+  target_date:
+    old: "2026-07-01"
+    new: null
+  target_date_entity:
+    old: null
+    new: sensor.next_appointment
+```
+
+### `whenhub.delete_event`
+
+> **Warning:** `delete_event` removes the event immediately. There is no confirmation
+> dialog and no undo. The config entry, the device, and every sensor, binary sensor and
+> image entity of that event are gone, and any dashboard card, automation or script that
+> references those entities stops working. Check what depends on the event before you
+> call this from an automation.
+
+```yaml
+action: whenhub.delete_event
+data:
+  device_id: 1a2b3c4d5e6f7890abcdef1234567890
+response_variable: removed
+```
+
+| Parameter | Required | Description |
+|---|---|---|
+| `device_id` | yes | The event to remove |
+
+An open expiry notification in **Settings → System → Repairs** for that event is removed
+with it.
+
+Response:
+
+```yaml
+device_id: 1a2b3c4d5e6f7890abcdef1234567890
+entry_id: 01M177T7QDGBASRJX2GNYZGJP4
+name: Denmark 2026
+event_type: trip
+removed_entities:
+  - binary_sensor.denmark_2026_trip_active_today
+  - binary_sensor.denmark_2026_trip_ends_today
+  - binary_sensor.denmark_2026_trip_starts_today
+  - image.denmark_2026_event_image
+  - sensor.denmark_2026_days_until
+  - sensor.denmark_2026_days_until_end
+  - sensor.denmark_2026_event_date
+  - sensor.denmark_2026_trip_left_days
+  - sensor.denmark_2026_trip_left_percent
+```
+
+`removed_entities` is read before the event is removed, so the list is complete — useful
+for reporting back what disappeared.
+
+### Responses
+
+All three services use `SupportsResponse.OPTIONAL`. Add `response_variable` to work with
+the result; leave it out and the service simply runs, which is what you want behind a
+dashboard button or in a script that does not care about the details.
+
+### Example: notification with a delete button
+
+Two automations. The first notices that a trip is over and sends a push notification with
+two buttons, the second acts on the answer and reports what was removed.
+
+```yaml
+automation:
+  - alias: "WhenHub: offer to remove the finished trip"
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.denmark_2026_days_until_end
+        below: 0
+    actions:
+      - action: notify.mobile_app_pixel
+        data:
+          title: Denmark 2026 is over
+          message: Remove the event and all its entities?
+          data:
+            actions:
+              - action: WHENHUB_DELETE_DENMARK
+                title: Delete
+              - action: WHENHUB_KEEP
+                title: Keep
+
+  - alias: "WhenHub: remove the trip when confirmed"
+    triggers:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: WHENHUB_DELETE_DENMARK
+    actions:
+      - action: whenhub.delete_event
+        data:
+          device_id: 1a2b3c4d5e6f7890abcdef1234567890
+        response_variable: removed
+      - action: notify.mobile_app_pixel
+        data:
+          title: WhenHub event removed
+          message: >-
+            {{ removed.name }} is gone, including
+            {{ removed.removed_entities | count }} entities.
+```
+
+Find the `device_id` under **Settings → Devices & Services → WhenHub → <event>**; it is
+the last part of the device page URL. In the visual automation editor the `device_id`
+field shows a device picker instead.
+
+If you would rather let WhenHub ask on its own, enable `notify_on_expiry` on the event:
+Home Assistant then shows a repair notification with a **Fix** button that removes the
+event after a confirmation. See [Expiry Notifications](#expiry-notifications).
+
 ## Technical Details
 
 | Property | Value |
@@ -566,6 +808,7 @@ All sensors are automatically updated with the new data.
 | IoT Class | `calculated` |
 | Platforms | Sensor, Binary Sensor, Image, Calendar |
 | Config Flow | Full UI configuration |
+| Services | `create_event`, `update_event`, `delete_event` |
 
 ## Localization
 
