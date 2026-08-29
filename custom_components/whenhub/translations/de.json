@@ -273,6 +273,10 @@
       "invalid_date_format": "Ungültiges Datumsformat. Verwende YYYY-MM-DD",
       "image_upload_failed": "Nicht unterstütztes Dateiformat. Bitte lade eine JPEG-, PNG-, WebP- oder GIF-Datei hoch.",
       "image_too_large": "Die Datei ist zu groß. Die maximale Dateigröße beträgt 5 MB."
+    },
+    "abort": {
+      "name_exists": "Ein Ereignis mit diesem Namen existiert bereits",
+      "invalid_dates": "Das Enddatum muss nach dem Startdatum liegen"
     }
   },
   "options": {
@@ -545,6 +549,15 @@
         "calendar": "WhenHub Kalender - WhenHub Events in der HA-Kalenderansicht anzeigen"
       }
     },
+    "service_event_type": {
+      "options": {
+        "trip": "Reise",
+        "milestone": "Meilenstein",
+        "anniversary": "Jahrestag",
+        "special": "Besonderes Ereignis",
+        "dst": "Zeitumstellung"
+      }
+    },
     "calendar_scope": {
       "options": {
         "all": "Alle Events",
@@ -734,6 +747,199 @@
     "entity_source_deleted": {
       "title": "Datumsquellen-Entity entfernt: {name}",
       "description": "Die Entity **{entity_id}**, die als Datumsquelle für **{name}** konfiguriert ist, wurde aus Home Assistant entfernt.\n\nAlle Sensoren für dieses Ereignis sind derzeit nicht verfügbar. Um das Problem zu beheben öffne die Einstellungen des Ereignisses und wähle eine andere Entity, gib ein festes Datum ein oder lösche das Ereignis."
+    }
+  },
+  "services": {
+    "create_event": {
+      "name": "Ereignis anlegen",
+      "description": "Legt ein WhenHub-Ereignis an. Ereignisse mit eigenem Wiederholungsmuster lassen sich nur über die Oberfläche anlegen.",
+      "fields": {
+        "event_type": {
+          "name": "Ereignistyp",
+          "description": "Art des Ereignisses, das angelegt werden soll."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Name des Ereignisses. Wird auch der Gerätename."
+        },
+        "auto_rename": {
+          "name": "Bei Namenskonflikt umbenennen",
+          "description": "Hängt eine Nummer an, wenn der Name schon vergeben ist, statt abzubrechen."
+        },
+        "start_date": {
+          "name": "Startdatum",
+          "description": "Startdatum einer Reise im Format JJJJ-MM-TT. Nicht zusammen mit einer Entität als Startdatum möglich."
+        },
+        "end_date": {
+          "name": "Enddatum",
+          "description": "Enddatum einer Reise im Format JJJJ-MM-TT. Nicht zusammen mit einer Entität als Enddatum möglich."
+        },
+        "target_date": {
+          "name": "Datum",
+          "description": "Datum eines Meilensteins oder das ursprüngliche Datum eines Jahrestags im Format JJJJ-MM-TT."
+        },
+        "start_date_entity": {
+          "name": "Entität für Startdatum",
+          "description": "Entität, die das Startdatum liefert. Benötigt die Geräteklasse date oder timestamp."
+        },
+        "end_date_entity": {
+          "name": "Entität für Enddatum",
+          "description": "Entität, die das Enddatum liefert. Benötigt die Geräteklasse date oder timestamp."
+        },
+        "target_date_entity": {
+          "name": "Entität für Datum",
+          "description": "Entität, die das Datum liefert. Benötigt die Geräteklasse date oder timestamp."
+        },
+        "special_type": {
+          "name": "Feiertag",
+          "description": "Feiertag, den das besondere Ereignis verfolgt."
+        },
+        "dst_region": {
+          "name": "Region",
+          "description": "Region, deren Zeitumstellungen verfolgt werden."
+        },
+        "dst_type": {
+          "name": "Wechsel",
+          "description": "Welche Zeitumstellung verfolgt wird."
+        },
+        "image_path": {
+          "name": "Bildpfad",
+          "description": "Pfad oder URL eines Bildes für dieses Ereignis."
+        },
+        "url": {
+          "name": "URL",
+          "description": "Link, den der URL-Sensor anzeigt."
+        },
+        "memo": {
+          "name": "Notiz",
+          "description": "Markdown-Text, den der Notiz-Sensor anzeigt."
+        },
+        "notify_on_expiry": {
+          "name": "Bei Ablauf benachrichtigen",
+          "description": "Meldet ein abgelaufenes Ereignis über Reparaturen. Nur für Reisen und Meilensteine."
+        }
+      }
+    },
+    "update_event": {
+      "name": "Ereignis ändern",
+      "description": "Ändert Felder eines bestehenden WhenHub-Ereignisses und lädt es neu. Es werden nur die übergebenen Felder geändert.",
+      "fields": {
+        "device_id": {
+          "name": "Ereignis",
+          "description": "Das zu ändernde Ereignis. Jedes WhenHub-Ereignis ist ein Gerät."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Neuer Name des Ereignisses. Die Entitäts-IDs bleiben unverändert."
+        },
+        "replace_date_source": {
+          "name": "Entitätsquelle ersetzen",
+          "description": "Erlaubt es, ein Datum, das aus einer Entität kommt, durch einen festen Wert zu ersetzen."
+        },
+        "start_date": {
+          "name": "Startdatum",
+          "description": "Neues Startdatum einer Reise im Format JJJJ-MM-TT."
+        },
+        "end_date": {
+          "name": "Enddatum",
+          "description": "Neues Enddatum einer Reise im Format JJJJ-MM-TT."
+        },
+        "target_date": {
+          "name": "Datum",
+          "description": "Neues Datum eines Meilensteins oder Jahrestags im Format JJJJ-MM-TT."
+        },
+        "start_date_entity": {
+          "name": "Entität für Startdatum",
+          "description": "Stellt das Startdatum auf diese Entität um. Benötigt die Geräteklasse date oder timestamp."
+        },
+        "end_date_entity": {
+          "name": "Entität für Enddatum",
+          "description": "Stellt das Enddatum auf diese Entität um. Benötigt die Geräteklasse date oder timestamp."
+        },
+        "target_date_entity": {
+          "name": "Entität für Datum",
+          "description": "Stellt das Datum auf diese Entität um. Benötigt die Geräteklasse date oder timestamp."
+        },
+        "special_type": {
+          "name": "Feiertag",
+          "description": "Neuer Feiertag für ein besonderes Ereignis."
+        },
+        "dst_region": {
+          "name": "Region",
+          "description": "Neue Region für ein Zeitumstellungs-Ereignis."
+        },
+        "dst_type": {
+          "name": "Wechsel",
+          "description": "Neuer Wechsel, den das Zeitumstellungs-Ereignis verfolgt."
+        },
+        "image_path": {
+          "name": "Bildpfad",
+          "description": "Neuer Bildpfad. Ein leerer Wert entfernt den bisherigen."
+        },
+        "url": {
+          "name": "URL",
+          "description": "Neuer Link. Ein leerer Wert entfernt den URL-Sensor."
+        },
+        "memo": {
+          "name": "Notiz",
+          "description": "Neuer Notiztext. Ein leerer Wert entfernt den Notiz-Sensor."
+        },
+        "notify_on_expiry": {
+          "name": "Bei Ablauf benachrichtigen",
+          "description": "Meldet ein abgelaufenes Ereignis über Reparaturen. Nur für Reisen, Meilensteine und Wiederholungsmuster mit Ende."
+        }
+      }
+    },
+    "delete_event": {
+      "name": "Ereignis löschen",
+      "description": "Entfernt ein WhenHub-Ereignis samt Gerät und allen Entitäten. Ohne Rückfrage, nicht umkehrbar.",
+      "fields": {
+        "device_id": {
+          "name": "Ereignis",
+          "description": "Das zu entfernende Ereignis. Jedes WhenHub-Ereignis ist ein Gerät."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Es gibt kein Gerät mit der ID {device_id}."
+    },
+    "device_not_whenhub": {
+      "message": "Das Gerät {device_id} gehört nicht zu WhenHub."
+    },
+    "calendar_not_supported": {
+      "message": "Das Gerät {device_id} ist ein WhenHub-Kalender. Die Ereignis-Dienste arbeiten nur mit Ereignissen."
+    },
+    "name_exists": {
+      "message": "Es gibt bereits ein Ereignis mit dem Namen '{name}'. Setze auto_rename auf true oder wähle einen anderen Namen."
+    },
+    "invalid_dates": {
+      "message": "Das Enddatum muss nach dem Startdatum liegen."
+    },
+    "invalid_date_format": {
+      "message": "'{value}' ist kein gültiges Datum für '{field}'. Verwende das Format JJJJ-MM-TT."
+    },
+    "missing_field": {
+      "message": "'{field}' wird für den Ereignistyp '{event_type}' benötigt."
+    },
+    "field_not_allowed": {
+      "message": "'{field}' kann beim Ereignistyp '{event_type}' nicht verwendet werden."
+    },
+    "date_and_entity": {
+      "message": "Übergib entweder '{field}' oder '{entity_field}', nicht beides."
+    },
+    "entity_not_found": {
+      "message": "Die Entität {entity_id} existiert nicht."
+    },
+    "entity_wrong_device_class": {
+      "message": "Die Entität {entity_id} benötigt die Geräteklasse 'date' oder 'timestamp', um als Datumsquelle zu dienen."
+    },
+    "date_source_active": {
+      "message": "'{field}' kommt derzeit aus der Entität {entity_id}. Setze replace_date_source auf true, um stattdessen ein festes Datum zu speichern."
+    },
+    "notify_not_supported": {
+      "message": "'notify_on_expiry' gibt es für den Ereignistyp '{event_type}' nicht. Nur Reisen, Meilensteine und Wiederholungsmuster mit Ende können ablaufen."
     }
   }
 }

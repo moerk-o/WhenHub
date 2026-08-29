@@ -13,8 +13,10 @@ from homeassistant.helpers.issue_registry import IssueSeverity, async_create_iss
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
 from .const import (
@@ -29,8 +31,11 @@ from .const import (
     CONF_END_DATE_ENTITY_ID,
 )
 from .coordinator import WhenHubCoordinator
+from .services import async_setup_services
 
 _LOGGER = logging.getLogger(__name__)
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 # Platforms per entry type
 EVENT_PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.IMAGE, Platform.BINARY_SENSOR]
@@ -38,6 +43,16 @@ CALENDAR_PLATFORMS: list[Platform] = [Platform.CALENDAR]
 
 # Key in hass.data[DOMAIN] for tracking entity restore listeners (per entry_id)
 _RESTORE_LISTENER_KEY = "_entity_restore_listeners"
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the WhenHub integration.
+
+    Only registers the event services (FR15). Everything else is per config
+    entry; the services are global and must exist exactly once.
+    """
+    async_setup_services(hass)
+    return True
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

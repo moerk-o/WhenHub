@@ -273,6 +273,10 @@
       "invalid_date_format": "Invalid date format. Use YYYY-MM-DD",
       "image_upload_failed": "Unsupported file type. Please upload a JPEG, PNG, WebP or GIF file.",
       "image_too_large": "File is too large. Maximum allowed size is 5 MB."
+    },
+    "abort": {
+      "name_exists": "An event with this name already exists",
+      "invalid_dates": "End date must be after start date"
     }
   },
   "options": {
@@ -545,6 +549,15 @@
         "calendar": "WhenHub Calendar - Show WhenHub events in HA calendar view"
       }
     },
+    "service_event_type": {
+      "options": {
+        "trip": "Trip",
+        "milestone": "Milestone",
+        "anniversary": "Anniversary",
+        "special": "Special event",
+        "dst": "Daylight saving time change"
+      }
+    },
     "calendar_scope": {
       "options": {
         "all": "All events",
@@ -734,6 +747,199 @@
     "entity_source_deleted": {
       "title": "Date source entity removed: {name}",
       "description": "The entity **{entity_id}** used as a date source for **{name}** has been removed from Home Assistant.\n\nAll sensors for this event are currently unavailable. To resolve this issue, open the event's settings and either choose a different entity, enter a fixed date, or delete the event."
+    }
+  },
+  "services": {
+    "create_event": {
+      "name": "Create event",
+      "description": "Creates a WhenHub event. Custom pattern events can only be created in the user interface.",
+      "fields": {
+        "event_type": {
+          "name": "Event type",
+          "description": "Kind of event to create."
+        },
+        "name": {
+          "name": "Name",
+          "description": "Name of the event. Becomes the device name."
+        },
+        "auto_rename": {
+          "name": "Rename on conflict",
+          "description": "Appends a number when the name is already taken instead of failing."
+        },
+        "start_date": {
+          "name": "Start date",
+          "description": "Start date of a trip in the format YYYY-MM-DD. Cannot be combined with a start date entity."
+        },
+        "end_date": {
+          "name": "End date",
+          "description": "End date of a trip in the format YYYY-MM-DD. Cannot be combined with an end date entity."
+        },
+        "target_date": {
+          "name": "Date",
+          "description": "Date of a milestone, or the original date of an anniversary, in the format YYYY-MM-DD."
+        },
+        "start_date_entity": {
+          "name": "Start date entity",
+          "description": "Entity that provides the start date. Needs device class date or timestamp."
+        },
+        "end_date_entity": {
+          "name": "End date entity",
+          "description": "Entity that provides the end date. Needs device class date or timestamp."
+        },
+        "target_date_entity": {
+          "name": "Date entity",
+          "description": "Entity that provides the date. Needs device class date or timestamp."
+        },
+        "special_type": {
+          "name": "Holiday",
+          "description": "Holiday tracked by a special event."
+        },
+        "dst_region": {
+          "name": "Region",
+          "description": "Region whose daylight saving time changes are tracked."
+        },
+        "dst_type": {
+          "name": "Change",
+          "description": "Which daylight saving time change to track."
+        },
+        "image_path": {
+          "name": "Image path",
+          "description": "Path or URL of an image for this event."
+        },
+        "url": {
+          "name": "URL",
+          "description": "Link shown by the URL sensor."
+        },
+        "memo": {
+          "name": "Memo",
+          "description": "Markdown text shown by the memo sensor."
+        },
+        "notify_on_expiry": {
+          "name": "Notify when expired",
+          "description": "Reports an expired event via Repairs. Only for trips and milestones."
+        }
+      }
+    },
+    "update_event": {
+      "name": "Update event",
+      "description": "Changes fields of an existing WhenHub event and reloads it. Only the fields you pass are changed.",
+      "fields": {
+        "device_id": {
+          "name": "Event",
+          "description": "The event to change. Every WhenHub event is a device."
+        },
+        "name": {
+          "name": "Name",
+          "description": "New name of the event. Entity IDs stay unchanged."
+        },
+        "replace_date_source": {
+          "name": "Replace entity source",
+          "description": "Allows a fixed date to replace a date that currently comes from an entity."
+        },
+        "start_date": {
+          "name": "Start date",
+          "description": "New start date of a trip in the format YYYY-MM-DD."
+        },
+        "end_date": {
+          "name": "End date",
+          "description": "New end date of a trip in the format YYYY-MM-DD."
+        },
+        "target_date": {
+          "name": "Date",
+          "description": "New date of a milestone or anniversary in the format YYYY-MM-DD."
+        },
+        "start_date_entity": {
+          "name": "Start date entity",
+          "description": "Switches the start date to this entity. Needs device class date or timestamp."
+        },
+        "end_date_entity": {
+          "name": "End date entity",
+          "description": "Switches the end date to this entity. Needs device class date or timestamp."
+        },
+        "target_date_entity": {
+          "name": "Date entity",
+          "description": "Switches the date to this entity. Needs device class date or timestamp."
+        },
+        "special_type": {
+          "name": "Holiday",
+          "description": "New holiday for a special event."
+        },
+        "dst_region": {
+          "name": "Region",
+          "description": "New region for a daylight saving time event."
+        },
+        "dst_type": {
+          "name": "Change",
+          "description": "New change tracked by a daylight saving time event."
+        },
+        "image_path": {
+          "name": "Image path",
+          "description": "New image path. An empty value removes the current one."
+        },
+        "url": {
+          "name": "URL",
+          "description": "New link. An empty value removes the URL sensor."
+        },
+        "memo": {
+          "name": "Memo",
+          "description": "New memo text. An empty value removes the memo sensor."
+        },
+        "notify_on_expiry": {
+          "name": "Notify when expired",
+          "description": "Reports an expired event via Repairs. Only for trips, milestones and custom patterns with an end condition."
+        }
+      }
+    },
+    "delete_event": {
+      "name": "Delete event",
+      "description": "Removes a WhenHub event including its device and all its entities. There is no confirmation and no undo.",
+      "fields": {
+        "device_id": {
+          "name": "Event",
+          "description": "The event to remove. Every WhenHub event is a device."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "No device with ID {device_id} exists."
+    },
+    "device_not_whenhub": {
+      "message": "Device {device_id} does not belong to WhenHub."
+    },
+    "calendar_not_supported": {
+      "message": "Device {device_id} is a WhenHub calendar. The event services only work on events."
+    },
+    "name_exists": {
+      "message": "An event named '{name}' already exists. Set auto_rename to true or choose another name."
+    },
+    "invalid_dates": {
+      "message": "The end date must be after the start date."
+    },
+    "invalid_date_format": {
+      "message": "'{value}' is not a valid date for '{field}'. Use the format YYYY-MM-DD."
+    },
+    "missing_field": {
+      "message": "'{field}' is required for event type '{event_type}'."
+    },
+    "field_not_allowed": {
+      "message": "'{field}' cannot be used with event type '{event_type}'."
+    },
+    "date_and_entity": {
+      "message": "Pass either '{field}' or '{entity_field}', not both."
+    },
+    "entity_not_found": {
+      "message": "Entity {entity_id} does not exist."
+    },
+    "entity_wrong_device_class": {
+      "message": "Entity {entity_id} needs device class 'date' or 'timestamp' to be used as a date source."
+    },
+    "date_source_active": {
+      "message": "'{field}' currently comes from entity {entity_id}. Set replace_date_source to true to store a fixed date instead."
+    },
+    "notify_not_supported": {
+      "message": "'notify_on_expiry' is not available for event type '{event_type}'. Only trips, milestones and custom patterns with an end condition can expire."
     }
   }
 }

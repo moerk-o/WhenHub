@@ -82,6 +82,8 @@ from .const import (
     CONF_START_DATE_ENTITY_ID,
     CONF_END_DATE_USE_ENTITY,
     CONF_END_DATE_ENTITY_ID,
+    ATTR_NAME,
+    ATTR_AUTO_RENAME,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -96,6 +98,32 @@ _IMAGE_MIME_MAP = {
 
 # Maximum allowed image file size (5 MB). Larger files would bloat the config entry JSON.
 _MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+
+
+def existing_event_names(
+    hass: HomeAssistant, *, ignore_entry_id: str | None = None
+) -> set[str]:
+    """Return the titles of all WhenHub config entries.
+
+    Shared by the name suggestion in the flows and the rename check in the
+    services so both see the same set of taken names.
+    """
+    return {
+        entry.title
+        for entry in hass.config_entries.async_entries(DOMAIN)
+        if entry.entry_id != ignore_entry_id
+    }
+
+
+def validate_trip_date_order(start_date: str, end_date: str) -> str | None:
+    """Return an error key when a trip's end date is not after its start date.
+
+    Shared by the config flow, the options flow, the import step and the
+    services so every path accepts exactly the same date combinations.
+    """
+    if start_date >= end_date:
+        return "invalid_dates"
+    return None
 
 
 def _process_image_upload(hass: HomeAssistant, user_input: dict) -> tuple[str | None, str | None, str | None]:
@@ -380,6 +408,34 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         elif self._event_type == EVENT_TYPE_SPECIAL:
             return await self.async_step_special_category()
 
+    async def async_step_import(self, import_data: dict[str, Any]) -> FlowResult:
+        """Create an event entry programmatically (whenhub.create_event service).
+
+        `import_data` carries the finished entry data plus the two control keys
+        `name` and `auto_rename`. Name and trip date order are validated exactly
+        as in the user flow; the abort reason is turned into a translated
+        ServiceValidationError by services.py.
+        """
+        data = dict(import_data)
+        name: str = data.pop(ATTR_NAME)
+        auto_rename: bool = data.pop(ATTR_AUTO_RENAME, False)
+
+        if (
+            data[CONF_EVENT_TYPE] == EVENT_TYPE_TRIP
+            and not data.get(CONF_START_DATE_USE_ENTITY)
+            and not data.get(CONF_END_DATE_USE_ENTITY)
+        ):
+            if error := validate_trip_date_order(data[CONF_START_DATE], data[CONF_END_DATE]):
+                return self.async_abort(reason=error)
+
+        suggested = self._suggest_event_name(name)
+        if suggested != name:
+            if not auto_rename:
+                return self.async_abort(reason="name_exists")
+            name = suggested
+
+        return self.async_create_entry(title=name, data=data)
+
     async def _show_event_type_form(self) -> FlowResult:
         """Show event type selection form."""
         event_type_options = list(EVENT_TYPES.keys()) + [ENTRY_TYPE_CALENDAR]
@@ -416,10 +472,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def _suggest_event_name(self, base: str) -> str:
         """Return an auto-incremented event name suggestion."""
-        existing = {
-            e.title
-            for e in self.hass.config_entries.async_entries(DOMAIN)
-        }
+        existing = existing_event_names(self.hass)
         if base not in existing:
             return base
         counter = 2
@@ -547,8 +600,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Validate date order only when both dates are entered manually.
         # When at least one date comes from an entity we can't check at config time.
         if not start_use_entity and not end_use_entity:
-            if user_input[CONF_START_DATE] >= user_input[CONF_END_DATE]:
-                errors["base"] = "invalid_dates"
+            if error := validate_trip_date_order(
+                user_input[CONF_START_DATE], user_input[CONF_END_DATE]
+            ):
+                errors["base"] = error
 
         if not errors:
             user_input[CONF_EVENT_TYPE] = self._event_type
@@ -1141,8 +1196,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             end_use_entity = user_input.get(CONF_END_DATE_USE_ENTITY, False)
 
             if not start_use_entity and not end_use_entity:
-                if user_input[CONF_START_DATE] >= user_input[CONF_END_DATE]:
-                    errors["base"] = "invalid_dates"
+                if error := validate_trip_date_order(
+                    user_input[CONF_START_DATE], user_input[CONF_END_DATE]
+                ):
+                    errors["base"] = error
 
             if not errors:
                 user_input[CONF_EVENT_TYPE] = self.config_entry.data[CONF_EVENT_TYPE]
