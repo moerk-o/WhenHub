@@ -15,7 +15,6 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .calculations import (
-    parse_date,
     anniversary_for_year,
     next_special_event,
     next_dst_event,
@@ -31,9 +30,6 @@ from .const import (
     CONF_CALENDAR_TYPES,
     CONF_CALENDAR_EVENT_IDS,
     CONF_EVENT_TYPE,
-    CONF_START_DATE,
-    CONF_END_DATE,
-    CONF_TARGET_DATE,
     CONF_SPECIAL_TYPE,
     CONF_SPECIAL_CATEGORY,
     CONF_DST_TYPE,
@@ -54,6 +50,26 @@ async def async_setup_entry(
 ) -> None:
     """Set up WhenHub Calendar entity."""
     async_add_entities([WhenHubCalendar(hass, entry)])
+
+
+def _resolved_data(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any] | None:
+    """Return the coordinator's resolved data for an event entry.
+
+    The calendar must not read the fixed date keys of the config entry: when a
+    date comes from an entity, those keys only hold the placeholder written at
+    creation time (#27). The coordinator resolves the entity state instead, and
+    all sensors already read from it.
+
+    Returns None when there is no usable data — no coordinator, no successful
+    update yet, or the last update failed because a date source entity is
+    unavailable. The caller then skips the event entirely rather than showing a
+    stale or placeholder date.
+    """
+    store = hass.data.get(DOMAIN, {}).get(entry.entry_id) or {}
+    coordinator = store.get("coordinator")
+    if coordinator is None or not coordinator.last_update_success:
+        return None
+    return coordinator.data
 
 
 class WhenHubCalendar(CalendarEntity):
@@ -107,7 +123,10 @@ class WhenHubCalendar(CalendarEntity):
                 continue
             if not self._entry_in_scope(entry):
                 continue
-            current = _get_current_event(entry.data, today, entry.title)
+            resolved = _resolved_data(self._hass, entry)
+            if resolved is None:
+                continue
+            current = _get_current_event(entry.data, today, entry.title, resolved)
             if current is not None:
                 return current
         return None
@@ -130,7 +149,12 @@ class WhenHubCalendar(CalendarEntity):
                 continue
             if not self._entry_in_scope(entry):
                 continue
-            events.extend(_get_calendar_events(entry.data, start, end, entry.title))
+            resolved = _resolved_data(hass, entry)
+            if resolved is None:
+                continue
+            events.extend(
+                _get_calendar_events(entry.data, start, end, entry.title, resolved)
+            )
 
         return events
 
@@ -152,15 +176,39 @@ class WhenHubCalendar(CalendarEntity):
 # Event calculation helpers (module-level, no HA dependencies)
 # =============================================================================
 
-def _get_calendar_events(event_data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
-    """Route event calculation to the correct type handler."""
+def _resolved_date(resolved: dict[str, Any], key: str) -> date | None:
+    """Return one resolved date from the coordinator data as a plain date.
+
+    The coordinator stores dates as timezone-aware datetimes at local midnight,
+    so `.date()` returns exactly the date it resolved. Returns None when the key
+    is absent, which makes the caller skip the event.
+    """
+    value = resolved.get(key)
+    return value.date() if value is not None else None
+
+
+def _get_calendar_events(
+    event_data: dict,
+    start: date,
+    end: date,
+    name: str,
+    resolved: dict[str, Any] | None = None,
+) -> list[CalendarEvent]:
+    """Route event calculation to the correct type handler.
+
+    `resolved` holds the coordinator data of the entry. Trip, Milestone and
+    Anniversary take their dates from it so that entity date sources are
+    honoured; Special and Custom Pattern derive their dates from the pattern
+    itself and ignore it.
+    """
+    resolved = resolved or {}
     event_type = event_data.get(CONF_EVENT_TYPE)
     if event_type == EVENT_TYPE_TRIP:
-        return _trip_events(event_data, start, end, name)
+        return _trip_events(resolved, start, end, name)
     if event_type == EVENT_TYPE_MILESTONE:
-        return _milestone_events(event_data, start, end, name)
+        return _milestone_events(resolved, start, end, name)
     if event_type == EVENT_TYPE_ANNIVERSARY:
-        return _anniversary_events(event_data, start, end, name)
+        return _anniversary_events(resolved, start, end, name)
     if event_type == EVENT_TYPE_SPECIAL:
         special_category = event_data.get(CONF_SPECIAL_CATEGORY)
         if special_category == "custom_pattern":
@@ -169,13 +217,25 @@ def _get_calendar_events(event_data: dict, start: date, end: date, name: str) ->
     return []
 
 
-def _get_current_event(event_data: dict, today: date, name: str) -> CalendarEvent | None:
-    """Return a CalendarEvent if this event is active today (used for STATE_ON)."""
+def _get_current_event(
+    event_data: dict,
+    today: date,
+    name: str,
+    resolved: dict[str, Any] | None = None,
+) -> CalendarEvent | None:
+    """Return a CalendarEvent if this event is active today (used for STATE_ON).
+
+    `resolved` holds the coordinator data of the entry — see
+    `_get_calendar_events` for how it is used per event type.
+    """
+    resolved = resolved or {}
     event_type = event_data.get(CONF_EVENT_TYPE)
 
     if event_type == EVENT_TYPE_TRIP:
-        trip_start = parse_date(event_data[CONF_START_DATE])
-        trip_end = parse_date(event_data[CONF_END_DATE])
+        trip_start = _resolved_date(resolved, "start_date")
+        trip_end = _resolved_date(resolved, "end_date")
+        if trip_start is None or trip_end is None:
+            return None
         if trip_start <= today <= trip_end:
             return CalendarEvent(
                 summary=name,
@@ -185,7 +245,9 @@ def _get_current_event(event_data: dict, today: date, name: str) -> CalendarEven
             )
 
     elif event_type == EVENT_TYPE_MILESTONE:
-        target = parse_date(event_data[CONF_TARGET_DATE])
+        target = _resolved_date(resolved, "target_date")
+        if target is None:
+            return None
         if target == today:
             return CalendarEvent(
                 summary=name,
@@ -195,7 +257,9 @@ def _get_current_event(event_data: dict, today: date, name: str) -> CalendarEven
             )
 
     elif event_type == EVENT_TYPE_ANNIVERSARY:
-        original = parse_date(event_data[CONF_TARGET_DATE])
+        original = _resolved_date(resolved, "original_date")
+        if original is None:
+            return None
         occ = anniversary_for_year(original, today.year)
         if occ == today:
             year_number = today.year - original.year
@@ -243,10 +307,12 @@ def _get_current_event(event_data: dict, today: date, name: str) -> CalendarEven
     return None
 
 
-def _trip_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
+def _trip_events(resolved: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return trip event if it overlaps with [start, end]."""
-    trip_start = parse_date(data[CONF_START_DATE])
-    trip_end = parse_date(data[CONF_END_DATE])
+    trip_start = _resolved_date(resolved, "start_date")
+    trip_end = _resolved_date(resolved, "end_date")
+    if trip_start is None or trip_end is None:
+        return []
     if trip_start <= end and trip_end >= start:
         return [CalendarEvent(
             summary=name,
@@ -257,9 +323,11 @@ def _trip_events(data: dict, start: date, end: date, name: str) -> list[Calendar
     return []
 
 
-def _milestone_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
+def _milestone_events(resolved: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return milestone event if its date falls within [start, end]."""
-    target = parse_date(data[CONF_TARGET_DATE])
+    target = _resolved_date(resolved, "target_date")
+    if target is None:
+        return []
     if start <= target <= end:
         return [CalendarEvent(
             summary=name,
@@ -270,13 +338,15 @@ def _milestone_events(data: dict, start: date, end: date, name: str) -> list[Cal
     return []
 
 
-def _anniversary_events(data: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
+def _anniversary_events(resolved: dict, start: date, end: date, name: str) -> list[CalendarEvent]:
     """Return all anniversary occurrences within [start, end].
 
     Uses anniversary_for_year() for leap-year-safe date calculation.
     Title format: "Name (N.)" where N is the number of years since the original date.
     """
-    original = parse_date(data[CONF_TARGET_DATE])
+    original = _resolved_date(resolved, "original_date")
+    if original is None:
+        return []
     events = []
 
     for year in range(max(original.year, start.year), end.year + 1):

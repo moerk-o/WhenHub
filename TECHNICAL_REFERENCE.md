@@ -1,6 +1,6 @@
 # Technical Reference: Home Assistant Integration `whenhub`
 
-**Version:** 3.3.1
+**Version:** 3.4.0
 **Date:** August 2026
 **Target Platform:** Home Assistant Custom Integration
 **Development Language:** English (code, comments, variables)
@@ -481,13 +481,29 @@ Created only for Calendar-type config entries (`CONF_ENTRY_TYPE = "calendar"`).
 
 The calendar iterates all loaded Event-type config entries whose `entry_id` matches the configured scope. Event representation per type:
 
-| WhenHub Type | Calendar Event |
-|---|---|
-| Trip | Multi-day event (`start_date` .. `end_date`) |
-| Milestone | Single-day event on `target_date` |
-| Anniversary | Annual single-day event (incl. ordinal) |
-| Special Event | Annual single-day event |
-| Custom Pattern | All occurrences in the calendar view window |
+| WhenHub Type | Calendar Event | Date source |
+|---|---|---|
+| Trip | Multi-day event (`start_date` .. `end_date`) | `coordinator.data` |
+| Milestone | Single-day event on `target_date` | `coordinator.data` |
+| Anniversary | Annual single-day event (incl. ordinal) | `coordinator.data["original_date"]` |
+| Special Event | Annual single-day event | Calculated from the holiday/DST rule |
+| Custom Pattern | All occurrences in the calendar view window | Calculated from the pattern |
+
+**Dates come from the coordinator, not from the config entry (#27).**
+
+For Trip, Milestone and Anniversary the calendar reads the resolved dates out of
+`hass.data[DOMAIN][entry_id]["coordinator"].data` — the same values the sensors show. Reading
+`entry.data[CONF_START_DATE]` and friends directly would show the placeholder date that entries
+with an entity date source keep in those keys (see 6.5), and would raise `KeyError` for an entry
+that has no placeholder at all. Special Event and Custom Pattern derive their dates from the
+rule/pattern and do not use coordinator data.
+
+**Behavior when a date cannot be resolved:** `_resolved_data()` returns `None` when the entry has
+no coordinator, or when `coordinator.last_update_success` is `False` — which is the case while a
+date source entity is `unavailable`, `unknown` or unparseable. The calendar then **skips that event
+entirely**: it appears in neither `async_get_events()` nor the `on`/`off` state, and no stale or
+placeholder date is shown. This matches the sensors, which go `unavailable` in the same situation.
+The event reappears on the next successful coordinator update.
 
 ---
 
@@ -1017,6 +1033,13 @@ At each update cycle, the coordinator also calls `_check_expiry_repair(today)` t
 
 Trip entries may have entity sources on start date, end date, or both independently.
 
+The fixed date key (`start_date` / `end_date` / `target_date`) stays in `entry.data` even when an
+entity source is active: the config flow and the event services write the current day there as a
+placeholder, and it is kept for backwards compatibility with existing entries. **That placeholder is
+not a date the user configured — nothing may read it while `*_use_entity` is set.** The coordinator
+is the single point that resolves these fields; every consumer reads `coordinator.data` instead
+(sensors, binary sensors, and the calendar entity since #27 — see 3.6).
+
 ### 6.6 Entry Type Routing
 
 `CONF_ENTRY_TYPE` in `entry.data` distinguishes between event entries and calendar entries:
@@ -1024,7 +1047,11 @@ Trip entries may have entity sources on start date, end date, or both independen
 | Entry Type | Platforms | Coordinator |
 |------------|-----------|-------------|
 | Event (default) | `SENSOR`, `IMAGE`, `BINARY_SENSOR` | `WhenHubCoordinator` per entry |
-| `"calendar"` | `CALENDAR` | None (reads live from `hass.config_entries`) |
+| `"calendar"` | `CALENDAR` | None of its own — reads the coordinators of the event entries in scope |
+
+A calendar entry stores `{}` under `hass.data[DOMAIN][entry_id]`; it has no coordinator and no
+update interval. It resolves its events on demand from `hass.config_entries` (which entries are in
+scope) plus each event entry's coordinator data (their dates) — see 3.6.
 
 ### 6.7 Device Registration
 
@@ -1249,6 +1276,7 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file RELEASENOTES.md
 | 3.2.0 | 2026-08 | 6.9 documents `async_remove_entry` and the split between issue cleanup on unload and on removal (#28); corrected the `entity_deleted_{entry_id}` issue ID in 6.12 |
 | 3.3.0 | 2026-08 | New section 6.13 on config entry updates and reloads plus the ADR "One reload per update_event" in 5.6 (#29) |
 | 3.3.1 | 2026-08 | 3.5 documents the image entity state, `image_last_updated` and `content_type` after the ImageEntity contract fix (#23) |
+| 3.4.0 | 2026-08 | 3.6 documents that the calendar reads the resolved dates from the coordinators of the event entries in scope and skips events whose date cannot be resolved; 6.5 states that the placeholder date in the config entry must not be read; 6.6 corrected accordingly (#27) |
 
 For detailed release notes with descriptions and issue links, see [`RELEASENOTES.md`](RELEASENOTES.md).
 
