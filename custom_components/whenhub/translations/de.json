@@ -912,22 +912,22 @@
       "message": "Das Gerät {device_id} ist ein WhenHub-Kalender. Die Ereignis-Dienste arbeiten nur mit Ereignissen."
     },
     "name_exists": {
-      "message": "Es gibt bereits ein Ereignis mit dem Namen '{name}'. Setze auto_rename auf true oder wähle einen anderen Namen."
+      "message": "Es gibt bereits ein Ereignis mit dem Namen {name}. Setze auto_rename auf true oder wähle einen anderen Namen."
     },
     "invalid_dates": {
       "message": "Das Enddatum muss nach dem Startdatum liegen."
     },
     "invalid_date_format": {
-      "message": "'{value}' ist kein gültiges Datum für '{field}'. Verwende das Format JJJJ-MM-TT."
+      "message": "{value} ist kein gültiges Datum für {field}. Verwende das Format JJJJ-MM-TT."
     },
     "missing_field": {
-      "message": "'{field}' wird für den Ereignistyp '{event_type}' benötigt."
+      "message": "Das Feld {field} wird für den Ereignistyp {event_type} benötigt."
     },
     "field_not_allowed": {
-      "message": "'{field}' kann beim Ereignistyp '{event_type}' nicht verwendet werden."
+      "message": "Das Feld {field} kann beim Ereignistyp {event_type} nicht verwendet werden."
     },
     "date_and_entity": {
-      "message": "Übergib entweder '{field}' oder '{entity_field}', nicht beides."
+      "message": "Übergib entweder {field} oder {entity_field}, nicht beides."
     },
     "entity_not_found": {
       "message": "Die Entität {entity_id} existiert nicht."
@@ -936,10 +936,10 @@
       "message": "Die Entität {entity_id} benötigt die Geräteklasse 'date' oder 'timestamp', um als Datumsquelle zu dienen."
     },
     "date_source_active": {
-      "message": "'{field}' kommt derzeit aus der Entität {entity_id}. Setze replace_date_source auf true, um stattdessen ein festes Datum zu speichern."
+      "message": "Das Feld {field} kommt derzeit aus der Entität {entity_id}. Setze replace_date_source auf true, um stattdessen ein festes Datum zu speichern."
     },
     "notify_not_supported": {
-      "message": "'notify_on_expiry' gibt es für den Ereignistyp '{event_type}' nicht. Nur Reisen, Meilensteine und Wiederholungsmuster mit Ende können ablaufen."
+      "message": "notify_on_expiry gibt es für den Ereignistyp {event_type} nicht. Nur Reisen, Meilensteine und Wiederholungsmuster mit Ende können ablaufen."
     }
   }
 }

@@ -912,22 +912,22 @@
       "message": "Device {device_id} is a WhenHub calendar. The event services only work on events."
     },
     "name_exists": {
-      "message": "An event named '{name}' already exists. Set auto_rename to true or choose another name."
+      "message": "An event named {name} already exists. Set auto_rename to true or choose another name."
     },
     "invalid_dates": {
       "message": "The end date must be after the start date."
     },
     "invalid_date_format": {
-      "message": "'{value}' is not a valid date for '{field}'. Use the format YYYY-MM-DD."
+      "message": "{value} is not a valid date for {field}. Use the format YYYY-MM-DD."
     },
     "missing_field": {
-      "message": "'{field}' is required for event type '{event_type}'."
+      "message": "The field {field} is required for event type {event_type}."
     },
     "field_not_allowed": {
-      "message": "'{field}' cannot be used with event type '{event_type}'."
+      "message": "The field {field} cannot be used with event type {event_type}."
     },
     "date_and_entity": {
-      "message": "Pass either '{field}' or '{entity_field}', not both."
+      "message": "Pass either {field} or {entity_field}, not both."
     },
     "entity_not_found": {
       "message": "Entity {entity_id} does not exist."
@@ -936,10 +936,10 @@
       "message": "Entity {entity_id} needs device class 'date' or 'timestamp' to be used as a date source."
     },
     "date_source_active": {
-      "message": "'{field}' currently comes from entity {entity_id}. Set replace_date_source to true to store a fixed date instead."
+      "message": "The field {field} currently comes from entity {entity_id}. Set replace_date_source to true to store a fixed date instead."
     },
     "notify_not_supported": {
-      "message": "'notify_on_expiry' is not available for event type '{event_type}'. Only trips, milestones and custom patterns with an end condition can expire."
+      "message": "notify_on_expiry is not available for event type {event_type}. Only trips, milestones and custom patterns with an end condition can expire."
     }
   }
 }
