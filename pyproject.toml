@@ -1,5 +1,5 @@
 [tool.pytest.ini_options]
-addopts = "-q --maxfail=1 --disable-warnings"
+addopts = "-q --disable-warnings"
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
