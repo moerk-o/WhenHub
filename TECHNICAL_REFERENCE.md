@@ -689,8 +689,8 @@ Any other type-specific parameter in the call is rejected with `field_not_allowe
 
 `notify_on_expiry` follows the rules of the Options Flow: trips and milestones always,
 Custom Patterns only when `cp_end_type != "none"`, everything else is rejected with
-`notify_not_supported`. The parameter is rejected by its presence, not its value — that
-keeps `field_not_allowed` and `notify_not_supported` consistent with each other.
+`notify_not_supported`. Only `true` is rejected — `notify_on_expiry: false` is accepted
+for every type as a no-op, so a generic script can always send the parameter.
 
 Dates are normalized with `date.fromisoformat(value).isoformat()`. Normalizing matters:
 Python also accepts `20260712`, while the trip date order is compared as a string and

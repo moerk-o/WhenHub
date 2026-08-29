@@ -512,6 +512,21 @@ class TestCreateEventErrors:
 
         assert err.value.translation_key == "notify_not_supported"
 
+    async def test_notify_on_expiry_false_for_anniversary(
+        self, hass: HomeAssistant, whenhub
+    ):
+        """``notify_on_expiry: false`` is accepted for every type (no-op)."""
+        created = await _create(
+            hass,
+            event_type="anniversary",
+            name="Birthday",
+            target_date="1983-04-17",
+            notify_on_expiry=False,
+        )
+
+        entry = hass.config_entries.async_get_entry(created["entry_id"])
+        assert entry.data["notify_on_expiry"] is False
+
     async def test_unknown_date_entity(self, hass: HomeAssistant, whenhub):
         """An entity that does not exist is rejected."""
         with pytest.raises(ServiceValidationError) as err:
@@ -962,6 +977,18 @@ class TestUpdateEventErrors:
             await _update(hass, created["device_id"], notify_on_expiry=True)
 
         assert err.value.translation_key == "notify_not_supported"
+
+    async def test_notify_on_expiry_false_for_anniversary_is_noop(
+        self, hass: HomeAssistant, whenhub
+    ):
+        """``notify_on_expiry: false`` on a type that cannot expire changes nothing."""
+        created = await _create(
+            hass, event_type="anniversary", name="Birthday", target_date="1983-04-17"
+        )
+
+        response = await _update(hass, created["device_id"], notify_on_expiry=False)
+
+        assert response["changed"] == {}
 
     async def test_notify_on_expiry_for_endless_custom_pattern(
         self, hass: HomeAssistant, whenhub

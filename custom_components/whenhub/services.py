@@ -293,8 +293,12 @@ def _check_type_fields(data: dict[str, Any], event_type: str) -> None:
 def _check_notify_supported(
     data: dict[str, Any], event_type: str, supported: tuple[str, ...]
 ) -> None:
-    """Reject notify_on_expiry for event types that cannot expire."""
-    if CONF_NOTIFY_ON_EXPIRY in data and event_type not in supported:
+    """Reject enabling notify_on_expiry for event types that cannot expire.
+
+    Passing ``notify_on_expiry: false`` is accepted for every type so that a
+    generic script can always send the parameter; only ``true`` is an error.
+    """
+    if data.get(CONF_NOTIFY_ON_EXPIRY) and event_type not in supported:
         raise _error("notify_not_supported", event_type=event_type)
 
 
@@ -485,7 +489,8 @@ async def _async_update_event(call: ServiceCall) -> ServiceResponse:
     event_type = _service_event_type(entry_data)
 
     _check_type_fields(data, event_type)
-    _check_notify_supported(data, event_type, _notify_types_for_update(entry_data))
+    notify_types = _notify_types_for_update(entry_data)
+    _check_notify_supported(data, event_type, notify_types)
 
     new_data = dict(entry_data)
     changed: dict[str, dict[str, Any]] = {}
@@ -511,6 +516,8 @@ async def _async_update_event(call: ServiceCall) -> ServiceResponse:
     ):
         if field in _DATE_PARAMETERS or field not in data:
             continue
+        if field == CONF_NOTIFY_ON_EXPIRY and event_type not in notify_types:
+            continue  # ``false`` on a type that cannot expire is a no-op
         if (new_value := data[field]) != entry_data.get(field):
             changed[field] = {"old": entry_data.get(field), "new": new_value}
             new_data[field] = new_value

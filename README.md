@@ -609,7 +609,7 @@ response_variable: created
 | `image_path` | no | Path or URL of an image. Uploading a file is only possible in the UI |
 | `url` | no | Creates the URL sensor |
 | `memo` | no | Markdown text, creates the memo sensor |
-| `notify_on_expiry` | no (`false`) | Only for `trip` and `milestone` — other types cannot expire |
+| `notify_on_expiry` | no (`false`) | `true` only for `trip` and `milestone` — other types cannot expire; `false` is accepted everywhere |
 
 A name that already exists is rejected. This protects against a faulty automation that
 fires every night and would otherwise pile up "Denmark 2026 2", "Denmark 2026 3" and so
@@ -649,7 +649,7 @@ response_variable: result
 | `replace_date_source` | no (`false`) | Allow a fixed date to overwrite an active entity source |
 | `special_type`, `dst_region`, `dst_type` | no | Only on the matching event type |
 | `image_path`, `url`, `memo` | no | An empty string clears the field and removes the URL or memo sensor |
-| `notify_on_expiry` | no | Only for trips, milestones, and Custom Patterns that have an end condition |
+| `notify_on_expiry` | no | `true` only for trips, milestones, and Custom Patterns that have an end condition; `false` is accepted everywhere |
 
 Only the fields you pass are changed; everything else stays untouched. The event type
 itself cannot be changed, and neither can a field that does not belong to the event type
